@@ -1,0 +1,38 @@
+<div class="form-card">
+  <h2>Crear cuenta</h2>
+
+  <form (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="50" [(ngModel)]="cliente.nombre" />
+    </div>
+
+    <div class="form-group">
+      <label for="apellido">Apellido</label>
+      <input id="apellido" name="apellido" type="text" maxlength="50" [(ngModel)]="cliente.apellido" />
+    </div>
+
+    <div class="form-group">
+      <label for="dni">DNI</label>
+      <input id="dni" name="dni" type="text" maxlength="20" [(ngModel)]="cliente.dni" />
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" maxlength="100" placeholder="tu@email.com"
+             [(ngModel)]="cliente.email" />
+    </div>
+
+    <div class="form-group">
+      <label for="contrasenia">Contraseña</label>
+      <input id="contrasenia" name="contrasenia" type="password" minlength="6" maxlength="50"
+             placeholder="Entre 6 y 50 caracteres" [(ngModel)]="cliente.contrasenia" />
+    </div>
+
+    <button type="submit" class="btn">Registrarme</button>
+  </form>
+
+  <p class="form-footer">
+    ¿Ya tenés cuenta? <a routerLink="/login">Iniciá sesión</a>
+  </p>
+</div>

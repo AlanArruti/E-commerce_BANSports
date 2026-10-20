@@ -1,0 +1,37 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: #111827;
+  color: #fff;
+}
+
+.logo {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav a {
+  opacity: 0.85;
+}
+
+.nav a:hover,
+.nav a.activo {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.btn-registro {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  background: #4f46e5;
+}

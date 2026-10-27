@@ -1,0 +1,15 @@
+<aside class="panel" [ngClass]="'panel-' + variante()">
+  <div class="franja" aria-hidden="true"></div>
+  <div class="marca-agua" aria-hidden="true">BAN</div>
+
+  <a routerLink="/" class="logo panel-logo" aria-label="BAN Sports, ir al inicio">
+    <span class="logo-marca">BAN</span>
+    <span class="logo-texto">SPORTS</span>
+  </a>
+
+  <div class="contenido">
+    <ng-content />
+  </div>
+
+  <span class="copy">&copy; {{ anio }} BAN Sports</span>
+</aside>

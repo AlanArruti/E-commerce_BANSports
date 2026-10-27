@@ -1,37 +1,222 @@
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  background: #111827;
-  color: #fff;
-}
-
-.logo {
-  font-size: 1.4rem;
-  font-weight: 700;
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.nav a {
-  opacity: 0.85;
-}
-
-.nav a:hover,
-.nav a.activo {
-  opacity: 1;
+.anuncio {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 13px;
   font-weight: 600;
+  text-align: center;
+  padding: var(--espacio-2) var(--espacio-4);
 }
 
-.btn-registro {
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
-  background: #4f46e5;
+.header {
+  border-bottom: 1px solid var(--color-borde);
+  background: var(--color-negro);
+}
+
+.header-grilla {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-6);
+  padding-top: var(--espacio-4);
+  padding-bottom: var(--espacio-4);
+}
+
+.btn-menu {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.categorias {
+  display: flex;
+  gap: var(--espacio-5);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.categorias a {
+  white-space: nowrap;
+}
+
+.categorias a:hover {
+  color: var(--color-verde);
+}
+
+.buscador {
+  flex: 1 1 220px;
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  height: 44px;
+  padding: 0 var(--espacio-3);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  color: var(--color-texto-secundario);
+}
+
+.buscador input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-texto);
+  font-size: 14px;
+  outline: none;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.link-ingresar,
+.saludo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-height: 44px;
+  padding: 0 var(--espacio-3);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.link-ingresar:hover {
+  color: var(--color-verde);
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.carrito {
+  position: relative;
+}
+
+.contador {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tablet: el buscador baja a una segunda fila */
+@media (max-width: 1100px) {
+  .header-grilla {
+    flex-wrap: wrap;
+    gap: var(--espacio-4) var(--espacio-5);
+  }
+
+  .buscador {
+    order: 5;
+    flex-basis: 100%;
+  }
+}
+
+/* Mobile: menú + logo + carrito, buscador y categorías en chips */
+@media (max-width: 760px) {
+  .anuncio {
+    font-size: 12px;
+  }
+
+  .header-grilla {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    grid-template-areas:
+      'menu logo acciones'
+      'buscador buscador buscador'
+      'categorias categorias categorias';
+    gap: var(--espacio-3);
+    padding-top: var(--espacio-2);
+    padding-bottom: var(--espacio-3);
+  }
+
+  .btn-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    grid-area: menu;
+  }
+
+  .header-logo {
+    grid-area: logo;
+    justify-self: center;
+  }
+
+  .header-logo .logo-marca {
+    font-size: 22px;
+    padding: 5px 9px 3px;
+  }
+
+  .header-logo .logo-texto {
+    font-size: 18px;
+    letter-spacing: 0.16em;
+  }
+
+  .acciones {
+    grid-area: acciones;
+  }
+
+  .link-ingresar span,
+  .saludo {
+    display: none;
+  }
+
+  .btn-texto {
+    font-size: 13px;
+    padding: 0 var(--espacio-2);
+  }
+
+  .buscador {
+    grid-area: buscador;
+    height: 46px;
+  }
+
+  .categorias {
+    grid-area: categorias;
+    gap: var(--espacio-2);
+    overflow-x: auto;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 13px;
+  }
+
+  .categorias a {
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+  }
 }

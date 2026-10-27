@@ -1,7 +1,11 @@
 <div class="layout">
-  <app-header />
+  @if (mostrarLayout()) {
+    <app-header />
+  }
   <main class="contenido">
     <router-outlet />
   </main>
-  <app-footer />
+  @if (mostrarLayout()) {
+    <app-footer />
+  }
 </div>

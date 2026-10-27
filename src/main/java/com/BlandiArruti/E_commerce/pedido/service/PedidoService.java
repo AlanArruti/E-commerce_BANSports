@@ -135,6 +135,9 @@ public class PedidoService implements IPedidoService {
         if (request.idDireccion() != null) {
             direccionEnvio = direccionRepository.findById(request.idDireccion())
                     .orElseThrow(() -> EntidadNoEncontradaException.direccion(request.idDireccion()));
+            if (!direccionEnvio.getCliente().getId().equals(cliente.getId())) {
+                throw new AccessDeniedException("La dirección de envío no pertenece al cliente del pedido.");
+            }
         }
 
         Pedido pedido = Pedido.builder()
@@ -199,10 +202,37 @@ public class PedidoService implements IPedidoService {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(pedidoId));
 
-        if (pedido.getEstadoPedido() != EstadoPedido.PENDIENTE_PAGO) {
+        // El webhook puede llegar repetido: si el pedido ya no está esperando pago, no hacemos nada.
+        if (!esCobrable(pedido.getEstadoPedido())) {
             return;
         }
 
+        acreditarPago(pedido, tipoFactura);
+    }
+
+    public PedidoResponse pagar(Long id, PagoRequest request) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
+        verificarPropietario(pedido);
+
+        if (!esCobrable(pedido.getEstadoPedido())) {
+            throw PedidoNoModificableException.porEstado(id, pedido.getEstadoPedido());
+        }
+
+        return pedidoMapper.toResponse(acreditarPago(pedido, request.tipoFactura()));
+    }
+
+    /** Estados desde los que todavía se puede cobrar un pedido. */
+    private boolean esCobrable(EstadoPedido estado) {
+        return estado == EstadoPedido.PENDIENTE_PAGO || estado == EstadoPedido.EN_PREPARACION;
+    }
+
+    /**
+     * Único camino a PAGADO: descuenta stock, emite la factura y notifica.
+     * Lo comparten el pago directo y la confirmación de MercadoPago para que
+     * no puedan divergir.
+     */
+    private Pedido acreditarPago(Pedido pedido, TipoFactura tipoFactura) {
         for (ItemPedido item : pedido.getItems()) {
             Variante variante = item.getVariante();
             if (variante != null) {
@@ -228,50 +258,11 @@ public class PedidoService implements IPedidoService {
 
         pedido.setEstadoPedido(EstadoPedido.PAGADO);
         pedido.setFactura(factura);
-        pedidoRepository.save(pedido);
-
-        notificacionService.notificarFacturaGenerada(factura);
-    }
-
-    public PedidoResponse pagar(Long id, PagoRequest request) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
-        verificarPropietario(pedido);
-
-        if (pedido.getEstadoPedido() != EstadoPedido.PENDIENTE_PAGO) {
-            throw PedidoNoModificableException.porEstado(id, pedido.getEstadoPedido());
-        }
-
-        for (ItemPedido item : pedido.getItems()) {
-            Variante variante = item.getVariante();
-            if (variante != null) {
-                if (variante.getStock() < item.getCantidad()) {
-                    throw StockInsuficienteException.stockInsuficiente(
-                            variante.getId(), variante.getStock(), item.getCantidad());
-                }
-                variante.setStock(variante.getStock() - item.getCantidad());
-                varianteRepository.save(variante);
-            }
-        }
-
-        double total = pedido.getItems().stream()
-                .mapToDouble(ItemPedido::getPrecioProducto)
-                .sum();
-
-        Factura factura = Factura.builder()
-                .pedido(pedido)
-                .tipoFactura(request.tipoFactura())
-                .precioTotal(total)
-                .build();
-        facturaRepository.save(factura);
-
-        pedido.setEstadoPedido(EstadoPedido.PAGADO);
-        pedido.setFactura(factura);
-        PedidoResponse response = pedidoMapper.toResponse(pedidoRepository.save(pedido));
+        Pedido guardado = pedidoRepository.save(pedido);
 
         notificacionService.notificarFacturaGenerada(factura);
 
-        return response;
+        return guardado;
     }
 
     public PedidoResponse cambiarEstado(Long id, EstadoPedidoRequest request) {
@@ -281,10 +272,18 @@ public class PedidoService implements IPedidoService {
         EstadoPedido actual = pedido.getEstadoPedido();
         EstadoPedido nuevo = request.estado();
 
+        // A PAGADO solo se llega cobrando (pagar / webhook de MercadoPago): ese es el
+        // único camino que descuenta stock y emite factura.
+        if (nuevo == EstadoPedido.PAGADO) {
+            throw new EcommerceException(
+                    "No se puede marcar un pedido como PAGADO a mano. "
+                    + "Usá PATCH /pedido/" + id + "/pagar o el pago con MercadoPago.");
+        }
+
         boolean valida = switch (actual) {
             case PENDIENTE_PAGO -> nuevo == EstadoPedido.EN_PREPARACION || nuevo == EstadoPedido.CANCELADO;
-            case EN_PREPARACION -> nuevo == EstadoPedido.PAGADO || nuevo == EstadoPedido.CANCELADO;
-            case PAGADO         -> nuevo == EstadoPedido.DESPACHADO;
+            case EN_PREPARACION -> nuevo == EstadoPedido.CANCELADO;
+            case PAGADO         -> nuevo == EstadoPedido.DESPACHADO || nuevo == EstadoPedido.CANCELADO;
             case DESPACHADO     -> nuevo == EstadoPedido.ENTREGADO || nuevo == EstadoPedido.CANCELADO;
             default             -> false;
         };
@@ -294,7 +293,9 @@ public class PedidoService implements IPedidoService {
                     "Transición de estado inválida: " + actual + " → " + nuevo + ".");
         }
 
-        if (nuevo == EstadoPedido.CANCELADO && actual == EstadoPedido.DESPACHADO) {
+        // El stock se devuelve solo si ya había sido descontado (es decir, si el pedido fue cobrado).
+        if (nuevo == EstadoPedido.CANCELADO
+                && (actual == EstadoPedido.PAGADO || actual == EstadoPedido.DESPACHADO)) {
             for (ItemPedido item : pedido.getItems()) {
                 Variante variante = item.getVariante();
                 if (variante != null) {

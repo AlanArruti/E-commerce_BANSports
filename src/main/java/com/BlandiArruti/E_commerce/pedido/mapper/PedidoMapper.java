@@ -15,5 +15,15 @@ public interface PedidoMapper {
     @Mapping(source = "uuid", target = "uuidPedido")
     @Mapping(source = "estadoPedido", target = "estado")
     @Mapping(source = "items", target = "items")
+    @Mapping(target = "total", expression = "java(calcularTotal(pedido))")
     PedidoResponse toResponse(Pedido pedido);
+
+    default Double calcularTotal(Pedido pedido) {
+        if (pedido.getItems() == null) {
+            return 0.0;
+        }
+        return pedido.getItems().stream()
+                .mapToDouble(item -> item.getPrecioProducto() != null ? item.getPrecioProducto() : 0.0)
+                .sum();
+    }
 }

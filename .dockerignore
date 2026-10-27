@@ -1,0 +1,51 @@
+# Todo lo que NO tiene que viajar al contexto de build.
+# Sin esto el build es lento y, peor, mete secretos en la imagen.
+
+# ── Secretos ────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.yaml
+
+# ── Artefactos de build (se regeneran adentro del contenedor) ───────────────
+target/
+build/
+*.jar
+*.war
+
+# ── Control de versiones e IDEs ─────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.github
+.idea
+*.iml
+*.iws
+*.ipr
+.vscode
+.settings
+.classpath
+.project
+
+# ── Herramientas de agentes ─────────────────────────────────────────────────
+.claude
+.agents
+
+# ── Documentación y material de la cursada ──────────────────────────────────
+*.md
+!README.md
+postman/
+scripts/
+*.pdf
+*.docx
+
+# ── Basura del sistema ──────────────────────────────────────────────────────
+*.stackdump
+.DS_Store
+Thumbs.db
+
+# ── Docker (no hace falta dentro de la imagen) ──────────────────────────────
+Dockerfile*
+compose*.yaml
+docker-compose*.yml
+.dockerignore

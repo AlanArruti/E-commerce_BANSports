@@ -1,6 +1,8 @@
 package com.BlandiArruti.E_commerce.cliente.service;
 
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
+import com.BlandiArruti.E_commerce.cliente.dto.request.CambioPasswordRequest;
+import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteUpdateRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.request.DireccionRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
@@ -13,6 +15,7 @@ import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
+import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.entity.Ciudad;
@@ -90,7 +93,7 @@ public class ClienteService implements IClienteService {
         return clienteMapper.toResponse(cliente);
     }
 
-    public ClienteResponse actualizar(Long id, ClienteRequest request) {
+    public ClienteResponse actualizar(Long id, ClienteUpdateRequest request) {
         verificarPropietario(id);
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(id));
@@ -103,8 +106,20 @@ public class ClienteService implements IClienteService {
         cliente.setNombre(request.nombre());
         cliente.setApellido(request.apellido());
         cliente.setEmail(request.email());
-        cliente.setContrasenia(passwordEncoder.encode(request.contrasenia()));
         return clienteMapper.toResponse(clienteRepository.save(cliente));
+    }
+
+    public void cambiarPassword(Long id, CambioPasswordRequest request) {
+        verificarPropietario(id);
+        Cliente cliente = clienteRepository.findByIdAndActivoTrue(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.cliente(id));
+
+        if (!passwordEncoder.matches(request.contraseniaActual(), cliente.getContrasenia())) {
+            throw new CredencialesInvalidasException("La contraseña actual no es correcta.");
+        }
+
+        cliente.setContrasenia(passwordEncoder.encode(request.contraseniaNueva()));
+        clienteRepository.save(cliente);
     }
 
     public void eliminar(Long id) {

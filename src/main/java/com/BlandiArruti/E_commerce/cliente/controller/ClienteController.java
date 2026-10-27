@@ -1,6 +1,8 @@
 package com.BlandiArruti.E_commerce.cliente.controller;
 
+import com.BlandiArruti.E_commerce.cliente.dto.request.CambioPasswordRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteRequest;
+import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteUpdateRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.request.DireccionRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
 import com.BlandiArruti.E_commerce.cliente.dto.response.DireccionResponse;
@@ -50,11 +52,20 @@ public class ClienteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(clienteService.crear(request));
     }
 
-    @Operation(summary = "Actualizar cliente")
+    @Operation(summary = "Actualizar datos del cliente",
+               description = "Edita nombre, apellido y email. La contraseña se cambia por separado.")
     @PutMapping("/{id}")
     public ResponseEntity<ClienteResponse> actualizar(@PathVariable Long id,
-                                                      @Valid @RequestBody ClienteRequest request) {
+                                                      @Valid @RequestBody ClienteUpdateRequest request) {
         return ResponseEntity.ok(clienteService.actualizar(id, request));
+    }
+
+    @Operation(summary = "Cambiar contraseña", description = "Requiere la contraseña actual.")
+    @PatchMapping("/{id}/password")
+    public ResponseEntity<Void> cambiarPassword(@PathVariable Long id,
+                                                @Valid @RequestBody CambioPasswordRequest request) {
+        clienteService.cambiarPassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Dar de baja cliente (soft delete)")

@@ -3,17 +3,21 @@ package com.BlandiArruti.E_commerce.producto.service;
 import com.BlandiArruti.E_commerce.categoria.entity.Categoria;
 import com.BlandiArruti.E_commerce.categoria.repository.CategoriaRepository;
 import com.BlandiArruti.E_commerce.enums.OperacionStock;
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
 import com.BlandiArruti.E_commerce.producto.dto.request.ProductoRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.StockRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.VarianteRequest;
+import com.BlandiArruti.E_commerce.producto.dto.response.ImagenProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.ProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.VarianteResponse;
+import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
 import com.BlandiArruti.E_commerce.producto.entity.Producto;
 import com.BlandiArruti.E_commerce.producto.entity.Variante;
 import com.BlandiArruti.E_commerce.producto.mapper.ProductoMapper;
 import com.BlandiArruti.E_commerce.producto.mapper.VarianteMapper;
+import com.BlandiArruti.E_commerce.producto.repository.ImagenProductoRepository;
 import com.BlandiArruti.E_commerce.producto.repository.ProductoRepository;
 import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
@@ -21,19 +25,93 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class ProductoService implements IProductoService {
 
+    /** Formatos de imagen aceptados para el catálogo. */
+    private static final Set<String> TIPOS_IMAGEN_PERMITIDOS =
+            Set.of("image/jpeg", "image/png", "image/webp");
+
+    /** Tope por imagen: 2 MB. */
+    private static final long TAMANIO_MAXIMO_IMAGEN = 2L * 1024 * 1024;
+
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final VarianteRepository varianteRepository;
+    private final ImagenProductoRepository imagenProductoRepository;
     private final ProductoMapper productoMapper;
     private final VarianteMapper varianteMapper;
+
+    public ImagenProductoResponse subirImagen(Long idProducto, MultipartFile archivo) {
+        Producto producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> EntidadNoEncontradaException.producto(idProducto));
+
+        if (archivo == null || archivo.isEmpty()) {
+            throw new EcommerceException("El archivo de imagen está vacío.");
+        }
+        if (archivo.getSize() > TAMANIO_MAXIMO_IMAGEN) {
+            throw new EcommerceException("La imagen no puede superar los 2 MB.");
+        }
+        String contentType = archivo.getContentType();
+        if (contentType == null || !TIPOS_IMAGEN_PERMITIDOS.contains(contentType.toLowerCase())) {
+            throw new EcommerceException(
+                    "Formato de imagen no soportado. Se aceptan: JPEG, PNG y WEBP.");
+        }
+
+        byte[] datos;
+        try {
+            datos = archivo.getBytes();
+        } catch (IOException e) {
+            throw new EcommerceException("No se pudo leer el archivo de imagen.");
+        }
+
+        // Una imagen por producto: si ya había, se reemplaza.
+        ImagenProducto imagen = imagenProductoRepository.findByProductoId(idProducto)
+                .orElseGet(() -> ImagenProducto.builder().producto(producto).build());
+        imagen.setNombreArchivo(archivo.getOriginalFilename() != null
+                ? archivo.getOriginalFilename() : "imagen");
+        imagen.setContentType(contentType.toLowerCase());
+        imagen.setDatos(datos);
+        imagenProductoRepository.save(imagen);
+
+        producto.setTieneImagen(true);
+        productoRepository.save(producto);
+
+        return new ImagenProductoResponse(
+                idProducto,
+                imagen.getNombreArchivo(),
+                imagen.getContentType(),
+                datos.length,
+                "/api/v1/producto/" + idProducto + "/imagen");
+    }
+
+    @Transactional(readOnly = true)
+    public ImagenProducto obtenerImagen(Long idProducto) {
+        return imagenProductoRepository.findByProductoId(idProducto)
+                .orElseThrow(() -> new EntidadNoEncontradaException(
+                        "El producto con id " + idProducto + " no tiene imagen cargada."));
+    }
+
+    public void eliminarImagen(Long idProducto) {
+        Producto producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> EntidadNoEncontradaException.producto(idProducto));
+
+        ImagenProducto imagen = imagenProductoRepository.findByProductoId(idProducto)
+                .orElseThrow(() -> new EntidadNoEncontradaException(
+                        "El producto con id " + idProducto + " no tiene imagen cargada."));
+
+        imagenProductoRepository.delete(imagen);
+        producto.setTieneImagen(false);
+        productoRepository.save(producto);
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax, String search, Pageable pageable) {

@@ -101,7 +101,9 @@ public class CarritoService {
         ItemCarrito item = itemCarritoRepository.findByIdAndCarritoId(idItem, carrito.getId())
                 .orElseThrow(() -> EntidadNoEncontradaException.itemCarrito(idItem));
 
-        validarStock(item.getVariante(), request.cantidad());
+        if (item.getVariante() != null) {
+            validarStock(item.getVariante(), request.cantidad());
+        }
 
         item.setCantidad(request.cantidad());
         itemCarritoRepository.save(item);

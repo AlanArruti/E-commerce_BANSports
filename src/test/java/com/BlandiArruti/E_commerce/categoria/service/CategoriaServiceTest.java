@@ -39,7 +39,7 @@ class CategoriaServiceTest {
     }
 
     private CategoriaResponse responseConNombre(String nombre) {
-        return new CategoriaResponse("uuid-" + nombre, nombre);
+        return new CategoriaResponse(1L, "uuid-" + nombre, nombre);
     }
 
     // ─── listarTodas() ───────────────────────────────────────────────────────

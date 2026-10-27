@@ -7,7 +7,9 @@ import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +49,13 @@ public class Pedido {
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ItemPedido> items = new ArrayList<>();
+
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre pedidos
+    // que ya estaban cargados (les queda la fecha de la migración).
+    @CreationTimestamp
+    @Column(name = "fecha_creacion", nullable = false, updatable = false,
+            columnDefinition = "timestamp default now() not null")
+    private LocalDateTime fechaCreacion;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_pedido", nullable = false)

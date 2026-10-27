@@ -19,6 +19,7 @@ import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.mercadopago.service.MercadoPagoService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
+import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
@@ -189,6 +190,22 @@ class PedidoServiceTest {
     }
 
     @Test
+    void cambiarEstado_pagadoACancelado_devuelveStock() {
+        Variante variante = Variante.builder().id(1L).stock(4).build();
+        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(2).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, item);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoMapper.toResponse(any())).thenReturn(null);
+
+        pedidoService.cambiarEstado(1L, new EstadoPedidoRequest(EstadoPedido.CANCELADO));
+
+        assertThat(variante.getStock()).isEqualTo(6);
+        verify(varianteRepository).save(variante);
+    }
+
+    @Test
     void cambiarEstado_transicionInvalida_lanzaExcepcion() {
         Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
 
@@ -197,6 +214,58 @@ class PedidoServiceTest {
 
         assertThatThrownBy(() -> pedidoService.cambiarEstado(1L, new EstadoPedidoRequest(EstadoPedido.ENTREGADO)))
                 .isInstanceOf(EcommerceException.class);
+    }
+
+    @Test
+    void cambiarEstado_aPagadoManualmente_noSePermite() {
+        Variante variante = Variante.builder().id(1L).stock(10).build();
+        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(3).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.EN_PREPARACION, item);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.cambiarEstado(1L, new EstadoPedidoRequest(EstadoPedido.PAGADO)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("pagar");
+
+        // El pedido no se movió y no se tocó ni el stock ni la facturación.
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.EN_PREPARACION);
+        assertThat(variante.getStock()).isEqualTo(10);
+        verify(facturaRepository, never()).save(any());
+    }
+
+    // ─── pagar() ─────────────────────────────────────────────────────────────
+
+    @Test
+    void pagar_desdeEnPreparacion_descuentaStockYFactura() {
+        Variante variante = Variante.builder().id(1L).stock(10).build();
+        ItemPedido item = ItemPedido.builder()
+                .variante(variante).cantidad(3).precioProducto(300.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.EN_PREPARACION, item);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        when(pedidoMapper.toResponse(any())).thenReturn(null);
+
+        pedidoService.pagar(1L, new PagoRequest(TipoFactura.B));
+
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
+        assertThat(variante.getStock()).isEqualTo(7);
+        verify(facturaRepository).save(any());
+    }
+
+    @Test
+    void pagar_pedidoYaPagado_lanzaNoModificable() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.pagar(1L, new PagoRequest(TipoFactura.B)))
+                .isInstanceOf(PedidoNoModificableException.class);
+        verify(facturaRepository, never()).save(any());
     }
 
     // ─── crearEnvio() ────────────────────────────────────────────────────────

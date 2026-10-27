@@ -18,8 +18,17 @@ public class MercadoPagoProperties {
     @Value("${mercadopago.back-url:http://localhost:8080}")
     private String backUrl;
 
+    private static final String BACK_URL_POR_DEFECTO = "http://localhost:8080";
+
     @PostConstruct
     public void init() {
+        // Docker Compose pasa la variable vacía cuando no hay túnel de ngrok
+        // configurado, y "" no dispara el default de @Value (que solo aplica si
+        // la propiedad no existe). Sin esto las back_urls de la preferencia
+        // saldrían malformadas.
+        if (backUrl == null || backUrl.isBlank()) {
+            backUrl = BACK_URL_POR_DEFECTO;
+        }
         com.mercadopago.MercadoPagoConfig.setAccessToken(accessToken);
     }
 }

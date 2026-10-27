@@ -2,13 +2,16 @@ package com.BlandiArruti.E_commerce.cliente.service;
 
 import com.BlandiArruti.E_commerce.administrador.entity.Administrador;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
+import com.BlandiArruti.E_commerce.cliente.dto.request.CambioPasswordRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteRequest;
+import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteUpdateRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.mapper.ClienteMapper;
 import com.BlandiArruti.E_commerce.cliente.mapper.DireccionMapper;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.repository.CiudadRepository;
@@ -142,28 +145,44 @@ class ClienteServiceTest {
 
     @Test
     void actualizar_emailNuevo_actualizaDatos() {
-        Cliente cliente = Cliente.builder().id(1L).email("viejo@mail.com").activo(true).build();
-        var request = new ClienteRequest("Juan", "Pérez", "12345678", "nuevo@mail.com", "newpass");
+        Cliente cliente = Cliente.builder().id(1L).email("viejo@mail.com")
+                .contrasenia("hash-original").activo(true).build();
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com");
         ClienteResponse response = mock(ClienteResponse.class);
 
         autenticarComoAdmin();
         when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
         when(clienteRepository.existsByEmail("nuevo@mail.com")).thenReturn(false);
-        when(passwordEncoder.encode("newpass")).thenReturn("hashed");
         when(clienteRepository.save(cliente)).thenReturn(cliente);
         when(clienteMapper.toResponse(cliente)).thenReturn(response);
 
         ClienteResponse result = clienteService.actualizar(1L, request);
 
         assertThat(cliente.getEmail()).isEqualTo("nuevo@mail.com");
-        assertThat(cliente.getContrasenia()).isEqualTo("hashed");
         assertThat(result).isEqualTo(response);
+    }
+
+    @Test
+    void actualizar_noTocaLaContrasenia() {
+        Cliente cliente = Cliente.builder().id(1L).email("viejo@mail.com")
+                .contrasenia("hash-original").activo(true).build();
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com");
+
+        autenticarComoAdmin();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.existsByEmail("nuevo@mail.com")).thenReturn(false);
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+
+        clienteService.actualizar(1L, request);
+
+        assertThat(cliente.getContrasenia()).isEqualTo("hash-original");
+        verify(passwordEncoder, never()).encode(any());
     }
 
     @Test
     void actualizar_emailDuplicadoDeOtroCliente_lanzaDuplicado() {
         Cliente cliente = Cliente.builder().id(1L).email("original@mail.com").activo(true).build();
-        var request = new ClienteRequest("Juan", "Pérez", "12345678", "otro@mail.com", "pass");
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "otro@mail.com");
 
         autenticarComoAdmin();
         when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
@@ -171,6 +190,38 @@ class ClienteServiceTest {
 
         assertThatThrownBy(() -> clienteService.actualizar(1L, request))
                 .isInstanceOf(DuplicadoException.class);
+    }
+
+    // ─── cambiarPassword ─────────────────────────────────────────────────────
+
+    @Test
+    void cambiarPassword_conContraseniaActualCorrecta_laReemplaza() {
+        Cliente cliente = Cliente.builder().id(1L).contrasenia("hash-viejo").activo(true).build();
+        var request = new CambioPasswordRequest("vieja", "nueva123");
+
+        autenticarComoAdmin();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(passwordEncoder.matches("vieja", "hash-viejo")).thenReturn(true);
+        when(passwordEncoder.encode("nueva123")).thenReturn("hash-nuevo");
+
+        clienteService.cambiarPassword(1L, request);
+
+        assertThat(cliente.getContrasenia()).isEqualTo("hash-nuevo");
+        verify(clienteRepository).save(cliente);
+    }
+
+    @Test
+    void cambiarPassword_conContraseniaActualIncorrecta_lanzaCredencialesInvalidas() {
+        Cliente cliente = Cliente.builder().id(1L).contrasenia("hash-viejo").activo(true).build();
+        var request = new CambioPasswordRequest("equivocada", "nueva123");
+
+        autenticarComoAdmin();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(passwordEncoder.matches("equivocada", "hash-viejo")).thenReturn(false);
+
+        assertThatThrownBy(() -> clienteService.cambiarPassword(1L, request))
+                .isInstanceOf(CredencialesInvalidasException.class);
+        verify(clienteRepository, never()).save(any());
     }
 
     // ─── eliminar ────────────────────────────────────────────────────────────

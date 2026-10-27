@@ -30,6 +30,12 @@ spring:
           time_zone: America/Argentina/Buenos_Aires
     open-in-view: false
 
+  servlet:
+    multipart:
+      # Imágenes de producto: el service valida 2 MB, acá dejamos un poco de margen.
+      max-file-size: 3MB
+      max-request-size: 5MB
+
   mail:
     host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
     port: ${MAIL_PORT:2525}
@@ -38,12 +44,26 @@ spring:
     properties:
       mail:
         smtp:
-          auth: true
+          # Mailpit (el SMTP local de Docker) no pide auth ni TLS; Mailtrap sí.
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${MAIL_SMTP_STARTTLS:true}
 
 server:
   port: 8080
+  shutdown: graceful
+
+# Solo el health endpoint, y sin detalles internos hacia afuera.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
 
 jwt:
   secret: ${JWT_SECRET}
@@ -63,3 +83,11 @@ correo-argentino:
 
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
+
+app:
+  cors:
+    # Orígenes del front autorizados, separados por coma.
+    allowed-origins: ${FRONT_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:4200}
+  oauth2:
+    # A dónde vuelve el navegador tras el login con GitHub. Vacío = devuelve JSON (Postman).
+    redirect-uri: ${OAUTH2_REDIRECT_URI:}

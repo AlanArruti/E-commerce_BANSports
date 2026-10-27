@@ -38,7 +38,11 @@ public class Direccion {
     @Column(name = "numero_calle", nullable = false)
     private Integer numeroCalle;
 
-    @Column(name = "codigo_postal", nullable = false, length = 8)
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre una tabla
+    // que ya tiene direcciones cargadas. Sin él, el ALTER falla en silencio y
+    // toda consulta sobre direcciones termina en 500.
+    @Column(name = "codigo_postal", nullable = false, length = 8,
+            columnDefinition = "varchar(8) default '0000' not null")
     private String codigoPostal;
 
     // -------- RELACIONES --------

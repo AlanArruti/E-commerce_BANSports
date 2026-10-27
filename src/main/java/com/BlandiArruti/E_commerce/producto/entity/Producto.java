@@ -42,6 +42,18 @@ public class Producto {
     @Builder.Default
     private boolean activo = true;
 
+    /**
+     * Bandera desnormalizada: evita consultar la tabla de imágenes por cada
+     * producto del catálogo solo para saber si hay que mostrar una foto.
+     * La mantiene ProductoService al subir o borrar la imagen.
+     */
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre una tabla
+    // que ya tiene filas cargadas.
+    @Column(name = "tiene_imagen", nullable = false,
+            columnDefinition = "boolean default false not null")
+    @Builder.Default
+    private boolean tieneImagen = false;
+
     @ManyToOne
     @JoinColumn(name = "id_categoria")
     private Categoria categoria;

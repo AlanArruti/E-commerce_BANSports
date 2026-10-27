@@ -1,6 +1,7 @@
 package com.BlandiArruti.E_commerce.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -8,10 +9,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -78,9 +81,19 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleArchivoDemasiadoGrande(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE,
+                "El archivo supera el tamaño máximo permitido.", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(
             Exception ex, HttpServletRequest request) {
+        // El cliente recibe un mensaje genérico, pero el stack queda en el log:
+        // sin esto un 500 es imposible de diagnosticar.
+        log.error("Error no controlado en {} {}", request.getMethod(), request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Error interno del servidor. Contacte al administrador.", request);
     }

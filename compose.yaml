@@ -1,0 +1,250 @@
+# =============================================================================
+# Stack completo del e-commerce para Docker Desktop.
+#
+#   docker compose up -d --build          → backend + base de datos + mail
+#   docker compose --profile tools up -d  → suma pgAdmin
+#   docker compose --profile front up -d  → suma el front de Progra 4
+#   docker compose --profile all up -d    → todo junto
+#
+# Los servicios opcionales están detrás de un profile: sin pedirlos, no arrancan
+# ni consumen recursos.
+#
+# La configuración sale de .env (copiá .env.docker.example). Todo tiene un valor
+# por defecto razonable, así que un `up` sin .env también funciona.
+# =============================================================================
+
+name: ecommerce
+
+services:
+
+  # ── Base de datos ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:18-alpine
+    container_name: ecommerce-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ecommerce}
+      POSTGRES_USER: ${DB_USERNAME:-ecommerce}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ecommerce}
+      # Acelera el arranque en dev; no usar así en producción.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      # Expuesto para poder conectar DBeaver/IntelliJ desde Windows.
+      # Si ya tenés un Postgres local en 5432, cambiá DB_PORT en el .env.
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # OJO: en Postgres 18+ el volumen va en /var/lib/postgresql, NO en
+      # /var/lib/postgresql/data como en las versiones anteriores. La imagen
+      # ahora guarda los datos en un subdirectorio por versión, y montar en
+      # /data hace que el contenedor arranque en loop.
+      - pgdata:/var/lib/postgresql
+      # Todo .sql que dejes acá se ejecuta SOLO al crear la base por primera vez.
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-ecommerce} -d ${DB_NAME:-ecommerce}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [ecommerce-net]
+
+  # ── Backend Spring Boot ────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_TESTS: ${SKIP_TESTS:-true}
+    image: ecommerce-backend:latest
+    container_name: ecommerce-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      # ── Base de datos (nombre del servicio, no localhost) ──
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-ecommerce}
+      DB_USERNAME: ${DB_USERNAME:-ecommerce}
+      DB_PASSWORD: ${DB_PASSWORD:-ecommerce}
+
+      # ── Seguridad ──
+      JWT_SECRET: ${JWT_SECRET:-clave-de-desarrollo-solo-para-docker-de-al-menos-32-chars}
+
+      # ── CORS y OAuth2: acá se conecta el front de Progra 4 ──
+      FRONT_ORIGINS: ${FRONT_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:4200}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-OAUTH_DISABLED}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-OAUTH_DISABLED}
+
+      # ── Mail: dentro del stack SIEMPRE va a Mailpit ──
+      # Fijo a propósito, sin leer del .env: ese archivo suele tener las
+      # credenciales de Mailtrap para correr fuera de Docker, y si se filtran
+      # acá la app intenta salir a internet con la config equivocada y los
+      # mails se pierden en silencio.
+      # Para mandar por Mailtrap/Gmail desde Docker, cambiá estas cuatro líneas
+      # a mano y poné MAIL_SMTP_AUTH/STARTTLS en "true".
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      MAIL_SMTP_AUTH: "false"
+      MAIL_SMTP_STARTTLS: "false"
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_FROM: ${MAIL_FROM:-no-reply@ecommerce-blandi-arruti.com}
+
+      # ── Servicios externos (opcionales: sin token quedan inactivos) ──
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      # Si definís NGROK_DOMAIN en el .env, estas dos se arman solas con ese
+      # dominio. Podés pisarlas seteándolas a mano. Vacías = sin webhook, y la
+      # app cae a http://localhost:8080 para las back_urls.
+      MP_NOTIFICATION_URL: ${MP_NOTIFICATION_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}/api/v1/webhook/mercadopago}}
+      MP_BACK_URL: ${MP_BACK_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}}}
+      CORREO_ARGENTINO_USER_TOKEN: ${CORREO_ARGENTINO_USER_TOKEN:-}
+      CORREO_ARGENTINO_PASSWORD_TOKEN: ${CORREO_ARGENTINO_PASSWORD_TOKEN:-}
+      CORREO_ARGENTINO_CUSTOMER_ID: ${CORREO_ARGENTINO_CUSTOMER_ID:-}
+
+      TZ: America/Argentina/Buenos_Aires
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # La app tarda en arrancar; hasta que pase este tiempo los fallos no cuentan.
+      start_period: 60s
+    networks: [ecommerce-net]
+
+  # ── Servidor de mail de desarrollo ─────────────────────────────────────────
+  # Atrapa todos los mails que manda la app (registro, factura, envío) y los
+  # muestra en una bandeja web. Nada sale a internet y no hace falta cuenta.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ecommerce-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"   # bandeja web
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks: [ecommerce-net]
+
+  # ── pgAdmin (profile: tools) ───────────────────────────────────────────────
+  # Cliente web de Postgres, por si no querés instalar DBeaver.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ecommerce-pgadmin
+    restart: unless-stopped
+    profiles: [tools, all]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      # pgAdmin rechaza TLDs reservados como .local: tiene que parecer un dominio real.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ecommerce.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      # Deja la conexión a `db` ya cargada, sin configurarla a mano.
+      - ./scripts/pgadmin-servers.json:/pgadmin4/servers.json:ro
+    networks: [ecommerce-net]
+
+  # ── Túnel público para el webhook de MercadoPago (profile: mp) ─────────────
+  # MercadoPago necesita pegarle a una URL pública para avisar que se aprobó un
+  # pago; localhost no le sirve. ngrok publica el puerto 8080 en internet.
+  #
+  #   docker compose --profile mp up -d
+  #
+  # Requiere una cuenta gratuita en https://dashboard.ngrok.com:
+  #   NGROK_AUTHTOKEN  → el token de la cuenta (obligatorio)
+  #   NGROK_DOMAIN     → tu dominio estático, sin el https://
+  #
+  # El dominio estático es en la práctica obligatorio: sin él ngrok da una URL
+  # distinta en cada arranque, y la app lee MP_NOTIFICATION_URL una sola vez al
+  # iniciar. El plan gratuito incluye uno.
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ecommerce-ngrok
+    # No es `unless-stopped`: si falta el token el arranque falla siempre, y
+    # reintentar para siempre solo llena los logs del mismo mensaje.
+    restart: "on-failure:3"
+    profiles: [mp, all]
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      # Inspector web: muestra cada request que entra por el túnel, con su
+      # body y su respuesta. Es la forma de ver si MP está llamando al webhook.
+      - "${NGROK_INSPECTOR_PORT:-4040}:4040"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_DOMAIN: ${NGROK_DOMAIN:-}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -z "$$NGROK_AUTHTOKEN" ]; then
+          echo "───────────────────────────────────────────────────────────────"
+          echo " Falta NGROK_AUTHTOKEN."
+          echo " Sacá el tuyo (gratis) en https://dashboard.ngrok.com/get-started/your-authtoken"
+          echo " y agregalo al archivo .env:"
+          echo ""
+          echo "     NGROK_AUTHTOKEN=tu_token_aca"
+          echo "     NGROK_DOMAIN=tu-dominio.ngrok-free.dev"
+          echo "───────────────────────────────────────────────────────────────"
+          exit 1
+        fi
+        if [ -n "$$NGROK_DOMAIN" ]; then
+          echo "Publicando el backend en https://$$NGROK_DOMAIN"
+          exec ngrok http app:8080 --url="https://$$NGROK_DOMAIN" --log=stdout
+        fi
+        echo "Sin NGROK_DOMAIN: la URL va a ser distinta en cada arranque."
+        echo "Mirá cuál te tocó en http://localhost:4040 y actualizá MP_NOTIFICATION_URL."
+        exec ngrok http app:8080 --log=stdout
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4040/api/tunnels || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks: [ecommerce-net]
+
+  # ── Frontend de Progra 4 (profile: front) ──────────────────────────────────
+  # Todavía no existe. Cuando lo crees en ./frontend con su propio Dockerfile,
+  # esto lo levanta sin tocar nada más:
+  #     docker compose --profile front up -d --build
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ecommerce-frontend:latest
+    container_name: ecommerce-frontend
+    restart: unless-stopped
+    profiles: [front, all]
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${FRONT_PORT:-5173}:5173"
+    environment:
+      # El navegador del usuario resuelve esta URL, no el contenedor: por eso
+      # es localhost y no `app`.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}
+    networks: [ecommerce-net]
+
+volumes:
+  pgdata:
+    name: ecommerce-pgdata
+  pgadmin-data:
+    name: ecommerce-pgadmin-data
+
+networks:
+  ecommerce-net:
+    name: ecommerce-net
+    driver: bridge

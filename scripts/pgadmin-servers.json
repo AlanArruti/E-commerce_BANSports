@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "E-commerce (Docker)",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "ecommerce",
+      "Username": "ecommerce",
+      "SSLMode": "prefer",
+      "Comment": "Base del stack de Compose. La contraseña es la de DB_PASSWORD (por defecto: ecommerce)."
+    }
+  }
+}

@@ -95,7 +95,7 @@ class CarritoServiceTest {
     }
 
     private CarritoResponse responseVacio() {
-        return new CarritoResponse("uuid-1", List.of(), 0.0);
+        return new CarritoResponse(1L, "uuid-1", List.of(), 0.0);
     }
 
     // ─── obtenerCarrito() ────────────────────────────────────────────────────

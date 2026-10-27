@@ -6,6 +6,7 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import java.time.LocalDate;
 
 public record EnvioResponse(
+        Long id,
         String uuidEnvio,
         DireccionResponse direccion,
         EstadoEnvio estado,

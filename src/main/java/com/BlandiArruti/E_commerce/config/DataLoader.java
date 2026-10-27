@@ -120,6 +120,80 @@ public class DataLoader implements CommandLineRunner {
                 .categoria(deportes)
                 .build());
 
+        // Catálogo extra: le da cuerpo al front (paginación, filtros y orden reales).
+        Producto auriculares = productoRepository.save(Producto.builder()
+                .nombre("Auriculares inalámbricos")
+                .descripcion("Bluetooth 5.3 con cancelación activa de ruido y 30h de batería.")
+                .precio(149.99)
+                .categoria(electronica)
+                .build());
+        Producto tablet = productoRepository.save(Producto.builder()
+                .nombre("Tablet 11 pulgadas")
+                .descripcion("Pantalla 2K, 128GB de almacenamiento y lápiz óptico incluido.")
+                .precio(429.99)
+                .categoria(electronica)
+                .build());
+        Producto teclado = productoRepository.save(Producto.builder()
+                .nombre("Teclado mecánico")
+                .descripcion("Switches rojos, retroiluminación RGB y layout español.")
+                .precio(89.99)
+                .categoria(electronica)
+                .build());
+        Producto campera = productoRepository.save(Producto.builder()
+                .nombre("Campera rompeviento")
+                .descripcion("Impermeable liviana con capucha desmontable.")
+                .precio(24999.99)
+                .categoria(indumentaria)
+                .build());
+        Producto jean = productoRepository.save(Producto.builder()
+                .nombre("Jean recto")
+                .descripcion("Denim rígido de algodón, corte clásico.")
+                .precio(18999.99)
+                .categoria(indumentaria)
+                .build());
+        Producto zapatillas = productoRepository.save(Producto.builder()
+                .nombre("Zapatillas urbanas")
+                .descripcion("Suela de goma antideslizante y plantilla acolchada.")
+                .precio(34999.99)
+                .categoria(indumentaria)
+                .build());
+        Producto lampara = productoRepository.save(Producto.builder()
+                .nombre("Lámpara de escritorio LED")
+                .descripcion("Tres temperaturas de color y brazo articulado.")
+                .precio(39.99)
+                .categoria(hogar)
+                .build());
+        Producto cafetera = productoRepository.save(Producto.builder()
+                .nombre("Cafetera de filtro")
+                .descripcion("Jarra de vidrio de 1.2L con placa calefactora.")
+                .precio(74.99)
+                .categoria(hogar)
+                .build());
+        Producto juegoSabanas = productoRepository.save(Producto.builder()
+                .nombre("Juego de sábanas")
+                .descripcion("200 hilos, incluye funda de almohada.")
+                .precio(29999.99)
+                .categoria(hogar)
+                .build());
+        Producto mancuernas = productoRepository.save(Producto.builder()
+                .nombre("Set de mancuernas")
+                .descripcion("Par regulable de 2 a 10 kg con recubrimiento de goma.")
+                .precio(129.99)
+                .categoria(deportes)
+                .build());
+        Producto bicicleta = productoRepository.save(Producto.builder()
+                .nombre("Bicicleta mountain bike")
+                .descripcion("Rodado 29, 21 velocidades y frenos a disco.")
+                .precio(899.99)
+                .categoria(deportes)
+                .build());
+        Producto matYoga = productoRepository.save(Producto.builder()
+                .nombre("Mat de yoga")
+                .descripcion("6mm de espesor, antideslizante, con correa de transporte.")
+                .precio(34.99)
+                .categoria(deportes)
+                .build());
+
         //------------VARIANTES------------//
         Variante laptopPlata = varianteRepository.save(Variante.builder()
                 .producto(laptop)
@@ -151,6 +225,46 @@ public class DataLoader implements CommandLineRunner {
                 .atributos(Map.of("color", "Rojo"))
                 .stock(15)
                 .build());
+
+        // Variantes de los productos del catálogo extra.
+        varianteRepository.save(Variante.builder()
+                .producto(smartphone).atributos(Map.of("color", "Negro", "almacenamiento", "128GB")).stock(12).build());
+        varianteRepository.save(Variante.builder()
+                .producto(smartphone).atributos(Map.of("color", "Azul", "almacenamiento", "256GB")).stock(6).build());
+        varianteRepository.save(Variante.builder()
+                .producto(pelota).atributos(Map.of("color", "Blanco")).stock(30).build());
+        varianteRepository.save(Variante.builder()
+                .producto(auriculares).atributos(Map.of("color", "Negro")).stock(25).build());
+        varianteRepository.save(Variante.builder()
+                .producto(auriculares).atributos(Map.of("color", "Blanco")).stock(8).build());
+        varianteRepository.save(Variante.builder()
+                .producto(tablet).atributos(Map.of("color", "Gris", "almacenamiento", "128GB")).stock(9).build());
+        varianteRepository.save(Variante.builder()
+                .producto(teclado).atributos(Map.of("switch", "Rojo", "layout", "Español")).stock(18).build());
+        varianteRepository.save(Variante.builder()
+                .producto(campera).atributos(Map.of("talla", "M", "color", "Negro")).stock(14).build());
+        varianteRepository.save(Variante.builder()
+                .producto(campera).atributos(Map.of("talla", "L", "color", "Verde")).stock(7).build());
+        varianteRepository.save(Variante.builder()
+                .producto(jean).atributos(Map.of("talla", "40", "color", "Azul")).stock(20).build());
+        varianteRepository.save(Variante.builder()
+                .producto(jean).atributos(Map.of("talla", "42", "color", "Negro")).stock(11).build());
+        varianteRepository.save(Variante.builder()
+                .producto(zapatillas).atributos(Map.of("talla", "41", "color", "Blanco")).stock(10).build());
+        varianteRepository.save(Variante.builder()
+                .producto(zapatillas).atributos(Map.of("talla", "43", "color", "Negro")).stock(4).build());
+        varianteRepository.save(Variante.builder()
+                .producto(lampara).atributos(Map.of("color", "Blanco")).stock(22).build());
+        varianteRepository.save(Variante.builder()
+                .producto(cafetera).atributos(Map.of("color", "Acero")).stock(13).build());
+        varianteRepository.save(Variante.builder()
+                .producto(juegoSabanas).atributos(Map.of("medida", "Queen", "color", "Gris")).stock(16).build());
+        varianteRepository.save(Variante.builder()
+                .producto(mancuernas).atributos(Map.of("peso", "10kg")).stock(9).build());
+        varianteRepository.save(Variante.builder()
+                .producto(bicicleta).atributos(Map.of("rodado", "29", "color", "Negro")).stock(3).build());
+        varianteRepository.save(Variante.builder()
+                .producto(matYoga).atributos(Map.of("color", "Violeta")).stock(28).build());
 
         //------------ADMIN------------//
         administradorRepository.save(Administrador.builder()

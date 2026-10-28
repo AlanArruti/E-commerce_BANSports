@@ -342,12 +342,9 @@ La colección incluye:
 
 ## Integrantes
 
-- Alan Arruti
-- Iara Blandi
-
 **Carrera:** Tecnicatura Universitaria en Programación — UTN Mar del Plata
 
-| Materia | Parte del proyecto | Docente |
-|---|---|---|
-| Programación III | Backend (API REST Spring Boot) | Lic. Mango Eduardo |
-| Programación IV | Frontend (Angular 22) | Lucrecia Bazán |
+| Materia | Parte del proyecto | Integrantes | Docente |
+|---|---|---|---|
+| Programación III | Backend (API REST Spring Boot) | Alan Arruti, Iara Blandi | Lic. Mango Eduardo |
+| Programación IV | Frontend (Angular 22) | Alan Arruti, Iara Blandi, Octavio Noval | Lucrecia Bazán |

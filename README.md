@@ -1,6 +1,18 @@
-# E-Commerce API — Blandi & Arruti
+# BAN Sports — E-Commerce (Blandi & Arruti)
 
-API REST para una plataforma de comercio electrónico desarrollada como Trabajo Práctico Final de Programación III — UTN Mar del Plata.
+Tienda online de suplementos deportivos. El backend es una API REST desarrollada como Trabajo Práctico Final de Programación III, y el frontend en Angular 22 es el Trabajo Práctico Final de Programación IV — UTN Mar del Plata.
+
+## Estructura del repositorio
+
+```
+backend/        ← API REST Spring Boot (Maven, src/, Dockerfile, colección Postman)
+frontend/       ← SPA Angular 22 (nginx en Docker)
+scripts/        ← SQL de la base (init de Docker, reparación de esquema) y config de pgAdmin
+compose.yaml    ← levanta todo el stack con Docker
+.env.example    ← variables de entorno de ejemplo
+```
+
+Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angular, desde `frontend/`. Docker Compose, desde la raíz.
 
 ## Descripción del proyecto
 
@@ -65,7 +77,7 @@ Controller → IService (interface) → ServiceImpl → Repository
 ## Estructura de paquetes
 
 ```
-src/main/java/com/BlandiArruti/E_commerce/
+backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── aop/                  ← LoggingAspect (AOP transversal)
 ├── auth/                 ← JWT, OAuth2 GitHub, AuthController
 ├── administrador/        ← CRUD de administradores
@@ -156,7 +168,7 @@ la app); después arranca en segundos.
 | **PostgreSQL** | `localhost:5432` | Base de datos (`ecommerce` / `ecommerce`) |
 | pgAdmin | http://localhost:5050 | Cliente web de la base (profile `tools`) |
 | ngrok | http://localhost:4040 | Túnel público para el webhook de MP (profile `mp`) |
-| Frontend | http://localhost:5173 | Progra 4 (profile `front`, ver `frontend/README.md`) |
+| **Frontend** | http://localhost:4200 | Angular, servido por nginx (profile `front`) |
 
 La base arranca con datos de prueba: usuario **`admin` / `admin123`**, 17
 productos, categorías, clientes y pedidos.
@@ -235,10 +247,11 @@ docker compose ps                       # estado y salud de cada servicio
 # 1. Crear la base de datos en PostgreSQL
 createdb ecommerce
 
-# 2. Configurar variables de entorno o crear src/main/resources/application-local.yaml
+# 2. Configurar variables de entorno o crear backend/src/main/resources/application-local.yaml
 #    con los valores correspondientes (ver Variables de entorno)
 
 # 3. Compilar y ejecutar
+cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
@@ -292,7 +305,8 @@ El proyecto incluye **129 tests** (128 unitarios en 13 clases + 1 de integració
 > `./mvnw test -Dtest='!ECommerceApplicationTests'`
 
 ```bash
-# Ejecutar todos los tests
+# Ejecutar todos los tests (desde backend/)
+cd backend
 ./mvnw test
 
 # El test de integración (contextLoads) requiere Docker para levantar PostgreSQL
@@ -317,7 +331,7 @@ Cobertura de tests unitarios:
 
 ## Colección Postman
 
-Importar el archivo `postman/E-Commerce_Blandi_Arruti.postman_collection.json` en Postman para acceder a todas las solicitudes preconfiguradas.
+Importar el archivo `backend/postman/E-Commerce_Blandi_Arruti.postman_collection.json` en Postman para acceder a todas las solicitudes preconfiguradas.
 
 La colección incluye:
 - Variables de entorno (`baseUrl`, `token`)

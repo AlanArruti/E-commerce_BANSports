@@ -51,7 +51,7 @@ services:
   # ── Backend Spring Boot ────────────────────────────────────────────────────
   app:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
       args:
         SKIP_TESTS: ${SKIP_TESTS:-true}

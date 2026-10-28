@@ -45,3 +45,6 @@ src/main/resources/application-local.yaml
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Volcados de crash de Git Bash
+*.stackdump

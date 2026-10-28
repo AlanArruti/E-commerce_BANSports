@@ -1,4 +1,4 @@
-# BAN Sports — E-Commerce (Blandi & Arruti)
+# BAN Sports — E-Commerce 
 
 Tienda online de suplementos deportivos. El backend es una API REST desarrollada como Trabajo Práctico Final de Programación III, y el frontend en Angular 22 es el Trabajo Práctico Final de Programación IV — UTN Mar del Plata.
 

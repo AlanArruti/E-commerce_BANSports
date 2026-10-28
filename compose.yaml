@@ -215,10 +215,10 @@ services:
       start_period: 15s
     networks: [ecommerce-net]
 
-  # ── Frontend de Progra 4 (profile: front) ──────────────────────────────────
-  # Todavía no existe. Cuando lo crees en ./frontend con su propio Dockerfile,
-  # esto lo levanta sin tocar nada más:
+  # ── Frontend Angular de Progra 4 (profile: front) ─────────────────────────
   #     docker compose --profile front up -d --build
+  # nginx sirve el build y reenvía /api al servicio `app` (ver frontend/nginx.conf),
+  # así que el navegador habla con un solo origen y no hace falta CORS.
   frontend:
     build:
       context: ./frontend
@@ -231,11 +231,7 @@ services:
       app:
         condition: service_healthy
     ports:
-      - "${FRONT_PORT:-5173}:5173"
-    environment:
-      # El navegador del usuario resuelve esta URL, no el contenedor: por eso
-      # es localhost y no `app`.
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}
+      - "${FRONT_PORT:-4200}:80"
     networks: [ecommerce-net]
 
 volumes:

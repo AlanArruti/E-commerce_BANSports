@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -21,6 +21,7 @@ interface Requisito {
   selector: 'app-registro',
   imports: [ReactiveFormsModule, RouterLink, NgClass, PanelAuth],
   templateUrl: './registro.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './registro.css'
 })
 export class Registro {

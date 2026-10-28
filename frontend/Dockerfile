@@ -2,7 +2,8 @@
 # nginx también reenvía /api al backend, así el front usa rutas relativas
 # (/api/v1) igual que con el proxy de `ng serve` y no hace falta CORS.
 
-FROM node:22-alpine AS build
+# Angular 22 pide Node 22.22.3+ o 24.15+.
+FROM node:24-alpine AS build
 WORKDIR /app
 
 # Primero solo las dependencias, para que esta capa quede cacheada.

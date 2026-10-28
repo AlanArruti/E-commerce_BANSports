@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { PoteProducto } from '../../componente/pote-producto/pote-producto';
 import { CategoriaDestacada } from '../../models/categoria-destacada';
@@ -14,6 +14,7 @@ interface Beneficio {
   selector: 'app-home',
   imports: [NgClass, PoteProducto],
   templateUrl: './home.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.css'
 })
 export class Home {

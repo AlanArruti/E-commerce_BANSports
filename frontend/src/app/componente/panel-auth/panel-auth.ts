@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -10,6 +10,7 @@ import { RouterLink } from '@angular/router';
   selector: 'app-panel-auth',
   imports: [NgClass, RouterLink],
   templateUrl: './panel-auth.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './panel-auth.css'
 })
 export class PanelAuth {

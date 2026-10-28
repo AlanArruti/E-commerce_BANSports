@@ -1,38 +1,181 @@
-<div class="form-card">
-  <h2>Crear cuenta</h2>
-
-  <form (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="nombre">Nombre</label>
-      <input id="nombre" name="nombre" type="text" maxlength="50" [(ngModel)]="cliente.nombre" />
+<div class="pantalla-auth">
+  <app-panel-auth variante="verde">
+    <h1 class="titulo-display panel-titulo">Sumate al <span class="cursiva">equipo</span></h1>
+    <p class="panel-bajada">Creá tu cuenta en un minuto y empezá a comprar tus suplementos con envío a todo el país.</p>
+    <div class="panel-beneficios">
+      <div class="panel-beneficio">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
+        Seguimiento de envíos en tiempo real
+      </div>
+      <div class="panel-beneficio">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7H8a2.5 2.5 0 1 1 0-5c3 0 4 5 4 5zM12 7h4a2.5 2.5 0 1 0 0-5c-3 0-4 5-4 5z"/></svg>
+        Ofertas exclusivas para clientes
+      </div>
     </div>
+  </app-panel-auth>
 
-    <div class="form-group">
-      <label for="apellido">Apellido</label>
-      <input id="apellido" name="apellido" type="text" maxlength="50" [(ngModel)]="cliente.apellido" />
+  <div class="auth-lado-formulario">
+    <a routerLink="/" class="auth-volver">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver a la tienda
+    </a>
+
+    <div class="auth-centro">
+      <div class="auth-caja">
+        <div class="auth-encabezado">
+          <h2 class="titulo-display auth-titulo">Crear cuenta</h2>
+          <p class="auth-bajada">Completá tus datos. Todos los campos son obligatorios.</p>
+        </div>
+
+        @if (errorServidor(); as errorActual) {
+          <div class="alerta-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+              <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+            </div>
+          </div>
+        }
+
+        <form class="auth-formulario" [formGroup]="registroForm" (ngSubmit)="registrarse()" novalidate>
+          <div class="fila-doble">
+            <div class="campo">
+              <label for="nombre">Nombre</label>
+              <input id="nombre" type="text" class="input" formControlName="nombre" autocomplete="given-name" placeholder="Lucas"
+                [ngClass]="{ 'input-error': error(nombre, 'nombre'), 'input-ok': correcto(nombre) }"
+                [attr.aria-invalid]="error(nombre, 'nombre') ? true : null" aria-describedby="nombre-error" />
+              @if (error(nombre, 'nombre'); as mensaje) {
+                <p class="msj-error" id="nombre-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                  {{ mensaje }}
+                </p>
+              }
+            </div>
+            <div class="campo">
+              <label for="apellido">Apellido</label>
+              <input id="apellido" type="text" class="input" formControlName="apellido" autocomplete="family-name" placeholder="Pérez"
+                [ngClass]="{ 'input-error': error(apellido, 'apellido'), 'input-ok': correcto(apellido) }"
+                [attr.aria-invalid]="error(apellido, 'apellido') ? true : null" aria-describedby="apellido-error" />
+              @if (error(apellido, 'apellido'); as mensaje) {
+                <p class="msj-error" id="apellido-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                  {{ mensaje }}
+                </p>
+              }
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="dni">DNI</label>
+            <input id="dni" type="text" inputmode="numeric" class="input" formControlName="dni" placeholder="Sin puntos, por ejemplo 38123456"
+              [ngClass]="{ 'input-error': error(dni, 'dni'), 'input-ok': correcto(dni) }"
+              [attr.aria-invalid]="error(dni, 'dni') ? true : null" aria-describedby="dni-error" />
+            @if (error(dni, 'dni'); as mensaje) {
+              <p class="msj-error" id="dni-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                <span>{{ mensaje }}
+                  @if (dni.hasError('servidor')) { <a routerLink="/login">¿Es tuya? Iniciá sesión</a> }
+                </span>
+              </p>
+            }
+          </div>
+
+          <div class="campo">
+            <label for="email">Email</label>
+            <input id="email" type="email" class="input" formControlName="email" autocomplete="email" placeholder="tu@email.com"
+              [ngClass]="{ 'input-error': error(email, 'email'), 'input-ok': correcto(email) }"
+              [attr.aria-invalid]="error(email, 'email') ? true : null" aria-describedby="email-error" />
+            @if (error(email, 'email'); as mensaje) {
+              <p class="msj-error" id="email-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                <span>{{ mensaje }}
+                  @if (email.hasError('servidor')) { <a routerLink="/login">¿Es tuya? Iniciá sesión</a> }
+                </span>
+              </p>
+            }
+          </div>
+
+          <div class="campo">
+            <label for="contrasenia">Contraseña</label>
+            <div class="input-con-boton">
+              <input id="contrasenia" class="input" formControlName="contrasenia" autocomplete="new-password" placeholder="Entre 6 y 50 caracteres"
+                [type]="mostrarContrasenia() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(contrasenia, 'contrasenia') }"
+                [attr.aria-invalid]="error(contrasenia, 'contrasenia') ? true : null" aria-describedby="contrasenia-error requisitos" />
+              <button type="button" class="btn-ojo" (click)="alternarContrasenia()"
+                [attr.aria-label]="mostrarContrasenia() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                @if (mostrarContrasenia()) {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                } @else {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (error(contrasenia, 'contrasenia'); as mensaje) {
+              <p class="msj-error" id="contrasenia-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+
+            <div class="medidor" aria-hidden="true">
+              @for (segmento of [0, 1, 2, 3]; track segmento) {
+                <span [ngClass]="{ lleno: segmento < fuerza() }"></span>
+              }
+            </div>
+            <span class="medidor-texto">Seguridad de la contraseña: <strong>{{ etiquetaFuerza() }}</strong></span>
+
+            <ul class="requisitos" id="requisitos">
+              @for (requisito of requisitos(); track requisito.texto) {
+                <li [ngClass]="{ cumple: requisito.cumple }">
+                  @if (requisito.cumple) {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+                  } @else {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>
+                  }
+                  <span>
+                    <strong>{{ requisito.obligatorio ? 'Obligatorio:' : 'Recomendado:' }}</strong>
+                    {{ requisito.texto }}
+                    <span class="solo-lectores">{{ requisito.cumple ? '(cumplido)' : '(pendiente)' }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="campo">
+            <label class="check">
+              <input type="checkbox" formControlName="terminos" aria-describedby="terminos-error" />
+              <span>Acepto los <a href="#" class="link" (click)="$event.preventDefault()">Términos y condiciones</a> y la <a href="#" class="link" (click)="$event.preventDefault()">Política de privacidad</a>.</span>
+            </label>
+            @if (error(terminos, 'terminos'); as mensaje) {
+              <p class="msj-error" id="terminos-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+          </div>
+
+          @if (intentoEnviar() && camposConError() > 0) {
+            <p class="msj-error resumen" role="alert">
+              {{ camposConError() === 1 ? 'Revisá el campo marcado en rojo para continuar.' : 'Revisá los ' + camposConError() + ' campos marcados en rojo para continuar.' }}
+            </p>
+          }
+
+          <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+            {{ cargando() ? 'Creando tu cuenta…' : 'Crear cuenta' }}
+          </button>
+        </form>
+
+        <div class="separador">o</div>
+
+        <button type="button" class="btn btn-social" title="Próximamente">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7c-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+          Registrarme con GitHub
+        </button>
+
+        <p class="auth-pie">¿Ya tenés cuenta? <a routerLink="/login" class="link">Iniciá sesión</a></p>
+      </div>
     </div>
-
-    <div class="form-group">
-      <label for="dni">DNI</label>
-      <input id="dni" name="dni" type="text" maxlength="20" [(ngModel)]="cliente.dni" />
-    </div>
-
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input id="email" name="email" type="email" maxlength="100" placeholder="tu@email.com"
-             [(ngModel)]="cliente.email" />
-    </div>
-
-    <div class="form-group">
-      <label for="contrasenia">Contraseña</label>
-      <input id="contrasenia" name="contrasenia" type="password" minlength="6" maxlength="50"
-             placeholder="Entre 6 y 50 caracteres" [(ngModel)]="cliente.contrasenia" />
-    </div>
-
-    <button type="submit" class="btn">Registrarme</button>
-  </form>
-
-  <p class="form-footer">
-    ¿Ya tenés cuenta? <a routerLink="/login">Iniciá sesión</a>
-  </p>
+  </div>
 </div>

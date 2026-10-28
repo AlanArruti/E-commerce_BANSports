@@ -1,0 +1,143 @@
+:host {
+  display: flex;
+  flex: 1 1 520px;
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--espacio-7);
+  padding: var(--espacio-7) 56px;
+  min-height: 420px;
+}
+
+.franja,
+.marca-agua,
+.panel-logo,
+.contenido,
+.copy {
+  position: relative;
+}
+
+.franja {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.marca-agua {
+  position: absolute;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 300px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.contenido {
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+}
+
+.copy {
+  font-size: 13px;
+}
+
+/* Variante oscura (login) */
+.panel-oscuro {
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.panel-oscuro .franja {
+  right: -10%;
+  width: 62%;
+  background: var(--color-verde);
+  clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.panel-oscuro .marca-agua {
+  right: -20px;
+  bottom: -60px;
+  color: var(--color-texto-sobre-verde);
+  opacity: 0.1;
+}
+
+.panel-oscuro .copy {
+  color: var(--color-texto-secundario);
+}
+
+/* Variante verde (registro) */
+.panel-verde {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.panel-verde .franja {
+  left: -10%;
+  width: 46%;
+  background: var(--color-texto-sobre-verde);
+  clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%);
+}
+
+.panel-verde .marca-agua {
+  right: -30px;
+  top: 40px;
+  font-size: 280px;
+  opacity: 0.08;
+}
+
+.panel-verde .contenido {
+  margin-left: auto;
+  max-width: 400px;
+}
+
+.panel-verde .copy {
+  align-self: flex-end;
+  font-weight: 600;
+}
+
+/* Mobile: el panel se achica a una franja con el logo */
+@media (max-width: 900px) {
+  :host {
+    flex-basis: 100%;
+  }
+
+  .panel {
+    min-height: 0;
+    height: 160px;
+    padding: var(--espacio-4);
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  .contenido,
+  .copy,
+  .marca-agua {
+    display: none;
+  }
+
+  .panel-oscuro .franja {
+    width: 55%;
+  }
+
+  .panel-verde {
+    background: var(--color-superficie);
+    color: var(--color-texto);
+  }
+
+  .panel-verde .franja {
+    left: auto;
+    right: -40px;
+    width: 55%;
+    background: var(--color-verde);
+    clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%);
+  }
+}

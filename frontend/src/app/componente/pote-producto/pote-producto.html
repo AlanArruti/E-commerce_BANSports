@@ -1,0 +1,13 @@
+<div class="pote" [ngClass]="{ grande: grande() }" aria-hidden="true">
+  <div class="tapa"></div>
+  <div class="cuerpo">
+    <span class="marca">BAN</span>
+    <span class="nombre">{{ nombre() }}</span>
+    @if (subtitulo()) {
+      <span class="subtitulo">{{ subtitulo() }}</span>
+    }
+    @if (detalle()) {
+      <span class="detalle">{{ detalle() }}</span>
+    }
+  </div>
+</div>

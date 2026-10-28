@@ -1,0 +1,54 @@
+/*
+ * Paleta y tokens de diseño de BAN Sports.
+ * Usá siempre estas variables en lugar de escribir colores o tamaños a mano.
+ * Ejemplo: color: var(--color-verde);
+ * Detalle de cada variable en frontend/DESIGN.md
+ */
+:root {
+  /* Fondos */
+  --color-negro: #0a0d0b;          /* fondo general */
+  --color-negro-profundo: #060807; /* footer */
+  --color-superficie: #121714;     /* tarjetas, inputs, paneles */
+  --color-superficie-2: #1a211d;   /* fondo de imágenes, íconos */
+  --color-borde: #26302a;          /* bordes y separadores */
+  --color-borde-input: #3a463f;    /* borde de inputs y botones secundarios */
+
+  /* Acento */
+  --color-verde: #2be37a;          /* botones principales, links, detalles */
+  --color-verde-hover: #6df0a4;    /* hover de links verdes */
+  --color-texto-sobre-verde: #06110a; /* texto encima del verde (contraste AA) */
+
+  /* Texto */
+  --color-texto: #f2f5f3;            /* texto principal */
+  --color-texto-suave: #c9d2cc;      /* listas y textos de apoyo */
+  --color-texto-secundario: #9ba8a0; /* descripciones, placeholders */
+
+  /* Estados */
+  --color-error: #ff7a6b;          /* borde e ícono de error */
+  --color-error-texto: #ffb3a9;    /* texto del mensaje de error */
+  --color-error-fondo: #2a1512;    /* fondo de alertas de error */
+
+  /* Tipografías */
+  --fuente-titulos: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --fuente-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Radios */
+  --radio-chico: 6px;
+  --radio: 10px;
+  --radio-grande: 16px;
+
+  /* Espaciados */
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 24px;
+  --espacio-6: 32px;
+  --espacio-7: 48px;
+  --espacio-8: 64px;
+
+  /* Tamaños */
+  --ancho-contenedor: 1280px;
+  --alto-input: 52px;
+  --alto-boton: 56px;
+}

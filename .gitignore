@@ -40,3 +40,11 @@ application-local.yaml
 src/main/resources/application-local.yaml
 .env
 .env.*
+
+### Frontend (Progra 4) ###
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Volcados de crash de Git Bash
+*.stackdump

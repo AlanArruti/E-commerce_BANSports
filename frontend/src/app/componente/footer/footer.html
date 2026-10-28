@@ -1,8 +1,53 @@
 <footer class="footer">
-  <p>&copy; {{ anio }} Blandi Arruti E-commerce. Todos los derechos reservados.</p>
-  <nav class="links">
-    <a href="#">Términos y condiciones</a>
-    <a href="#">Privacidad</a>
-    <a href="#">Contacto</a>
-  </nav>
+  <div class="contenedor footer-grilla">
+    <div class="marca">
+      <a routerLink="/" class="logo footer-logo">
+        <span class="logo-marca">BAN</span>
+        <span class="logo-texto">SPORTS</span>
+      </a>
+      <p>Suplementos deportivos originales, con envío a todo el país.</p>
+      <div class="redes">
+        <a href="#" class="btn-icono" aria-label="Instagram" (click)="$event.preventDefault()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6"/></svg>
+        </a>
+        <a href="#" class="btn-icono" aria-label="WhatsApp" (click)="$event.preventDefault()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+        </a>
+        <a href="#" class="btn-icono" aria-label="Email" (click)="$event.preventDefault()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <nav class="columna" aria-label="Tienda">
+      <span class="columna-titulo">Tienda</span>
+      @for (link of linksTienda; track link) {
+        <a href="#" (click)="$event.preventDefault()">{{ link }}</a>
+      }
+    </nav>
+
+    <nav class="columna" aria-label="Ayuda">
+      <span class="columna-titulo">Ayuda</span>
+      @for (link of linksAyuda; track link) {
+        <a href="#" (click)="$event.preventDefault()">{{ link }}</a>
+      }
+    </nav>
+
+    <nav class="columna" aria-label="Mi cuenta">
+      <span class="columna-titulo">Mi cuenta</span>
+      <a routerLink="/login">Iniciar sesión</a>
+      <a routerLink="/registro">Crear cuenta</a>
+      <a href="#" (click)="$event.preventDefault()">Mis pedidos</a>
+    </nav>
+  </div>
+
+  <div class="footer-base">
+    <div class="contenedor footer-base-fila">
+      <span>&copy; {{ anio }} BAN Sports. Todos los derechos reservados.</span>
+      <div class="legales">
+        <a href="#" (click)="$event.preventDefault()">Términos y condiciones</a>
+        <a href="#" (click)="$event.preventDefault()">Privacidad</a>
+      </div>
+    </div>
+  </div>
 </footer>

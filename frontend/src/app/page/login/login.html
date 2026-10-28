@@ -1,23 +1,138 @@
-<div class="form-card">
-  <h2>Iniciar sesión</h2>
+<div class="pantalla-auth">
+  <app-panel-auth variante="oscuro">
+    <h1 class="titulo-display panel-titulo">Tu próxima <span class="acento cursiva">marca</span> empieza acá</h1>
+    <ul class="auth-lista panel-lista">
+      @for (beneficio of beneficios; track beneficio) {
+        <li>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+          {{ beneficio }}
+        </li>
+      }
+    </ul>
+  </app-panel-auth>
 
-  <form (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="username">Usuario</label>
-      <input id="username" name="username" type="text" placeholder="Tu usuario o email"
-             [(ngModel)]="credenciales.username" />
+  <div class="auth-lado-formulario">
+    <a routerLink="/" class="auth-volver">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver a la tienda
+    </a>
+
+    <div class="auth-centro">
+      <div class="auth-caja">
+        <div class="auth-encabezado">
+          <h2 class="titulo-display auth-titulo">Iniciar sesión</h2>
+          <p class="auth-bajada">Ingresá con el email y la contraseña de tu cuenta.</p>
+        </div>
+
+        @if (cuentaCreada()) {
+          <div class="alerta-ok" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+            <div>
+              <div class="alerta-ok-titulo">Tu cuenta se creó correctamente</div>
+              <div class="alerta-error-texto">No pudimos iniciar sesión automáticamente. Ingresá con el email y la contraseña que acabás de registrar.</div>
+            </div>
+          </div>
+        }
+
+        @if (aviso()) {
+          <div class="alerta-error" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">Se cerró tu sesión</div>
+              <div class="alerta-error-texto">{{ aviso() }}</div>
+            </div>
+          </div>
+        }
+
+        @if (errorServidor(); as errorActual) {
+          <div class="alerta-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+              <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+            </div>
+          </div>
+        }
+
+        <button type="button" class="btn btn-social" title="Próximamente">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7c-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+          Continuar con GitHub
+        </button>
+
+        <div class="separador">o con tu cuenta</div>
+
+        <form class="auth-formulario" [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" novalidate>
+          <div class="campo">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              class="input"
+              formControlName="email"
+              autocomplete="username"
+              placeholder="tu@email.com"
+              [ngClass]="{ 'input-error': error(email, 'loginEmail') }"
+              [attr.aria-invalid]="error(email, 'loginEmail') ? true : null"
+              aria-describedby="email-error"
+            />
+            @if (error(email, 'loginEmail'); as mensaje) {
+              <p class="msj-error" id="email-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+          </div>
+
+          <div class="campo">
+            <div class="fila-etiqueta">
+              <label for="contrasenia">Contraseña</label>
+              <a href="#" class="link link-chico" title="Próximamente" (click)="$event.preventDefault()">¿La olvidaste?</a>
+            </div>
+            <div class="input-con-boton">
+              <input
+                id="contrasenia"
+                class="input"
+                formControlName="contrasenia"
+                autocomplete="current-password"
+                placeholder="Tu contraseña"
+                [type]="mostrarContrasenia() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(contrasenia, 'loginContrasenia') }"
+                [attr.aria-invalid]="error(contrasenia, 'loginContrasenia') ? true : null"
+                aria-describedby="contrasenia-error"
+              />
+              <button
+                type="button"
+                class="btn-ojo"
+                (click)="alternarContrasenia()"
+                [attr.aria-label]="mostrarContrasenia() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                @if (mostrarContrasenia()) {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                } @else {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (error(contrasenia, 'loginContrasenia'); as mensaje) {
+              <p class="msj-error" id="contrasenia-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+          </div>
+
+          <label class="check">
+            <input type="checkbox" formControlName="recordar" />
+            Mantener la sesión iniciada en este dispositivo
+          </label>
+
+          <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+            {{ cargando() ? 'Ingresando…' : 'Ingresar' }}
+          </button>
+        </form>
+
+        <p class="auth-pie">¿Todavía no tenés cuenta? <a routerLink="/registro" class="link">Creala gratis</a></p>
+      </div>
     </div>
-
-    <div class="form-group">
-      <label for="password">Contraseña</label>
-      <input id="password" name="password" type="password" placeholder="••••••"
-             [(ngModel)]="credenciales.password" />
-    </div>
-
-    <button type="submit" class="btn">Ingresar</button>
-  </form>
-
-  <p class="form-footer">
-    ¿No tenés cuenta? <a routerLink="/registro">Registrate</a>
-  </p>
+  </div>
 </div>

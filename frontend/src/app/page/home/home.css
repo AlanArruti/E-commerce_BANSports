@@ -1,32 +1,533 @@
+/* ── Hero ───────────────────────────────────────────────── */
 .hero {
-  max-width: 640px;
-  margin: 5rem auto;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-borde);
 }
 
-.hero h1 {
-  font-size: 2.2rem;
-}
-
-.acciones {
+.hero-grilla {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-7);
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+
+.hero-texto {
+  flex: 1 1 520px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+}
+
+.pildora {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  border: 1px solid var(--color-verde);
+  color: var(--color-verde);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-verde);
+}
+
+.hero-titulo {
+  font-size: clamp(64px, 9vw, 104px);
+}
+
+.cursiva {
+  font-style: italic;
+}
+
+.hero-bajada {
+  margin: 0;
+  max-width: 480px;
+  color: var(--color-texto-secundario);
+  font-size: 18px;
+}
+
+.hero-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+}
+
+.hero-visual {
+  flex: 1 1 420px;
+  position: relative;
+  height: 480px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
 }
 
-.accion {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+.hero-franja {
+  position: absolute;
+  inset: 20px 0;
+  background: var(--color-verde);
+  clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
+}
+
+.hero-marca-agua {
+  position: absolute;
+  top: 44px;
+  left: 12%;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 140px;
+  line-height: 1;
+  color: var(--color-texto-sobre-verde);
+  opacity: 0.12;
+}
+
+.hero-pote {
+  position: relative;
+}
+
+.hero-precio {
+  position: absolute;
+  right: 4%;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--color-negro);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.hero-precio span {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+}
+
+.hero-precio strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* ── Beneficios ─────────────────────────────────────────── */
+.beneficios {
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.beneficios-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--espacio-5);
+  padding-top: var(--espacio-6);
+  padding-bottom: var(--espacio-6);
+}
+
+.beneficio {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+}
+
+.beneficio-icono {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--color-superficie-2);
+  color: var(--color-verde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beneficio-titulo {
+  font-weight: 700;
+}
+
+.beneficio-detalle {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+/* ── Secciones ──────────────────────────────────────────── */
+.seccion {
+  padding-top: var(--espacio-7);
+  padding-bottom: var(--espacio-7);
+}
+
+.seccion-categorias {
+  padding-top: 96px;
+}
+
+.seccion-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  margin-bottom: var(--espacio-6);
+}
+
+.titulo-seccion {
+  font-size: clamp(40px, 5vw, 56px);
+  line-height: 1;
+}
+
+.link-seccion {
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-texto);
   font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
 }
 
-.primaria {
-  background: #4f46e5;
-  color: #fff;
+.link-seccion:hover {
+  color: var(--color-verde);
 }
 
-.secundaria {
-  border: 2px solid #4f46e5;
-  color: #4f46e5;
+.grilla-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* ── Categorías ─────────────────────────────────────────── */
+.categoria {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  height: 280px;
+  padding: 28px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  color: var(--color-texto);
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoria:hover {
+  border-color: var(--color-verde);
+}
+
+.categoria-numero {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 96px;
+  line-height: 0.8;
+  color: var(--color-verde);
+  opacity: 0.35;
+}
+
+.categoria-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.categoria-nombre {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.categoria-descripcion {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.categoria-destacada {
+  background: var(--color-verde);
+  border-color: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.categoria-destacada .categoria-numero {
+  color: var(--color-texto-sobre-verde);
+  opacity: 0.18;
+}
+
+.categoria-destacada .categoria-descripcion {
+  color: var(--color-texto-sobre-verde);
+  font-weight: 500;
+}
+
+/* ── Productos ──────────────────────────────────────────── */
+.producto {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  overflow: hidden;
+}
+
+.producto-imagen {
+  position: relative;
+  height: 240px;
+  background: var(--color-superficie-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.producto-etiqueta {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: var(--radio-chico);
+  text-transform: uppercase;
+}
+
+.producto-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: 20px;
+}
+
+.producto-categoria {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-verde);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.producto-nombre {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.producto-variante {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.producto-pie {
+  margin-top: auto;
+  padding-top: var(--espacio-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.producto-precio {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.btn-agregar {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radio);
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Banner ─────────────────────────────────────────────── */
+.seccion-banner {
+  padding-bottom: 96px;
+}
+
+.banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-6);
+  padding: 56px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  border-radius: 20px;
+}
+
+.banner-marca-agua {
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 320px;
+  line-height: 1;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.banner-texto {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  max-width: 640px;
+}
+
+.banner-volanta {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.banner-titulo {
+  font-size: clamp(46px, 6vw, 72px);
+}
+
+.banner-texto p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.btn-oscuro {
+  position: relative;
+  background: var(--color-texto-sobre-verde);
+  color: var(--color-texto);
+}
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .hero-grilla {
+    padding-top: var(--espacio-4);
+    padding-bottom: 40px;
+    gap: var(--espacio-5);
+  }
+
+  .hero-texto {
+    flex-basis: 100%;
+  }
+
+  .hero-bajada {
+    font-size: 16px;
+  }
+
+  .hero-botones .btn {
+    width: 100%;
+  }
+
+  .hero-visual {
+    flex-basis: 100%;
+    height: 300px;
+    order: 2;
+  }
+
+  .hero-precio,
+  .hero-marca-agua {
+    display: none;
+  }
+
+  .beneficios-grilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px var(--espacio-3);
+  }
+
+  .beneficio {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+  }
+
+  .beneficio-icono {
+    width: auto;
+    height: auto;
+    background: transparent;
+  }
+
+  .beneficio-titulo {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .beneficio-detalle {
+    display: none;
+  }
+
+  .seccion-categorias {
+    padding-top: 40px;
+  }
+
+  .seccion-categorias .grilla-tarjetas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-3);
+  }
+
+  .categoria {
+    height: 150px;
+    padding: var(--espacio-4);
+  }
+
+  .categoria-numero {
+    font-size: 52px;
+  }
+
+  .categoria-nombre {
+    font-size: 24px;
+  }
+
+  .categoria-descripcion {
+    display: none;
+  }
+
+  .productos {
+    display: flex;
+    overflow-x: auto;
+    gap: var(--espacio-3);
+    margin: 0 calc(var(--espacio-4) * -1);
+    padding: 0 var(--espacio-4);
+  }
+
+  .producto {
+    flex: none;
+    width: 220px;
+  }
+
+  .producto-imagen {
+    height: 180px;
+  }
+
+  .banner {
+    padding: 28px 22px;
+  }
+
+  .banner .btn {
+    width: 100%;
+  }
 }

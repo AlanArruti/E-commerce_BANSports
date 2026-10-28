@@ -1,0 +1,21 @@
+.panel-titulo {
+  font-size: clamp(56px, 6vw, 80px);
+}
+
+.cursiva {
+  font-style: italic;
+}
+
+.panel-lista {
+  color: var(--color-texto-suave);
+}
+
+.fila-etiqueta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.link-chico {
+  font-size: 13px;
+}

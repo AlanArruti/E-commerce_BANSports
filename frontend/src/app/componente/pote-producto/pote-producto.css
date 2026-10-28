@@ -1,0 +1,119 @@
+.pote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tapa {
+  width: 104px;
+  height: 24px;
+  background: var(--color-verde);
+  border-radius: 8px 8px 2px 2px;
+}
+
+.cuerpo {
+  width: 116px;
+  height: 136px;
+  background: var(--color-negro);
+  border-radius: 4px 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.marca {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.nombre {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.subtitulo {
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.3em;
+  color: var(--color-texto-secundario);
+}
+
+.detalle {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-verde);
+  letter-spacing: 0.1em;
+}
+
+/* Versión grande del hero */
+.grande {
+  transform: rotate(-4deg);
+}
+
+.grande .tapa {
+  width: 230px;
+  height: 54px;
+  background: var(--color-texto-sobre-verde);
+  border-radius: 14px 14px 4px 4px;
+  border-bottom: 4px solid var(--color-superficie-2);
+}
+
+.grande .cuerpo {
+  width: 250px;
+  height: 300px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 6px 6px 28px 28px;
+  gap: 8px;
+}
+
+.grande .marca {
+  font-size: 34px;
+  padding: 4px 12px;
+  transform: skewX(-10deg);
+}
+
+.grande .nombre {
+  font-size: 40px;
+}
+
+@media (max-width: 640px) {
+  .grande .tapa {
+    width: 150px;
+    height: 36px;
+  }
+
+  .grande .cuerpo {
+    width: 164px;
+    height: 196px;
+  }
+
+  .grande .marca {
+    font-size: 24px;
+  }
+
+  .grande .nombre {
+    font-size: 28px;
+  }
+
+  .grande .subtitulo {
+    font-size: 14px;
+  }
+
+  .grande .detalle {
+    display: none;
+  }
+}

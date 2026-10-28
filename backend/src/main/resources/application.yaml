@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: E-commerce
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:OAUTH_DISABLED}
+            client-secret: ${GITHUB_CLIENT_SECRET:OAUTH_DISABLED}
+            scope:
+              - user:email
+              - read:user
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: America/Argentina/Buenos_Aires
+    open-in-view: false
+
+  servlet:
+    multipart:
+      # Imágenes de producto: el service valida 2 MB, acá dejamos un poco de margen.
+      max-file-size: 3MB
+      max-request-size: 5MB
+
+  mail:
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          # Mailpit (el SMTP local de Docker) no pide auth ni TLS; Mailtrap sí.
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+
+server:
+  port: 8080
+  shutdown: graceful
+
+# Solo el health endpoint, y sin detalles internos hacia afuera.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+
+mercadopago:
+  access-token: ${MP_ACCESS_TOKEN}
+  notification-url: ${MP_NOTIFICATION_URL:}
+  back-url: ${MP_BACK_URL:http://localhost:8080}
+
+correo-argentino:
+  base-url: https://apitest.correoargentino.com.ar/micorreo/v1
+  user-token: ${CORREO_ARGENTINO_USER_TOKEN:}
+  password-token: ${CORREO_ARGENTINO_PASSWORD_TOKEN:}
+  customer-id: ${CORREO_ARGENTINO_CUSTOMER_ID:}
+  codigo-postal-origen: "1425"
+
+notificaciones:
+  remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
+
+app:
+  cors:
+    # Orígenes del front autorizados, separados por coma.
+    allowed-origins: ${FRONT_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:4200}
+  oauth2:
+    # A dónde vuelve el navegador tras el login con GitHub. Vacío = devuelve JSON (Postman).
+    redirect-uri: ${OAUTH2_REDIRECT_URI:}

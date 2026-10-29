@@ -75,196 +75,195 @@ public class DataLoader implements CommandLineRunner {
         cargarProvinciasYCiudadesArgentina(argentina);
 
         //------------CATEGORIA------------//
-        Categoria electronica = categoriaRepository.save(
-                Categoria.builder().nombre("Electrónica").build()
+        Categoria proteinas = categoriaRepository.save(
+                Categoria.builder().nombre("Proteínas").build()
         );
-        Categoria indumentaria = categoriaRepository.save(
-                Categoria.builder().nombre("Indumentaria").build()
+        Categoria creatinas = categoriaRepository.save(
+                Categoria.builder().nombre("Creatinas").build()
         );
-        Categoria hogar = categoriaRepository.save(
-                Categoria.builder().nombre("Hogar").build()
+        Categoria preEntrenos = categoriaRepository.save(
+                Categoria.builder().nombre("Pre-entrenos").build()
         );
-        Categoria deportes = categoriaRepository.save(
-                Categoria.builder().nombre("Deportes").build()
+        Categoria aminoacidos = categoriaRepository.save(
+                Categoria.builder().nombre("Aminoácidos").build()
+        );
+        Categoria vitaminas = categoriaRepository.save(
+                Categoria.builder().nombre("Vitaminas").build()
         );
 
         //------------PRODUCTO------------//
-        Producto laptop = productoRepository.save(Producto.builder()
-                .nombre("Laptop")
-                .descripcion("Laptop con procesador Intel i7 y 16GB de RAM.")
-                .precio(999.99)
-                .categoria(electronica)
+        // El precio es por producto, así que cada producto tiene una sola presentación
+        // y las variantes cambian solo el sabor.
+        Producto wheyConcentrada = productoRepository.save(Producto.builder()
+                .nombre("Whey Protein Concentrada")
+                .descripcion("24 g de proteína por servicio. Ideal para recuperación y ganancia de masa muscular.")
+                .precio(42999.99)
+                .categoria(proteinas)
                 .build());
-        Producto smartphone = productoRepository.save(Producto.builder()
-                .nombre("Smartphone")
-                .descripcion("Smartphone Android con pantalla OLED de 6.5 pulgadas.")
-                .precio(699.99)
-                .categoria(electronica)
+        Producto wheyIsolate = productoRepository.save(Producto.builder()
+                .nombre("Whey Protein Isolate")
+                .descripcion("Proteína aislada de rápida absorción, baja en grasas y sin lactosa.")
+                .precio(58999.99)
+                .categoria(proteinas)
                 .build());
-        Producto remera = productoRepository.save(Producto.builder()
-                .nombre("Remera básica")
-                .descripcion("Remera de algodón 100% color sólido.")
-                .precio(4999.99)
-                .categoria(indumentaria)
+        Producto proteinaVegana = productoRepository.save(Producto.builder()
+                .nombre("Proteína Vegana")
+                .descripcion("Blend de arveja y arroz con 21 g de proteína por servicio. Apta veganos.")
+                .precio(46999.99)
+                .categoria(proteinas)
                 .build());
-        Producto silla = productoRepository.save(Producto.builder()
-                .nombre("Silla gamer")
-                .descripcion("Silla ergonómica con apoyabrazos ajustables.")
-                .precio(199.99)
-                .categoria(hogar)
+        Producto caseina = productoRepository.save(Producto.builder()
+                .nombre("Caseína Micelar")
+                .descripcion("Proteína de absorción lenta, pensada para tomar antes de dormir.")
+                .precio(51999.99)
+                .categoria(proteinas)
                 .build());
-        Producto pelota = productoRepository.save(Producto.builder()
-                .nombre("Pelota fútbol")
-                .descripcion("Pelota oficial talle 5.")
-                .precio(89.99)
-                .categoria(deportes)
+        Producto ganador = productoRepository.save(Producto.builder()
+                .nombre("Ganador de Peso Mass Gainer")
+                .descripcion("Carbohidratos y proteína en proporción 3:1 para sumar calorías de calidad.")
+                .precio(38999.99)
+                .categoria(proteinas)
                 .build());
-
-        // Catálogo extra: le da cuerpo al front (paginación, filtros y orden reales).
-        Producto auriculares = productoRepository.save(Producto.builder()
-                .nombre("Auriculares inalámbricos")
-                .descripcion("Bluetooth 5.3 con cancelación activa de ruido y 30h de batería.")
-                .precio(149.99)
-                .categoria(electronica)
+        Producto creatinaMono = productoRepository.save(Producto.builder()
+                .nombre("Creatina Monohidrato")
+                .descripcion("Creatina pura de 5 g por servicio para más fuerza y potencia.")
+                .precio(27999.99)
+                .categoria(creatinas)
                 .build());
-        Producto tablet = productoRepository.save(Producto.builder()
-                .nombre("Tablet 11 pulgadas")
-                .descripcion("Pantalla 2K, 128GB de almacenamiento y lápiz óptico incluido.")
-                .precio(429.99)
-                .categoria(electronica)
+        Producto creatinaMicro = productoRepository.save(Producto.builder()
+                .nombre("Creatina Micronizada")
+                .descripcion("Partícula ultrafina que se disuelve fácil y no deja grumos.")
+                .precio(39999.99)
+                .categoria(creatinas)
                 .build());
-        Producto teclado = productoRepository.save(Producto.builder()
-                .nombre("Teclado mecánico")
-                .descripcion("Switches rojos, retroiluminación RGB y layout español.")
-                .precio(89.99)
-                .categoria(electronica)
-                .build());
-        Producto campera = productoRepository.save(Producto.builder()
-                .nombre("Campera rompeviento")
-                .descripcion("Impermeable liviana con capucha desmontable.")
+        Producto creatinaCapsulas = productoRepository.save(Producto.builder()
+                .nombre("Creatina en Cápsulas")
+                .descripcion("La dosis diaria lista para llevar, sin medir ni mezclar.")
                 .precio(24999.99)
-                .categoria(indumentaria)
+                .categoria(creatinas)
                 .build());
-        Producto jean = productoRepository.save(Producto.builder()
-                .nombre("Jean recto")
-                .descripcion("Denim rígido de algodón, corte clásico.")
-                .precio(18999.99)
-                .categoria(indumentaria)
+        Producto preExplosive = productoRepository.save(Producto.builder()
+                .nombre("Pre-entreno Explosive")
+                .descripcion("Cafeína, beta-alanina y citrulina para entrenar con energía y enfoque.")
+                .precio(32999.99)
+                .categoria(preEntrenos)
                 .build());
-        Producto zapatillas = productoRepository.save(Producto.builder()
-                .nombre("Zapatillas urbanas")
-                .descripcion("Suela de goma antideslizante y plantilla acolchada.")
-                .precio(34999.99)
-                .categoria(indumentaria)
-                .build());
-        Producto lampara = productoRepository.save(Producto.builder()
-                .nombre("Lámpara de escritorio LED")
-                .descripcion("Tres temperaturas de color y brazo articulado.")
-                .precio(39.99)
-                .categoria(hogar)
-                .build());
-        Producto cafetera = productoRepository.save(Producto.builder()
-                .nombre("Cafetera de filtro")
-                .descripcion("Jarra de vidrio de 1.2L con placa calefactora.")
-                .precio(74.99)
-                .categoria(hogar)
-                .build());
-        Producto juegoSabanas = productoRepository.save(Producto.builder()
-                .nombre("Juego de sábanas")
-                .descripcion("200 hilos, incluye funda de almohada.")
+        Producto preSinCafeina = productoRepository.save(Producto.builder()
+                .nombre("Pre-entreno Sin Cafeína")
+                .descripcion("Bombeo y resistencia sin estimulantes. Se puede tomar de noche.")
                 .precio(29999.99)
-                .categoria(hogar)
+                .categoria(preEntrenos)
                 .build());
-        Producto mancuernas = productoRepository.save(Producto.builder()
-                .nombre("Set de mancuernas")
-                .descripcion("Par regulable de 2 a 10 kg con recubrimiento de goma.")
-                .precio(129.99)
-                .categoria(deportes)
+        Producto oxidoNitrico = productoRepository.save(Producto.builder()
+                .nombre("Óxido Nítrico Pump")
+                .descripcion("Arginina y citrulina para mejorar el bombeo y la vascularización.")
+                .precio(26999.99)
+                .categoria(preEntrenos)
                 .build());
-        Producto bicicleta = productoRepository.save(Producto.builder()
-                .nombre("Bicicleta mountain bike")
-                .descripcion("Rodado 29, 21 velocidades y frenos a disco.")
-                .precio(899.99)
-                .categoria(deportes)
+        Producto bcaa = productoRepository.save(Producto.builder()
+                .nombre("BCAA 2:1:1")
+                .descripcion("Leucina, isoleucina y valina para cuidar el músculo durante el entrenamiento.")
+                .precio(21999.99)
+                .categoria(aminoacidos)
                 .build());
-        Producto matYoga = productoRepository.save(Producto.builder()
-                .nombre("Mat de yoga")
-                .descripcion("6mm de espesor, antideslizante, con correa de transporte.")
-                .precio(34.99)
-                .categoria(deportes)
+        Producto glutamina = productoRepository.save(Producto.builder()
+                .nombre("Glutamina")
+                .descripcion("L-glutamina pura para la recuperación muscular y el sistema inmune.")
+                .precio(19999.99)
+                .categoria(aminoacidos)
+                .build());
+        Producto eaa = productoRepository.save(Producto.builder()
+                .nombre("Aminoácidos Esenciales EAA")
+                .descripcion("Los 9 aminoácidos esenciales en una sola toma.")
+                .precio(28999.99)
+                .categoria(aminoacidos)
+                .build());
+        Producto multivitaminico = productoRepository.save(Producto.builder()
+                .nombre("Multivitamínico Deportivo")
+                .descripcion("Vitaminas y minerales para cubrir las necesidades de quien entrena.")
+                .precio(15999.99)
+                .categoria(vitaminas)
+                .build());
+        Producto omega3 = productoRepository.save(Producto.builder()
+                .nombre("Omega 3")
+                .descripcion("Aceite de pescado con EPA y DHA para la salud cardiovascular.")
+                .precio(17999.99)
+                .categoria(vitaminas)
+                .build());
+        Producto magnesio = productoRepository.save(Producto.builder()
+                .nombre("Magnesio + Zinc")
+                .descripcion("Ayuda al descanso, la recuperación y la función muscular.")
+                .precio(13999.99)
+                .categoria(vitaminas)
                 .build());
 
         //------------VARIANTES------------//
-        Variante laptopPlata = varianteRepository.save(Variante.builder()
-                .producto(laptop)
-                .atributos(Map.of("color", "Plata", "ram", "16GB"))
-                .stock(10)
+        Variante wheyChocolate = varianteRepository.save(Variante.builder()
+                .producto(wheyConcentrada)
+                .atributos(Map.of("presentacion", "1 kg", "sabor", "Chocolate"))
+                .stock(25)
                 .build());
         varianteRepository.save(Variante.builder()
-                .producto(laptop)
-                .atributos(Map.of("color", "Negro", "ram", "32GB"))
-                .stock(5)
-                .build());
-        Variante remeraM = varianteRepository.save(Variante.builder()
-                .producto(remera)
-                .atributos(Map.of("talla", "M", "color", "Blanco"))
-                .stock(50)
+                .producto(wheyConcentrada)
+                .atributos(Map.of("presentacion", "1 kg", "sabor", "Vainilla"))
+                .stock(18)
                 .build());
         varianteRepository.save(Variante.builder()
-                .producto(remera)
-                .atributos(Map.of("talla", "M", "color", "Negro"))
+                .producto(wheyConcentrada)
+                .atributos(Map.of("presentacion", "1 kg", "sabor", "Frutilla"))
                 .stock(0)
                 .build());
-        varianteRepository.save(Variante.builder()
-                .producto(remera)
-                .atributos(Map.of("talla", "L", "color", "Blanco"))
-                .stock(2)
+        Variante creatinaSinSabor = varianteRepository.save(Variante.builder()
+                .producto(creatinaMono)
+                .atributos(Map.of("presentacion", "300 g", "sabor", "Sin sabor"))
+                .stock(40)
                 .build());
-        Variante sillaRoja = varianteRepository.save(Variante.builder()
-                .producto(silla)
-                .atributos(Map.of("color", "Rojo"))
+        Variante preFrutosRojos = varianteRepository.save(Variante.builder()
+                .producto(preExplosive)
+                .atributos(Map.of("presentacion", "300 g", "sabor", "Frutos rojos"))
                 .stock(15)
                 .build());
+        varianteRepository.save(Variante.builder()
+                .producto(preExplosive)
+                .atributos(Map.of("presentacion", "300 g", "sabor", "Limón"))
+                .stock(3)
+                .build());
 
-        // Variantes de los productos del catálogo extra.
+        // Stock variado (incluye agotados y pocas unidades) para probar el catálogo.
         varianteRepository.save(Variante.builder()
-                .producto(smartphone).atributos(Map.of("color", "Negro", "almacenamiento", "128GB")).stock(12).build());
+                .producto(wheyIsolate).atributos(Map.of("presentacion", "900 g", "sabor", "Chocolate")).stock(10).build());
         varianteRepository.save(Variante.builder()
-                .producto(smartphone).atributos(Map.of("color", "Azul", "almacenamiento", "256GB")).stock(6).build());
+                .producto(wheyIsolate).atributos(Map.of("presentacion", "900 g", "sabor", "Cookies and cream")).stock(6).build());
         varianteRepository.save(Variante.builder()
-                .producto(pelota).atributos(Map.of("color", "Blanco")).stock(30).build());
+                .producto(proteinaVegana).atributos(Map.of("presentacion", "1 kg", "sabor", "Chocolate")).stock(9).build());
         varianteRepository.save(Variante.builder()
-                .producto(auriculares).atributos(Map.of("color", "Negro")).stock(25).build());
+                .producto(caseina).atributos(Map.of("presentacion", "1 kg", "sabor", "Vainilla")).stock(7).build());
         varianteRepository.save(Variante.builder()
-                .producto(auriculares).atributos(Map.of("color", "Blanco")).stock(8).build());
+                .producto(ganador).atributos(Map.of("presentacion", "3 kg", "sabor", "Chocolate")).stock(12).build());
         varianteRepository.save(Variante.builder()
-                .producto(tablet).atributos(Map.of("color", "Gris", "almacenamiento", "128GB")).stock(9).build());
+                .producto(ganador).atributos(Map.of("presentacion", "3 kg", "sabor", "Banana")).stock(0).build());
         varianteRepository.save(Variante.builder()
-                .producto(teclado).atributos(Map.of("switch", "Rojo", "layout", "Español")).stock(18).build());
+                .producto(creatinaMicro).atributos(Map.of("presentacion", "500 g", "sabor", "Sin sabor")).stock(20).build());
         varianteRepository.save(Variante.builder()
-                .producto(campera).atributos(Map.of("talla", "M", "color", "Negro")).stock(14).build());
+                .producto(creatinaCapsulas).atributos(Map.of("presentacion", "120 cápsulas")).stock(14).build());
         varianteRepository.save(Variante.builder()
-                .producto(campera).atributos(Map.of("talla", "L", "color", "Verde")).stock(7).build());
+                .producto(preSinCafeina).atributos(Map.of("presentacion", "300 g", "sabor", "Uva")).stock(11).build());
         varianteRepository.save(Variante.builder()
-                .producto(jean).atributos(Map.of("talla", "40", "color", "Azul")).stock(20).build());
+                .producto(oxidoNitrico).atributos(Map.of("presentacion", "250 g", "sabor", "Naranja")).stock(2).build());
         varianteRepository.save(Variante.builder()
-                .producto(jean).atributos(Map.of("talla", "42", "color", "Negro")).stock(11).build());
+                .producto(bcaa).atributos(Map.of("presentacion", "200 g", "sabor", "Limón")).stock(22).build());
         varianteRepository.save(Variante.builder()
-                .producto(zapatillas).atributos(Map.of("talla", "41", "color", "Blanco")).stock(10).build());
+                .producto(bcaa).atributos(Map.of("presentacion", "200 g", "sabor", "Sandía")).stock(8).build());
         varianteRepository.save(Variante.builder()
-                .producto(zapatillas).atributos(Map.of("talla", "43", "color", "Negro")).stock(4).build());
+                .producto(glutamina).atributos(Map.of("presentacion", "300 g", "sabor", "Sin sabor")).stock(16).build());
         varianteRepository.save(Variante.builder()
-                .producto(lampara).atributos(Map.of("color", "Blanco")).stock(22).build());
+                .producto(eaa).atributos(Map.of("presentacion", "300 g", "sabor", "Mango")).stock(5).build());
         varianteRepository.save(Variante.builder()
-                .producto(cafetera).atributos(Map.of("color", "Acero")).stock(13).build());
+                .producto(multivitaminico).atributos(Map.of("presentacion", "60 comprimidos")).stock(30).build());
         varianteRepository.save(Variante.builder()
-                .producto(juegoSabanas).atributos(Map.of("medida", "Queen", "color", "Gris")).stock(16).build());
+                .producto(omega3).atributos(Map.of("presentacion", "90 cápsulas")).stock(24).build());
         varianteRepository.save(Variante.builder()
-                .producto(mancuernas).atributos(Map.of("peso", "10kg")).stock(9).build());
-        varianteRepository.save(Variante.builder()
-                .producto(bicicleta).atributos(Map.of("rodado", "29", "color", "Negro")).stock(3).build());
-        varianteRepository.save(Variante.builder()
-                .producto(matYoga).atributos(Map.of("color", "Violeta")).stock(28).build());
+                .producto(magnesio).atributos(Map.of("presentacion", "60 cápsulas")).stock(19).build());
 
         //------------ADMIN------------//
         administradorRepository.save(Administrador.builder()
@@ -344,24 +343,24 @@ public class DataLoader implements CommandLineRunner {
         //------------ITEMS PEDIDO------------//
         itemPedidoRepository.save(ItemPedido.builder()
                 .pedido(pedido1)
-                .variante(laptopPlata)
-                .producto(laptop)
+                .variante(wheyChocolate)
+                .producto(wheyConcentrada)
                 .cantidad(1)
-                .precioProducto(laptop.getPrecio())
+                .precioProducto(wheyConcentrada.getPrecio())
                 .build());
         itemPedidoRepository.save(ItemPedido.builder()
                 .pedido(pedido2)
-                .variante(remeraM)
-                .producto(remera)
+                .variante(creatinaSinSabor)
+                .producto(creatinaMono)
                 .cantidad(3)
-                .precioProducto(remera.getPrecio())
+                .precioProducto(creatinaMono.getPrecio())
                 .build());
         itemPedidoRepository.save(ItemPedido.builder()
                 .pedido(pedido3)
-                .variante(sillaRoja)
-                .producto(silla)
+                .variante(preFrutosRojos)
+                .producto(preExplosive)
                 .cantidad(2)
-                .precioProducto(silla.getPrecio())
+                .precioProducto(preExplosive.getPrecio())
                 .build());
 
         //------------ENVIOS------------//
@@ -383,12 +382,12 @@ public class DataLoader implements CommandLineRunner {
         facturaRepository.save(Factura.builder()
                 .pedido(pedido2)
                 .tipoFactura(TipoFactura.B)
-                .precioTotal(remera.getPrecio() * 3)
+                .precioTotal(creatinaMono.getPrecio() * 3)
                 .build());
         facturaRepository.save(Factura.builder()
                 .pedido(pedido3)
                 .tipoFactura(TipoFactura.A)
-                .precioTotal(silla.getPrecio() * 2)
+                .precioTotal(preExplosive.getPrecio() * 2)
                 .build());
     }
 

@@ -101,3 +101,12 @@ export function traducirErrorRegistro(error: HttpErrorResponse): ErrorTraducido 
     detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }
+
+export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
+  return (
+    errorGeneral(error) ?? {
+      titulo: 'No pudimos cargar los productos',
+      detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+    }
+  );
+}

@@ -115,11 +115,21 @@ public class ProductoService implements IProductoService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax, String search, Pageable pageable) {
-        String searchParam = (search != null && !search.isBlank()) ? search.trim() : "";
+        String searchParam = normalizarBusqueda(search);
         return PageResponse.from(
                 productoRepository.buscarConFiltros(categoriaId, precioMin, precioMax, searchParam, pageable)
                         .map(productoMapper::toResponse)
         );
+    }
+
+    // Mismo criterio que ProductoRepository.NOMBRE_SIN_TILDES: minúsculas y sin tildes (la ñ queda).
+    private static String normalizarBusqueda(String search) {
+        if (search == null || search.isBlank()) {
+            return "";
+        }
+        return search.trim().toLowerCase()
+                .replace('á', 'a').replace('é', 'e').replace('í', 'i')
+                .replace('ó', 'o').replace('ú', 'u').replace('ü', 'u');
     }
 
     @Transactional(readOnly = true)

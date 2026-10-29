@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Map;
@@ -274,6 +276,35 @@ class ProductoServiceTest {
         assertThatThrownBy(() -> productoService.subirImagen(1L, archivo))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("2 MB");
+    }
+
+    // ─── listarTodos — búsqueda sin tildes ───────────────────────────────────
+
+    @Test
+    void listarTodos_busquedaConTildesYMayusculas_buscaNormalizado() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, "  PROTEÍNA Óxido ", PageRequest.of(0, 10));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina oxido", PageRequest.of(0, 10));
+    }
+
+    @Test
+    void listarTodos_busquedaConEnie_laMantiene() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, "Ñandú", PageRequest.of(0, 10));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "ñandu", PageRequest.of(0, 10));
+    }
+
+    @Test
+    void listarTodos_sinBusqueda_buscaTextoVacio() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, "   ", PageRequest.of(0, 10));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "", PageRequest.of(0, 10));
     }
 
     @Test

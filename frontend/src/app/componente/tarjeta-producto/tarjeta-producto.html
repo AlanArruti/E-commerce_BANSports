@@ -1,0 +1,46 @@
+<article class="producto" [ngClass]="{ 'sin-stock': sinStock() }">
+  <div class="producto-imagen">
+    @if (sinStock()) {
+      <span class="producto-etiqueta etiqueta-gris">Sin stock</span>
+    }
+    @if (producto().imagenUrl; as imagen) {
+      <img class="producto-foto" [src]="imagen" [alt]="producto().nombre" loading="lazy" />
+    } @else {
+      <app-pote-producto class="producto-pote" [nombre]="abreviatura()" />
+    }
+  </div>
+  <div class="producto-info">
+    @if (producto().categoria; as categoria) {
+      <span class="producto-categoria">{{ categoria.nombre }}</span>
+    }
+    <h3 class="producto-nombre">{{ producto().nombre }}</h3>
+    @if (resumenVariantes()) {
+      <span class="producto-variante">{{ resumenVariantes() }}</span>
+    }
+    @if (stock() !== null) {
+      <span class="producto-stock">
+        <span class="punto-stock" [ngClass]="{ bajo: stockBajo(), cero: sinStock() }" aria-hidden="true"></span>
+        @if (sinStock()) {
+          Sin stock
+        } @else if (stockBajo()) {
+          ¡Últimas {{ stock() }} unidades!
+        } @else {
+          En stock
+        }
+      </span>
+    }
+    <div class="producto-pie">
+      <span class="producto-precio">{{ producto().precioBase | precio }}</span>
+      <!-- El detalle del producto llega con SCRUM-106. -->
+      <button
+        type="button"
+        class="btn-ver"
+        title="Próximamente"
+        [disabled]="sinStock()"
+        [attr.aria-label]="'Ver ' + producto().nombre"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</article>

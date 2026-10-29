@@ -14,17 +14,22 @@
     </a>
 
     <nav class="categorias" aria-label="Categorías">
-      @for (categoria of categorias; track categoria) {
-        <a href="#" (click)="$event.preventDefault()">{{ categoria }}</a>
+      @for (categoria of categorias(); track categoria.id) {
+        <a
+          routerLink="/productos"
+          [queryParams]="{ categoria: categoria.id }"
+          routerLinkActive="activa"
+          [routerLinkActiveOptions]="opcionesActiva"
+        >{{ categoria.nombre }}</a>
       }
       <a href="#" class="acento" (click)="$event.preventDefault()">Ofertas</a>
     </nav>
 
-    <div class="buscador">
+    <form class="buscador" role="search" (submit)="buscar($event)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <label for="buscar" class="solo-lectores">Buscar productos</label>
-      <input id="buscar" type="search" placeholder="Buscá proteína, creatina…" />
-    </div>
+      <input id="buscar" type="search" placeholder="Buscá proteína, creatina…" [formControl]="busqueda" enterkeyhint="search" />
+    </form>
 
     <div class="acciones">
       @if (authService.estaLogueado()) {

@@ -71,3 +71,5 @@ export function mensajeDeError(control: AbstractControl | null, campo: string): 
   }
   return null;
 }
+
+export const MSJ_PRECIO_RANGO = 'El precio mínimo no puede ser mayor que el máximo.';

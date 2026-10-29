@@ -12,6 +12,16 @@ import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
+    // Nombre en minúsculas y sin tildes, para que "proteina" encuentre "Proteína".
+    // Se reemplazan también las mayúsculas acentuadas por si LOWER no las convierte
+    // (depende del locale de la base). La ñ se deja: es otra letra.
+    // El texto buscado se normaliza igual en ProductoService.normalizarBusqueda.
+    String NOMBRE_SIN_TILDES =
+            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
+            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(p.nombre), " +
+            "'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u'), 'Ü', 'u'), " +
+            "'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ü', 'u')";
+
     Optional<Producto> findByUuid(String uuid);
 
     Optional<Producto> findByIdAndActivoTrue(Long id);
@@ -30,7 +40,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
            "AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId) " +
            "AND (:precioMin IS NULL OR p.precio >= :precioMin) " +
            "AND (:precioMax IS NULL OR p.precio <= :precioMax) " +
-           "AND LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%'))")
+           "AND " + NOMBRE_SIN_TILDES + " LIKE CONCAT('%', :search, '%')")
     Page<Producto> buscarConFiltros(@Param("categoriaId") Long categoriaId,
                                     @Param("precioMin") Double precioMin,
                                     @Param("precioMax") Double precioMax,

@@ -102,6 +102,16 @@ export function traducirErrorRegistro(error: HttpErrorResponse): ErrorTraducido 
   };
 }
 
+/** El 404 no pasa por acá: la página de detalle muestra "Producto no encontrado". */
+export function traducirErrorProducto(error: HttpErrorResponse): ErrorTraducido {
+  return (
+    errorGeneral(error) ?? {
+      titulo: 'No pudimos cargar el producto',
+      detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+    }
+  );
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

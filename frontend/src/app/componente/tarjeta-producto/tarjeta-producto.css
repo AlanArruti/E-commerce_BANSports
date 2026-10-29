@@ -3,6 +3,7 @@
 }
 
 .producto {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -145,10 +146,31 @@
   cursor: pointer;
 }
 
-.btn-ver:disabled {
+.btn-ver.apagado {
   background: var(--color-superficie-2);
   color: var(--color-texto-secundario);
-  cursor: not-allowed;
+}
+
+/* Toda la tarjeta es clickeable: el link del nombre se estira encima. */
+.producto-link {
+  color: inherit;
+}
+
+.producto-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.producto-link:focus-visible {
+  outline: none;
+}
+
+.producto:has(.producto-link:focus-visible) {
+  border-color: var(--color-verde);
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
 }
 
 /* Mobile: grilla de 2 columnas, todo más compacto */

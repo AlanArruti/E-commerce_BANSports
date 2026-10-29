@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import { FiltrosCatalogo, ORDENES } from '../models/filtros-catalogo';
 import { Pagina } from '../models/pagina';
 import { Producto } from '../models/producto';
+import { Variante } from '../models/variante';
 
 @Injectable({
   providedIn: 'root'
@@ -37,5 +38,15 @@ export class ProductoService {
     }
 
     return this.http.get<Pagina<Producto>>(`${this.API_URL}/producto`, { params });
+  }
+
+  /** Un producto por id (GET /producto/{id}). Si no existe o está dado de baja, el back responde 404. */
+  obtener(id: number): Observable<Producto> {
+    return this.http.get<Producto>(`${this.API_URL}/producto/${id}`);
+  }
+
+  /** Variantes activas del producto (GET /producto/{id}/variante). */
+  listarVariantes(id: number): Observable<Variante[]> {
+    return this.http.get<Variante[]>(`${this.API_URL}/producto/${id}/variante`);
   }
 }

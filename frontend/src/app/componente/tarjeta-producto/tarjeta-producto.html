@@ -13,7 +13,10 @@
     @if (producto().categoria; as categoria) {
       <span class="producto-categoria">{{ categoria.nombre }}</span>
     }
-    <h3 class="producto-nombre">{{ producto().nombre }}</h3>
+    <h3 class="producto-nombre">
+      <!-- El link se estira sobre toda la tarjeta (ver .producto-link::after). -->
+      <a class="producto-link" [routerLink]="['/productos', producto().id]">{{ producto().nombre }}</a>
+    </h3>
     @if (resumenVariantes()) {
       <span class="producto-variante">{{ resumenVariantes() }}</span>
     }
@@ -31,16 +34,10 @@
     }
     <div class="producto-pie">
       <span class="producto-precio">{{ producto().precioBase | precio }}</span>
-      <!-- El detalle del producto llega con SCRUM-106. -->
-      <button
-        type="button"
-        class="btn-ver"
-        title="Próximamente"
-        [disabled]="sinStock()"
-        [attr.aria-label]="'Ver ' + producto().nombre"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
+      <!-- Solo decorativa: el click lo toma el link del nombre, que cubre toda la tarjeta. -->
+      <span class="btn-ver" [ngClass]="{ apagado: sinStock() }" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
     </div>
   </div>
 </article>

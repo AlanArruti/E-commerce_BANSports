@@ -12,15 +12,18 @@ import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
-    // Nombre en minúsculas y sin tildes, para que "proteina" encuentre "Proteína".
+    // Texto en minúsculas y sin tildes, para que "proteina" encuentre "Proteína".
     // Se reemplazan también las mayúsculas acentuadas por si LOWER no las convierte
     // (depende del locale de la base). La ñ se deja: es otra letra.
     // El texto buscado se normaliza igual en ProductoService.normalizarBusqueda.
-    String NOMBRE_SIN_TILDES =
+    String SIN_TILDES_INICIO =
             "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
-            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(p.nombre), " +
-            "'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u'), 'Ü', 'u'), " +
+            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(";
+    String SIN_TILDES_FIN =
+            "), 'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u'), 'Ü', 'u'), " +
             "'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'ü', 'u')";
+    String NOMBRE_SIN_TILDES = SIN_TILDES_INICIO + "p.nombre" + SIN_TILDES_FIN;
+    String CATEGORIA_SIN_TILDES = SIN_TILDES_INICIO + "c.nombre" + SIN_TILDES_FIN;
 
     Optional<Producto> findByUuid(String uuid);
 
@@ -36,11 +39,14 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     List<Producto> findByActivoTrueAndNombreContainingIgnoreCaseAndCategoriaId(String texto, Long categoriaId);
 
-    @Query("SELECT p FROM Producto p WHERE p.activo = true " +
+    // La búsqueda mira el nombre del producto y el de su categoría ("proteinas" trae
+    // todo lo de Proteínas). LEFT JOIN para no perder productos sin categoría.
+    @Query("SELECT p FROM Producto p LEFT JOIN p.categoria c WHERE p.activo = true " +
            "AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId) " +
            "AND (:precioMin IS NULL OR p.precio >= :precioMin) " +
            "AND (:precioMax IS NULL OR p.precio <= :precioMax) " +
-           "AND " + NOMBRE_SIN_TILDES + " LIKE CONCAT('%', :search, '%')")
+           "AND (" + NOMBRE_SIN_TILDES + " LIKE CONCAT('%', :search, '%') " +
+           "OR " + CATEGORIA_SIN_TILDES + " LIKE CONCAT('%', :search, '%'))")
     Page<Producto> buscarConFiltros(@Param("categoriaId") Long categoriaId,
                                     @Param("precioMin") Double precioMin,
                                     @Param("precioMax") Double precioMax,

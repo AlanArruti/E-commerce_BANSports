@@ -299,6 +299,24 @@ class ProductoServiceTest {
     }
 
     @Test
+    void listarTodos_busquedaEnPlural_buscaCadaPalabraEnSingular() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, "Proteínas   Veganas", PageRequest.of(0, 10));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina vegana", PageRequest.of(0, 10));
+    }
+
+    @Test
+    void listarTodos_palabraCortaTerminadaEnS_noLaCambia() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, "mas BCAAs", PageRequest.of(0, 10));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "mas bcaa", PageRequest.of(0, 10));
+    }
+
+    @Test
     void listarTodos_sinBusqueda_buscaTextoVacio() {
         when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
 

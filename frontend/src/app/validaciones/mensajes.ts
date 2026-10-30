@@ -44,6 +44,21 @@ export const MENSAJES: Record<string, Mensajes> = {
   terminos: {
     required: () => 'Tenés que aceptar los Términos y condiciones para crear la cuenta.'
   },
+  repetirContrasenia: {
+    requerido: () => 'Repetí la contraseña nueva.',
+    noCoinciden: () => 'Las contraseñas nuevas no coinciden.'
+  },
+  contraseniaActual: {
+    requerido: () => 'Ingresá tu contraseña actual.'
+  },
+  contraseniaNueva: {
+    requerido: () => 'Ingresá la contraseña nueva.',
+    minlength: (d) => {
+      const faltan = d.requiredLength - d.actualLength;
+      return `La contraseña nueva debe tener al menos ${d.requiredLength} caracteres (te ${faltan === 1 ? 'falta 1' : `faltan ${faltan}`}).`;
+    },
+    maxlength: (d) => `La contraseña nueva puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
   loginEmail: {
     requerido: () => 'Ingresá el email con el que te registraste.',
     emailValido: () => MSJ_EMAIL_FORMATO

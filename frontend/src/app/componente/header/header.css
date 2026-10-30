@@ -92,6 +92,30 @@
   color: var(--color-verde);
 }
 
+.btn-perfil {
+  border: none;
+  background: transparent;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.btn-perfil:hover {
+  color: var(--color-verde);
+}
+
+.btn-perfil:focus-visible {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+
+.saludo-flecha {
+  transition: transform 0.15s ease;
+}
+
+.btn-perfil[aria-expanded='true'] .saludo-flecha {
+  transform: rotate(180deg);
+}
+
 .btn-texto {
   min-height: 44px;
   padding: 0 var(--espacio-3);
@@ -187,7 +211,8 @@
   }
 
   .link-ingresar span,
-  .saludo {
+  .saludo-texto,
+  .saludo-flecha {
     display: none;
   }
 

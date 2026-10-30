@@ -1,0 +1,337 @@
+.perfil-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espacio-5);
+  background: rgba(6, 8, 7, 0.8);
+  overflow-y: auto;
+}
+
+.perfil-panel {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  padding: 28px;
+  overflow-y: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  animation: aparecer 0.18s ease-out;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.perfil-cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+}
+
+.perfil-avatar {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-verde);
+  border-radius: 50%;
+  background: var(--color-superficie-2);
+  color: var(--color-verde);
+  font-family: var(--fuente-titulos);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.perfil-identidad {
+  flex: 1;
+  min-width: 0;
+}
+
+.perfil-titulo {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.perfil-nombre {
+  margin: 4px 0 0;
+  color: var(--color-texto-secundario);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-cerrar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.btn-cerrar:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.btn-cerrar:focus-visible,
+.btn-chico:focus-visible {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+
+.perfil-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding-top: var(--espacio-5);
+  border-top: 1px solid var(--color-borde);
+}
+
+.seccion-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.seccion-titulo {
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.perfil-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.btn-chico {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  font-size: 13px;
+}
+
+.datos-grilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-3);
+  margin: 0;
+}
+
+.dato {
+  padding: 12px 14px;
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  min-width: 0;
+}
+
+.dato dt {
+  margin: 0 0 4px;
+  color: var(--color-texto-secundario);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dato dd {
+  margin: 0;
+  color: var(--color-texto);
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.perfil-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.fila-doble {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-3);
+}
+
+.perfil-formulario .input:disabled {
+  background: var(--color-superficie-2);
+  color: var(--color-texto-secundario);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.perfil-nota {
+  margin: 0;
+  color: var(--color-texto-secundario);
+  font-size: 13px;
+}
+
+.perfil-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espacio-3);
+}
+
+.lista-simple {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.direccion,
+.pedido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: 12px 14px;
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.direccion {
+  justify-content: flex-start;
+}
+
+.direccion svg {
+  flex: none;
+  color: var(--color-verde);
+}
+
+.direccion div,
+.pedido > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.direccion strong,
+.pedido strong {
+  font-size: 14px;
+}
+
+.direccion span,
+.pedido span {
+  color: var(--color-texto-secundario);
+  font-size: 13px;
+}
+
+.pedido-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}
+
+.estado {
+  padding: 3px 9px;
+  border: 1px solid var(--color-borde-input);
+  border-radius: 999px;
+  color: var(--color-texto-secundario);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.estado-pagado,
+.estado-despachado,
+.estado-entregado {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.estado-cancelado {
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}
+
+.perfil-vacio {
+  margin: 0;
+  color: var(--color-texto-secundario);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .perfil-fondo {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .perfil-panel {
+    width: 100%;
+    max-height: 92vh;
+    padding: var(--espacio-5) var(--espacio-4) var(--espacio-6);
+    border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+    border-bottom: none;
+  }
+
+  .perfil-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .perfil-titulo {
+    font-size: 28px;
+  }
+
+  .datos-grilla,
+  .fila-doble {
+    grid-template-columns: 1fr;
+  }
+
+  .perfil-botones {
+    flex-direction: column-reverse;
+  }
+
+  .perfil-botones .btn {
+    width: 100%;
+  }
+
+  .pedido {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pedido-meta {
+    align-items: flex-start;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+  }
+}

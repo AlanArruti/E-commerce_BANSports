@@ -1,0 +1,283 @@
+<div class="perfil-fondo" (click)="cerrar.emit()">
+  <section
+    class="perfil-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="perfil-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="perfil-cabecera">
+      <div class="perfil-avatar" aria-hidden="true">{{ iniciales() }}</div>
+      <div class="perfil-identidad">
+        <h2 id="perfil-titulo" class="titulo-display perfil-titulo">Mi perfil</h2>
+        <p class="perfil-nombre">{{ nombreCompleto() }}</p>
+      </div>
+      <button type="button" class="btn-cerrar" (click)="cerrar.emit()" aria-label="Cerrar perfil">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </header>
+
+    @if (exito(); as mensaje) {
+      <div class="alerta-ok" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m5 12 5 5 9-10" />
+        </svg>
+        <div>
+          <div class="alerta-ok-titulo">{{ mensaje }}</div>
+        </div>
+      </div>
+    }
+
+    @if (errorServidor(); as errorActual) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v6M12 16.5v.5" />
+        </svg>
+        <div>
+          <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+          <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+        </div>
+      </div>
+    }
+
+    @switch (modo()) {
+      @case ('ver') {
+        <section class="perfil-seccion">
+          <div class="seccion-cabecera">
+            <h3 class="titulo-display seccion-titulo">Datos personales</h3>
+            <div class="perfil-acciones">
+              <button type="button" class="btn btn-secundario btn-chico" (click)="editar()">Editar datos</button>
+              <button type="button" class="btn btn-secundario btn-chico" (click)="irPassword()">Cambiar contraseña</button>
+            </div>
+          </div>
+
+          <dl class="datos-grilla">
+            <div class="dato">
+              <dt>Nombre</dt>
+              <dd>{{ cliente()?.nombre || '—' }}</dd>
+            </div>
+            <div class="dato">
+              <dt>Apellido</dt>
+              <dd>{{ cliente()?.apellido || '—' }}</dd>
+            </div>
+            <div class="dato">
+              <dt>DNI</dt>
+              <dd>{{ cliente()?.dni || '—' }}</dd>
+            </div>
+            <div class="dato">
+              <dt>Email</dt>
+              <dd>{{ cliente()?.email || '—' }}</dd>
+            </div>
+          </dl>
+        </section>
+      }
+
+      @case ('editar') {
+        <section class="perfil-seccion">
+          <h3 class="titulo-display seccion-titulo">Editar datos</h3>
+
+          <form class="perfil-formulario" [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" novalidate>
+            <div class="fila-doble">
+              <div class="campo">
+                <label for="perfil-nombre">Nombre</label>
+                <input
+                  id="perfil-nombre"
+                  type="text"
+                  class="input"
+                  formControlName="nombre"
+                  autocomplete="given-name"
+                  [ngClass]="{ 'input-error': error(nombre, 'nombre'), 'input-ok': correcto(nombre) }"
+                  [attr.aria-invalid]="error(nombre, 'nombre') ? true : null"
+                  aria-describedby="perfil-nombre-error"
+                />
+                @if (error(nombre, 'nombre'); as mensaje) {
+                  <p class="msj-error" id="perfil-nombre-error">{{ mensaje }}</p>
+                }
+              </div>
+
+              <div class="campo">
+                <label for="perfil-apellido">Apellido</label>
+                <input
+                  id="perfil-apellido"
+                  type="text"
+                  class="input"
+                  formControlName="apellido"
+                  autocomplete="family-name"
+                  [ngClass]="{ 'input-error': error(apellido, 'apellido'), 'input-ok': correcto(apellido) }"
+                  [attr.aria-invalid]="error(apellido, 'apellido') ? true : null"
+                  aria-describedby="perfil-apellido-error"
+                />
+                @if (error(apellido, 'apellido'); as mensaje) {
+                  <p class="msj-error" id="perfil-apellido-error">{{ mensaje }}</p>
+                }
+              </div>
+            </div>
+
+            <div class="fila-doble">
+              <div class="campo">
+                <label for="perfil-dni">DNI</label>
+                <input id="perfil-dni" type="text" class="input" [value]="cliente()?.dni ?? ''" disabled />
+              </div>
+              <div class="campo">
+                <label for="perfil-email">Email</label>
+                <input id="perfil-email" type="email" class="input" [value]="cliente()?.email ?? ''" disabled />
+              </div>
+            </div>
+
+            <p class="perfil-nota">El DNI y el email no se pueden modificar desde acá.</p>
+
+            <div class="perfil-botones">
+              <button type="button" class="btn btn-secundario btn-chico" [disabled]="cargando()" (click)="cancelarEdicion()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primario btn-chico" [disabled]="cargando()">
+                {{ cargando() ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @case ('password') {
+        <section class="perfil-seccion">
+          <h3 class="titulo-display seccion-titulo">Cambiar contraseña</h3>
+
+          <form class="perfil-formulario" [formGroup]="passwordForm" (ngSubmit)="guardarPassword()" novalidate>
+            <div class="campo">
+              <label for="password-actual">Contraseña actual</label>
+              <div class="input-con-boton">
+                <input
+                  id="password-actual"
+                  class="input"
+                  formControlName="contraseniaActual"
+                  autocomplete="current-password"
+                  [type]="mostrarPassword() ? 'text' : 'password'"
+                  [ngClass]="{ 'input-error': error(contraseniaActual, 'contraseniaActual') }"
+                  [attr.aria-invalid]="error(contraseniaActual, 'contraseniaActual') ? true : null"
+                  aria-describedby="password-actual-error"
+                />
+                <button
+                  type="button"
+                  class="btn-ojo"
+                  (click)="alternarPassword()"
+                  [attr.aria-label]="mostrarPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    @if (mostrarPassword()) {
+                      <path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1" />
+                      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                    } @else {
+                      <path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" />
+                      <circle cx="12" cy="12" r="3" />
+                    }
+                  </svg>
+                </button>
+              </div>
+              @if (error(contraseniaActual, 'contraseniaActual'); as mensaje) {
+                <p class="msj-error" id="password-actual-error">{{ mensaje }}</p>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="password-nueva">Contraseña nueva</label>
+              <input
+                id="password-nueva"
+                class="input"
+                formControlName="contraseniaNueva"
+                autocomplete="new-password"
+                [type]="mostrarPassword() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(contraseniaNueva, 'contraseniaNueva') }"
+                [attr.aria-invalid]="error(contraseniaNueva, 'contraseniaNueva') ? true : null"
+                aria-describedby="password-nueva-error"
+              />
+              @if (error(contraseniaNueva, 'contraseniaNueva'); as mensaje) {
+                <p class="msj-error" id="password-nueva-error">{{ mensaje }}</p>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="password-repetir">Repetir contraseña nueva</label>
+              <input
+                id="password-repetir"
+                class="input"
+                formControlName="repetirContrasenia"
+                autocomplete="new-password"
+                [type]="mostrarPassword() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(repetirContrasenia, 'repetirContrasenia') }"
+                [attr.aria-invalid]="error(repetirContrasenia, 'repetirContrasenia') ? true : null"
+                aria-describedby="password-repetir-error"
+              />
+              @if (error(repetirContrasenia, 'repetirContrasenia'); as mensaje) {
+                <p class="msj-error" id="password-repetir-error">{{ mensaje }}</p>
+              }
+            </div>
+
+            <p class="perfil-nota">La contraseña nueva debe tener entre 6 y 50 caracteres.</p>
+
+            <div class="perfil-botones">
+              <button type="button" class="btn btn-secundario btn-chico" [disabled]="cargando()" (click)="cancelarPassword()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primario btn-chico" [disabled]="cargando()">
+                {{ cargando() ? 'Guardando…' : 'Cambiar contraseña' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+    }
+
+    <section class="perfil-seccion">
+      <h3 class="titulo-display seccion-titulo">Direcciones</h3>
+
+      @if ((cliente()?.direcciones?.length ?? 0) > 0) {
+        <ul class="lista-simple">
+          @for (direccion of cliente()?.direcciones ?? []; track direccion.id) {
+            <li class="direccion">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z" />
+                <circle cx="12" cy="10" r="2.5" />
+              </svg>
+              <div>
+                <strong>{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</strong>
+                <span>{{ direccion.ciudad.nombreCiudad }}, {{ direccion.ciudad.provincia.nombreProvincia }} · CP {{ direccion.codigoPostal }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="perfil-vacio">Todavía no cargaste direcciones.</p>
+      }
+    </section>
+
+    <section class="perfil-seccion">
+      <h3 class="titulo-display seccion-titulo">Mis pedidos</h3>
+
+      @if (cargandoPedidos()) {
+        <p class="perfil-vacio">Cargando pedidos…</p>
+      } @else if (errorPedidos(); as mensaje) {
+        <p class="msj-error">{{ mensaje }}</p>
+      } @else if (pedidos().length === 0) {
+        <p class="perfil-vacio">Todavía no hiciste pedidos.</p>
+      } @else {
+        <ul class="lista-simple">
+          @for (pedido of pedidos(); track pedido.id) {
+            <li class="pedido">
+              <div>
+                <strong>Pedido #{{ pedido.id }}</strong>
+                <span>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }} · {{ cantidadProductos(pedido) }} productos</span>
+              </div>
+              <div class="pedido-meta">
+                <span class="estado" [ngClass]="estadoClase(pedido.estado)">{{ estadoPedido(pedido.estado) }}</span>
+                <strong>$ {{ pedido.total | number: '1.2-2' }}</strong>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </section>
+</div>

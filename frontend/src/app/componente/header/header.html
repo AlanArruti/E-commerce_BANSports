@@ -28,10 +28,18 @@
 
     <div class="acciones">
       @if (authService.estaLogueado()) {
-        <span class="saludo">
+        <button
+          type="button"
+          class="saludo btn-perfil"
+          (click)="abrirPerfil()"
+          aria-haspopup="dialog"
+          [attr.aria-expanded]="perfilAbierto()"
+          aria-label="Abrir mi perfil"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          Hola, {{ nombreUsuario() }}
-        </span>
+          <span class="saludo-texto">Hola, {{ nombreUsuario() }}</span>
+          <svg class="saludo-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
         <button type="button" class="btn-texto" (click)="cerrarSesion()">Cerrar sesión</button>
       } @else {
         <a routerLink="/login" class="link-ingresar">
@@ -46,3 +54,7 @@
     </div>
   </div>
 </header>
+
+@if (perfilAbierto()) {
+  <app-perfil-modal (cerrar)="cerrarPerfil()" />
+}

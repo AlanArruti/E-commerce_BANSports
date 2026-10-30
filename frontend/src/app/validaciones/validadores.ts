@@ -46,6 +46,22 @@ export const largoDni: ValidatorFn = (control: AbstractControl): ValidationError
   return null;
 };
 
+/**
+ * Exige que el valor coincida con el de otro campo del mismo formulario.
+ * El control que lo usa tiene que refrescarse cuando cambia el otro campo
+ * (ver perfil-modal.ts).
+ */
+export const coincideCon = (campo: string): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const valor = String(control.value ?? '');
+    const original = String(control.parent?.get(campo)?.value ?? '');
+    if (valor === '' || valor === original) {
+      return null;
+    }
+    return { noCoinciden: true };
+  };
+};
+
 /** Email con formato nombre@dominio.ext (más estricto que Validators.email). */
 export const emailValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '').trim();

@@ -116,10 +116,12 @@ public class ProductoService implements IProductoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax, String search, Pageable pageable) {
+    public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax,
+                                                      String search, Boolean soloOfertas, Pageable pageable) {
         String searchParam = normalizarBusqueda(search);
         return PageResponse.from(
-                productoRepository.buscarConFiltros(categoriaId, precioMin, precioMax, searchParam, pageable)
+                productoRepository.buscarConFiltros(categoriaId, precioMin, precioMax, searchParam,
+                                Boolean.TRUE.equals(soloOfertas), pageable)
                         .map(productoMapper::toResponse)
         );
     }
@@ -160,6 +162,7 @@ public class ProductoService implements IProductoService {
 
         Producto producto = productoMapper.toEntity(request);
         producto.setCategoria(categoria);
+        producto.recalcularPrecioFinal();
         return productoMapper.toResponse(productoRepository.save(producto));
     }
 
@@ -173,7 +176,9 @@ public class ProductoService implements IProductoService {
         producto.setNombre(request.nombre());
         producto.setDescripcion(request.descripcion());
         producto.setPrecio(request.precioBase());
+        producto.setDescuento(request.descuento());
         producto.setCategoria(categoria);
+        producto.recalcularPrecioFinal();
         return productoMapper.toResponse(productoRepository.save(producto));
     }
 

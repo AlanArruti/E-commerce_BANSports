@@ -15,7 +15,7 @@ public interface CarritoMapper {
 
     default Double calcularTotal(Carrito carrito) {
         return carrito.getItems().stream()
-                .mapToDouble(item -> item.getProducto().getPrecio() * item.getCantidad())
+                .mapToDouble(item -> item.getProducto().getPrecioConDescuento() * item.getCantidad())
                 .sum();
     }
 }

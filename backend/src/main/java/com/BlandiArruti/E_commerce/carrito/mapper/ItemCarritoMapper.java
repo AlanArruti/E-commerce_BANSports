@@ -11,6 +11,6 @@ import org.mapstruct.Mapping;
 public interface ItemCarritoMapper {
 
     @Mapping(source = "id", target = "idItemCarrito")
-    @Mapping(target = "subtotal", expression = "java(item.getProducto().getPrecio() * item.getCantidad())")
+    @Mapping(target = "subtotal", expression = "java(item.getProducto().getPrecioConDescuento() * item.getCantidad())")
     ItemCarritoResponse toResponse(ItemCarrito item);
 }

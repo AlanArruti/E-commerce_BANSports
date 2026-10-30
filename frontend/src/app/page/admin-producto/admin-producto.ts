@@ -14,7 +14,7 @@ import { CategoriaService } from '../../services/categoria.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorGuardarProducto, traducirErrorProducto } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
-import { leerPrecio, precioValido, requerido } from '../../validaciones/validadores';
+import { descuentoValido, leerPrecio, precioValido, requerido } from '../../validaciones/validadores';
 
 const ERROR_INESPERADO: ErrorTraducido = {
   titulo: 'No pudimos guardar el producto',
@@ -50,12 +50,14 @@ export class AdminProducto implements OnInit {
   nombre = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(100)] });
   categoria = new FormControl<number | null>(null, { validators: [Validators.required] });
   precio = new FormControl('', { nonNullable: true, validators: [requerido, precioValido] });
+  descuento = new FormControl('', { nonNullable: true, validators: [descuentoValido] });
   descripcion = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(250)] });
 
   formulario = new FormGroup({
     nombre: this.nombre,
     categoria: this.categoria,
     precio: this.precio,
+    descuento: this.descuento,
     descripcion: this.descripcion
   });
 
@@ -74,13 +76,24 @@ export class AdminProducto implements OnInit {
 
     const valores = toSignal(this.formulario.valueChanges, { initialValue: this.formulario.getRawValue() });
     this.vistaPrevia = computed(() => {
-      const { nombre, categoria, precio, descripcion } = valores();
+      const { nombre, categoria, precio, descuento, descripcion } = valores();
       const precioLeido = leerPrecio(precio ?? '');
+      const porcentaje = Number(descuento ?? '');
+      const descuentoAplicado = Number.isInteger(porcentaje) && porcentaje >= 1 && porcentaje <= 99
+        ? porcentaje
+        : null;
+      const precioFinal = precioLeido > 0
+        ? (descuentoAplicado === null
+            ? precioLeido
+            : Math.round(precioLeido * (100 - descuentoAplicado)) / 100)
+        : null;
       return {
         nombre: (nombre ?? '').trim(),
         abreviatura: abreviarNombre((nombre ?? '').trim()) || '—',
         categoria: this.categorias().find((opcion) => opcion.id === categoria)?.nombre ?? null,
         precio: precioLeido > 0 ? precioLeido : null,
+        descuento: descuentoAplicado,
+        precioFinal,
         largoNombre: (nombre ?? '').trim().length,
         largoDescripcion: (descripcion ?? '').trim().length
       };
@@ -150,6 +163,7 @@ export class AdminProducto implements OnInit {
       nombre: this.nombre.value.trim(),
       descripcion: this.descripcion.value.trim(),
       precioBase: leerPrecio(this.precio.value),
+      descuento: this.descuento.value.trim() === '' ? null : Number(this.descuento.value.trim()),
       categoriaId: this.categoria.value!
     };
 
@@ -183,7 +197,7 @@ export class AdminProducto implements OnInit {
   crearOtro(): void {
     this.creado.set(null);
     this.intentoGuardar.set(false);
-    this.formulario.reset({ nombre: '', categoria: null, precio: '', descripcion: '' });
+    this.formulario.reset({ nombre: '', categoria: null, precio: '', descuento: '', descripcion: '' });
     this.title.setTitle('Nuevo producto | Panel BAN Sports');
   }
 
@@ -193,6 +207,7 @@ export class AdminProducto implements OnInit {
       categoria: producto.categoria?.id ?? null,
       // Mismo formato que se escribe: "42.999,99".
       precio: formatearPrecio(producto.precioBase).replace('$ ', ''),
+      descuento: producto.descuento ? String(producto.descuento) : '',
       descripcion: producto.descripcion
     });
     this.intentoGuardar.set(false);

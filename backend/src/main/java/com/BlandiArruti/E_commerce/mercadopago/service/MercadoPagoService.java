@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -81,7 +82,10 @@ public class MercadoPagoService {
     }
 
     private PreferenceItemRequest mapItem(ItemPedido item) {
-        BigDecimal unitPrice = BigDecimal.valueOf(item.getProducto().getPrecio());
+        // Se usa el precio congelado en el pedido, no el precio actual del producto:
+        // si la oferta cambia después de la compra, el pago tiene que respetar el total original.
+        BigDecimal unitPrice = BigDecimal.valueOf(item.getPrecioProducto())
+                .divide(BigDecimal.valueOf(item.getCantidad()), 2, RoundingMode.HALF_UP);
 
         String itemId = item.getVariante() != null
                 ? item.getVariante().getId().toString()

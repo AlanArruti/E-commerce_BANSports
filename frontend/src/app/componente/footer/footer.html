@@ -22,7 +22,11 @@
     <nav class="columna" aria-label="Tienda">
       <span class="columna-titulo">Tienda</span>
       @for (link of linksTienda; track link) {
-        <a href="#" (click)="$event.preventDefault()">{{ link }}</a>
+        @if (link === 'Ofertas') {
+          <a routerLink="/ofertas">{{ link }}</a>
+        } @else {
+          <a href="#" (click)="$event.preventDefault()">{{ link }}</a>
+        }
       }
     </nav>
 

@@ -19,6 +19,12 @@ export const routes: Routes = [
     title: 'Catálogo | BAN Sports'
   },
   {
+    path: 'ofertas',
+    loadComponent: () => import('./page/catalogo/catalogo').then((m) => m.Catalogo),
+    data: { ofertas: true },
+    title: 'Ofertas | BAN Sports'
+  },
+  {
     // El título final lo pone la página con el nombre del producto.
     path: 'productos/:id',
     loadComponent: () => import('./page/detalle-producto/detalle-producto').then((m) => m.DetalleProducto),

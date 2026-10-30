@@ -282,47 +282,47 @@ class ProductoServiceTest {
 
     @Test
     void listarTodos_busquedaConTildesYMayusculas_buscaNormalizado() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "  PROTEÍNA Óxido ", PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "  PROTEÍNA Óxido ", false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "proteina oxido", PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina oxido", false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_busquedaConEnie_laMantiene() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "Ñandú", PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "Ñandú", false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "ñandu", PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "ñandu", false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_busquedaEnPlural_buscaCadaPalabraEnSingular() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "Proteínas   Veganas", PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "Proteínas   Veganas", false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "proteina vegana", PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina vegana", false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_palabraCortaTerminadaEnS_noLaCambia() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "mas BCAAs", PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "mas BCAAs", false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "mas bcaa", PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "mas bcaa", false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_sinBusqueda_buscaTextoVacio() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "   ", PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "   ", false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "", PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "", false, PageRequest.of(0, 10));
     }
 
     @Test

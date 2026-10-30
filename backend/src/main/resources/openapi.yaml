@@ -129,6 +129,24 @@ paths:
           description: Filtra por nombre (case-insensitive, coincidencia parcial)
           schema:
             type: string
+        - name: soloOfertas
+          in: query
+          description: Si es true, solo devuelve productos con descuento.
+          schema:
+            type: boolean
+            default: false
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [id, nombre, precio, descuento]
+            default: id
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -1481,6 +1499,13 @@ components:
           format: double
           minimum: 0
           example: 4999.99
+        descuento:
+          type: integer
+          minimum: 1
+          maximum: 99
+          nullable: true
+          description: Porcentaje de descuento. null = sin oferta.
+          example: 20
         categoriaId:
           type: integer
           format: int64
@@ -1496,6 +1521,12 @@ components:
         descripcion:
           type: string
         precio:
+          type: number
+          format: double
+        descuento:
+          type: integer
+          nullable: true
+        precioFinal:
           type: number
           format: double
         categoria:

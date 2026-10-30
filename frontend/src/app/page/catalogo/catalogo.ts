@@ -71,6 +71,11 @@ function aNumero(texto: string): number | null {
 export class Catalogo {
   protected readonly ordenes = ORDENES;
   protected readonly esqueletos = [1, 2, 3, 4, 5, 6];
+  protected readonly esOfertas: boolean;
+
+  /** Mejores ofertas por descuento. Solo se cargan en /ofertas. */
+  protected readonly destacadas = signal<Producto[]>([]);
+  protected readonly cargandoDestacadas = signal(false);
 
   precioMin = new FormControl('', { nonNullable: true });
   precioMax = new FormControl('', { nonNullable: true });
@@ -96,15 +101,20 @@ export class Catalogo {
     private router: Router,
     private route: ActivatedRoute
   ) {
+    this.esOfertas = this.route.snapshot.data['ofertas'] === true;
     const filtros$ = this.route.queryParamMap.pipe(map(leerFiltros));
     this.filtros = toSignal(filtros$, { requireSync: true });
     this.categorias = toSignal(this.categoriaService.listar(), { initialValue: [] });
+
+    if (this.esOfertas) {
+      this.cargarDestacadas();
+    }
 
     // Cada cambio de filtros en la URL vuelve a pedir el catálogo (y cancela el pedido anterior).
     this.estado = toSignal(
       combineLatest([filtros$, this.recargar$]).pipe(
         switchMap(([filtros]) =>
-          this.productoService.listar(filtros).pipe(
+          this.productoService.listar(filtros, this.esOfertas).pipe(
             map((pagina): EstadoCatalogo => ({ cargando: false, pagina, error: null })),
             catchError((e: unknown) =>
               of<EstadoCatalogo>({
@@ -151,7 +161,13 @@ export class Catalogo {
       .pipe(debounceTime(DEMORA_PRECIO_MS), takeUntilDestroyed())
       .subscribe(() => this.aplicarPrecio());
 
-    this.titulo = computed(() => this.nombreCategoria(this.filtros().categoriaId) ?? 'Catálogo');
+    this.titulo = computed(() => {
+      const categoria = this.nombreCategoria(this.filtros().categoriaId);
+      if (this.esOfertas) {
+        return categoria ? `Ofertas de ${categoria}` : 'Ofertas';
+      }
+      return categoria ?? 'Catálogo';
+    });
 
     this.chips = computed<Chip[]>(() => {
       const filtros = this.filtros();
@@ -222,6 +238,20 @@ export class Catalogo {
 
   reintentar(): void {
     this.recargar$.next();
+  }
+
+  private cargarDestacadas(): void {
+    this.cargandoDestacadas.set(true);
+    this.productoService.destacadas().subscribe({
+      next: (productos) => {
+        this.destacadas.set(productos);
+        this.cargandoDestacadas.set(false);
+      },
+      error: () => {
+        this.destacadas.set([]);
+        this.cargandoDestacadas.set(false);
+      }
+    });
   }
 
   abrirFiltros(): void {

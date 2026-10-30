@@ -1,23 +1,11 @@
-// Sugerencia del autocompletado de direcciones (SugerenciaDireccionResponse).
-export interface SugerenciaDireccion {
-  placeId: string;
-  /** "Av. Corrientes 1234" */
-  principal: string;
-  /** "CABA, Argentina" */
-  secundario: string | null;
-}
-
-// Dirección elegida, desarmada en partes (LugarResponse). Altura y CP pueden faltar.
-export interface Lugar {
-  placeId: string;
-  direccionCompleta: string;
-  nombreCalle: string | null;
-  numeroCalle: number | null;
-  codigoPostal: string | null;
-  ciudad: string | null;
-  provincia: string | null;
-  pais: string | null;
-  codigoPais: string | null;
+// Localidad del buscador del formulario de dirección (LocalidadResponse, sale de Georef).
+export interface Localidad {
+  /** Id de Georef (8 dígitos). */
+  id: string;
+  nombre: string;
+  /** Departamento o partido: distingue localidades con el mismo nombre. */
+  departamento: string | null;
+  provincia: string;
 }
 
 // Datos geográficos que vienen dentro de una dirección guardada (PaisResponse, ProvinciaResponse, CiudadResponse).

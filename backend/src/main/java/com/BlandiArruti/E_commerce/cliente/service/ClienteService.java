@@ -19,7 +19,7 @@ import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.entity.Ciudad;
-import com.BlandiArruti.E_commerce.geo.service.LugarService;
+import com.BlandiArruti.E_commerce.geo.service.LocalidadService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.mapper.PedidoMapper;
@@ -42,7 +42,7 @@ public class ClienteService implements IClienteService {
 
     private final ClienteRepository clienteRepository;
     private final DireccionRepository direccionRepository;
-    private final LugarService lugarService;
+    private final LocalidadService localidadService;
     private final PedidoRepository pedidoRepository;
     private final ClienteMapper clienteMapper;
     private final DireccionMapper direccionMapper;
@@ -144,8 +144,8 @@ public class ClienteService implements IClienteService {
         verificarPropietario(idCliente);
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(idCliente)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(idCliente));
-        // La ciudad sale de Google (y se crea si es la primera vez que alguien la usa).
-        Ciudad ciudad = lugarService.resolverCiudad(request.placeId(), request.sesion());
+        // La ciudad sale de Georef (y se crea si es la primera vez que alguien la usa).
+        Ciudad ciudad = localidadService.resolverCiudad(request.idLocalidad());
 
         Direccion direccion = Direccion.builder()
                 .nombreCalle(request.nombreCalle())

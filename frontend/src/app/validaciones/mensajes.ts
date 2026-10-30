@@ -75,8 +75,8 @@ export const MENSAJES: Record<string, Mensajes> = {
     requerido: () => 'Ingresá una descripción: es lo que lee el cliente en el detalle del producto.',
     maxlength: (d) => `La descripción puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   },
-  direccionBuscada: {
-    required: () => 'Buscá tu dirección y elegila de la lista de sugerencias.'
+  localidad: {
+    required: () => 'Buscá tu localidad y elegila de la lista.'
   },
   calle: {
     requerido: () => 'Ingresá la calle.',

@@ -9,66 +9,64 @@
     </div>
   }
 
-  <!-- Buscador de direcciones (patrón combobox de ARIA) -->
+  <!-- Buscador de localidades (patrón combobox de ARIA) -->
   <div class="campo buscador-direccion">
-    <label for="dir-buscar">Dirección</label>
+    <label for="dir-localidad">Localidad</label>
     <div class="input-buscador">
       <svg class="icono-buscar" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input
-        id="dir-buscar"
+        id="dir-localidad"
         class="input"
         type="text"
         role="combobox"
         autocomplete="off"
-        placeholder="Escribí la calle y la altura, por ejemplo Av. Colón 1234"
+        placeholder="Escribí tu ciudad o localidad, por ejemplo Mar del Plata"
         [formControl]="busqueda"
-        [ngClass]="{ 'input-error': error(placeId, 'direccionBuscada') }"
+        [ngClass]="{ 'input-error': error(idLocalidad, 'localidad') }"
         aria-autocomplete="list"
         aria-controls="dir-sugerencias"
         [attr.aria-expanded]="listaAbierta()"
         [attr.aria-activedescendant]="listaAbierta() && activa() >= 0 ? 'dir-sugerencia-' + activa() : null"
-        [attr.aria-invalid]="error(placeId, 'direccionBuscada') ? true : null"
-        aria-describedby="dir-buscar-ayuda dir-buscar-error"
+        [attr.aria-invalid]="error(idLocalidad, 'localidad') ? true : null"
+        aria-describedby="dir-localidad-ayuda dir-localidad-error"
         (keydown)="alTeclear($event)"
         (blur)="alSalirDelBuscador()"
       />
-      @if (buscando() || cargandoLugar()) {
+      @if (buscando()) {
         <span class="indicador" aria-hidden="true"></span>
       }
 
     @if (listaAbierta()) {
-      <ul class="sugerencias" id="dir-sugerencias" role="listbox" aria-label="Direcciones sugeridas">
-        @for (sugerencia of sugerencias(); track sugerencia.placeId; let i = $index) {
+      <ul class="sugerencias" id="dir-sugerencias" role="listbox" aria-label="Localidades sugeridas">
+        @for (localidad of sugerencias(); track localidad.id; let i = $index) {
           <li
             class="sugerencia"
             role="option"
             [id]="'dir-sugerencia-' + i"
             [class.activa]="i === activa()"
             [attr.aria-selected]="i === activa()"
-            (mousedown)="alApretarSugerencia($event, sugerencia)"
+            (mousedown)="alApretarSugerencia($event, localidad)"
             (mouseenter)="activa.set(i)"
           >
-            <span class="sugerencia-principal">{{ sugerencia.principal }}</span>
-            @if (sugerencia.secundario) {
-              <span class="sugerencia-secundaria">{{ sugerencia.secundario }}</span>
-            }
+            <span class="sugerencia-principal">{{ localidad.nombre }}</span>
+            <span class="sugerencia-secundaria">{{ detalle(localidad) }}</span>
           </li>
         } @empty {
           <li class="sin-resultados" role="option" aria-disabled="true">
-            No encontramos direcciones con ese texto. Probá con la calle y la altura.
+            No encontramos localidades con ese nombre. Revisá cómo está escrito.
           </li>
         }
       </ul>
     }
     </div>
 
-    @if (error(placeId, 'direccionBuscada'); as mensaje) {
-      <p class="msj-error" id="dir-buscar-error">{{ mensaje }}</p>
+    @if (error(idLocalidad, 'localidad'); as mensaje) {
+      <p class="msj-error" id="dir-localidad-error">{{ mensaje }}</p>
     } @else {
-      <p class="ayuda" id="dir-buscar-ayuda">
-        @if (lugar(); as elegido) {
+      <p class="ayuda" id="dir-localidad-ayuda">
+        @if (elegida(); as localidad) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
-          {{ elegido.ciudad }}, {{ elegido.provincia }}
+          {{ localidad.nombre }}, {{ detalle(localidad) }}
         } @else {
           Solo hacemos envíos dentro de Argentina.
         }
@@ -76,39 +74,37 @@
     }
   </div>
 
-  @if (lugar()) {
-    <div class="fila fila-calle">
-      <div class="campo">
-        <label for="dir-calle">Calle</label>
-        <input id="dir-calle" class="input" formControlName="calle" autocomplete="address-line1"
-          [ngClass]="{ 'input-error': error(calle, 'calle') }" [attr.aria-invalid]="error(calle, 'calle') ? true : null" aria-describedby="dir-calle-error" />
-        @if (error(calle, 'calle'); as mensaje) {
-          <p class="msj-error" id="dir-calle-error">{{ mensaje }}</p>
-        }
-      </div>
-
-      <div class="campo">
-        <label for="dir-numero">Altura</label>
-        <input id="dir-numero" class="input" formControlName="numeroCalle" inputmode="numeric" placeholder="1234"
-          [ngClass]="{ 'input-error': error(numeroCalle, 'numeroCalle') }" [attr.aria-invalid]="error(numeroCalle, 'numeroCalle') ? true : null" aria-describedby="dir-numero-error" />
-        @if (error(numeroCalle, 'numeroCalle'); as mensaje) {
-          <p class="msj-error" id="dir-numero-error">{{ mensaje }}</p>
-        }
-      </div>
-
-      <div class="campo">
-        <label for="dir-cp">Código postal</label>
-        <input id="dir-cp" class="input" formControlName="codigoPostal" autocomplete="postal-code" placeholder="7600"
-          [ngClass]="{ 'input-error': error(codigoPostal, 'codigoPostal') }" [attr.aria-invalid]="error(codigoPostal, 'codigoPostal') ? true : null" aria-describedby="dir-cp-error" />
-        @if (error(codigoPostal, 'codigoPostal'); as mensaje) {
-          <p class="msj-error" id="dir-cp-error">{{ mensaje }}</p>
-        }
-      </div>
+  <div class="fila fila-calle">
+    <div class="campo">
+      <label for="dir-calle">Calle</label>
+      <input id="dir-calle" class="input" formControlName="calle" autocomplete="address-line1" placeholder="Av. Colón"
+        [ngClass]="{ 'input-error': error(calle, 'calle') }" [attr.aria-invalid]="error(calle, 'calle') ? true : null" aria-describedby="dir-calle-error" />
+      @if (error(calle, 'calle'); as mensaje) {
+        <p class="msj-error" id="dir-calle-error">{{ mensaje }}</p>
+      }
     </div>
-  }
+
+    <div class="campo">
+      <label for="dir-numero">Altura</label>
+      <input id="dir-numero" class="input" formControlName="numeroCalle" inputmode="numeric" placeholder="1234"
+        [ngClass]="{ 'input-error': error(numeroCalle, 'numeroCalle') }" [attr.aria-invalid]="error(numeroCalle, 'numeroCalle') ? true : null" aria-describedby="dir-numero-error" />
+      @if (error(numeroCalle, 'numeroCalle'); as mensaje) {
+        <p class="msj-error" id="dir-numero-error">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="dir-cp">Código postal</label>
+      <input id="dir-cp" class="input" formControlName="codigoPostal" autocomplete="postal-code" placeholder="7600"
+        [ngClass]="{ 'input-error': error(codigoPostal, 'codigoPostal') }" [attr.aria-invalid]="error(codigoPostal, 'codigoPostal') ? true : null" aria-describedby="dir-cp-error" />
+      @if (error(codigoPostal, 'codigoPostal'); as mensaje) {
+        <p class="msj-error" id="dir-cp-error">{{ mensaje }}</p>
+      }
+    </div>
+  </div>
 
   <div class="acciones">
-    <button type="submit" class="btn btn-primario" [disabled]="guardando() || cargandoLugar()">
+    <button type="submit" class="btn btn-primario" [disabled]="guardando()">
       {{ guardando() ? 'Guardando…' : 'Guardar dirección' }}
     </button>
     @if (puedeCancelar()) {

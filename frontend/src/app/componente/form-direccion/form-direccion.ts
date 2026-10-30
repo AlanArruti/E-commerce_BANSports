@@ -5,20 +5,20 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { Direccion } from '../../models/direccion';
-import { Lugar, SugerenciaDireccion } from '../../models/geo';
+import { Localidad } from '../../models/geo';
 import { DireccionService } from '../../services/direccion.service';
 import { GeoService } from '../../services/geo.service';
 import { ErrorTraducido, traducirErrorDireccion } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
 import { requerido, soloNumeros } from '../../validaciones/validadores';
 
-/** Caracteres mínimos para pedir sugerencias (el back tampoco busca con menos). */
+/** Caracteres mínimos para buscar localidades (el back tampoco busca con menos). */
 const MINIMO_BUSQUEDA = 3;
 
 /**
- * Formulario "Agregar dirección" con búsqueda de Google Maps.
- * El cliente busca su dirección, elige una sugerencia y se completan calle, altura y CP
- * (corregibles a mano). La ciudad y la provincia las resuelve el back con el placeId.
+ * Formulario "Agregar dirección".
+ * El cliente busca su localidad (Georef) y la elige de la lista; calle, altura y CP los escribe.
+ * La ciudad y la provincia las resuelve el back con el id de la localidad.
  * Se usa en el checkout y en "Mis direcciones".
  */
 @Component({
@@ -36,34 +36,30 @@ export class FormDireccion {
 
   /** Lo que escribe el cliente en el buscador (no se manda al back al guardar). */
   busqueda = new FormControl('', { nonNullable: true });
-  /** placeId de la sugerencia elegida: sin él no se puede guardar. */
-  placeId = new FormControl<string | null>(null, { validators: [Validators.required] });
+  /** Id de la localidad elegida: sin él no se puede guardar. */
+  idLocalidad = new FormControl<string | null>(null, { validators: [Validators.required] });
   // Mismas reglas que DireccionRequest en el back.
   calle = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(100)] });
   numeroCalle = new FormControl('', { nonNullable: true, validators: [requerido, soloNumeros, Validators.min(1)] });
   codigoPostal = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(8)] });
 
   formulario = new FormGroup({
-    placeId: this.placeId,
+    idLocalidad: this.idLocalidad,
     calle: this.calle,
     numeroCalle: this.numeroCalle,
     codigoPostal: this.codigoPostal
   });
 
-  protected readonly sugerencias = signal<SugerenciaDireccion[]>([]);
+  protected readonly sugerencias = signal<Localidad[]>([]);
   protected readonly listaAbierta = signal(false);
   protected readonly activa = signal(-1);
   protected readonly buscando = signal(false);
   protected readonly sinResultados = signal(false);
-  protected readonly cargandoLugar = signal(false);
-  protected readonly lugar = signal<Lugar | null>(null);
+  protected readonly elegida = signal<Localidad | null>(null);
 
   protected readonly guardando = signal(false);
   protected readonly intentoEnviar = signal(false);
   protected readonly errorServidor = signal<ErrorTraducido | null>(null);
-
-  /** Id de esta búsqueda para Google: se renueva después de guardar. */
-  private sesion = crypto.randomUUID();
 
   constructor(
     private geoService: GeoService,
@@ -71,18 +67,18 @@ export class FormDireccion {
   ) {
     this.busqueda.valueChanges
       .pipe(
-        // Escribir de nuevo invalida la dirección elegida: hay que volver a elegir de la lista.
-        tap(() => this.olvidarLugar()),
+        // Escribir de nuevo invalida la localidad elegida: hay que volver a elegir de la lista.
+        tap(() => this.olvidarLocalidad()),
         map((texto) => texto.trim()),
         debounceTime(300),
         distinctUntilChanged(),
         switchMap((texto) => {
           if (texto.length < MINIMO_BUSQUEDA) {
             this.buscando.set(false);
-            return of<SugerenciaDireccion[] | null>([]);
+            return of<Localidad[] | null>([]);
           }
           this.buscando.set(true);
-          return this.geoService.sugerencias(texto, this.sesion).pipe(
+          return this.geoService.localidades(texto).pipe(
             catchError((e: unknown) => {
               this.mostrarError(e);
               return of(null);
@@ -113,6 +109,13 @@ export class FormDireccion {
     return mensajeDeError(control, campo);
   }
 
+  /** "General Pueyrredón, Buenos Aires" (el departamento se omite si se llama igual que la localidad). */
+  protected detalle(localidad: Localidad): string {
+    const partes = [localidad.departamento, localidad.provincia]
+      .filter((p): p is string => !!p && p !== localidad.nombre);
+    return partes.join(', ') || localidad.provincia;
+  }
+
   // ── Buscador (combobox) ────────────────────────────────
 
   alTeclear(evento: KeyboardEvent): void {
@@ -136,38 +139,22 @@ export class FormDireccion {
   }
 
   /** Se usa mousedown (no click) para que corra antes del blur del input. */
-  alApretarSugerencia(evento: MouseEvent, sugerencia: SugerenciaDireccion): void {
+  alApretarSugerencia(evento: MouseEvent, localidad: Localidad): void {
     evento.preventDefault();
-    this.elegir(sugerencia);
+    this.elegir(localidad);
   }
 
   alSalirDelBuscador(): void {
     this.cerrarLista();
-    this.placeId.markAsTouched();
+    this.idLocalidad.markAsTouched();
   }
 
-  elegir(sugerencia: SugerenciaDireccion): void {
+  elegir(localidad: Localidad): void {
     this.cerrarLista();
-    const texto = sugerencia.secundario ? `${sugerencia.principal}, ${sugerencia.secundario}` : sugerencia.principal;
-    this.busqueda.setValue(texto, { emitEvent: false });
+    this.busqueda.setValue(localidad.nombre, { emitEvent: false });
     this.errorServidor.set(null);
-    this.cargandoLugar.set(true);
-
-    this.geoService.lugar(sugerencia.placeId, this.sesion).subscribe({
-      next: (lugar) => {
-        this.cargandoLugar.set(false);
-        this.lugar.set(lugar);
-        this.placeId.setValue(lugar.placeId);
-        // Se precarga lo que mandó Google; lo que falte (altura, CP) lo completa el cliente.
-        this.calle.setValue(lugar.nombreCalle ?? '');
-        this.numeroCalle.setValue(lugar.numeroCalle !== null ? String(lugar.numeroCalle) : '');
-        this.codigoPostal.setValue(lugar.codigoPostal ?? '');
-      },
-      error: (e: unknown) => {
-        this.cargandoLugar.set(false);
-        this.mostrarError(e);
-      }
-    });
+    this.elegida.set(localidad);
+    this.idLocalidad.setValue(localidad.id);
   }
 
   // ── Guardar ────────────────────────────────────────────
@@ -175,7 +162,7 @@ export class FormDireccion {
   guardar(): void {
     this.intentoEnviar.set(true);
     this.errorServidor.set(null);
-    if (this.formulario.invalid || this.cargandoLugar()) {
+    if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       return;
     }
@@ -186,13 +173,11 @@ export class FormDireccion {
         nombreCalle: this.calle.value.trim(),
         numeroCalle: Number(this.numeroCalle.value),
         codigoPostal: this.codigoPostal.value.trim(),
-        placeId: this.placeId.value!,
-        sesion: this.sesion
+        idLocalidad: this.idLocalidad.value!
       })
       .subscribe({
         next: (direccion) => {
           this.guardando.set(false);
-          this.sesion = crypto.randomUUID();
           this.guardada.emit(direccion);
         },
         error: (e: unknown) => {
@@ -204,10 +189,10 @@ export class FormDireccion {
 
   // ── Internos ───────────────────────────────────────────
 
-  private olvidarLugar(): void {
-    if (this.lugar() !== null || this.placeId.value !== null) {
-      this.lugar.set(null);
-      this.placeId.setValue(null);
+  private olvidarLocalidad(): void {
+    if (this.elegida() !== null || this.idLocalidad.value !== null) {
+      this.elegida.set(null);
+      this.idLocalidad.setValue(null);
     }
   }
 

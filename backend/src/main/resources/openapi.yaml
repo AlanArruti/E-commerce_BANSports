@@ -1805,9 +1805,10 @@ components:
     DireccionRequest:
       type: object
       description: >
-        La ciudad y la provincia salen del placeId de Google Maps (las consulta el back
-        y las crea si no existen). Calle, altura y código postal vienen del formulario.
-      required: [nombreCalle, numeroCalle, codigoPostal, placeId]
+        La localidad se elige con GET /geo/localidades (Georef); el back obtiene de ahí
+        la ciudad y la provincia y las crea si no existen. Calle, altura y código postal
+        los escribe el cliente.
+      required: [nombreCalle, numeroCalle, codigoPostal, idLocalidad]
       properties:
         nombreCalle:
           type: string
@@ -1818,13 +1819,10 @@ components:
         codigoPostal:
           type: string
           example: "7600"
-        placeId:
+        idLocalidad:
           type: string
-          description: Id del lugar elegido en GET /geo/sugerencias.
-          example: ChIJ8X3X0eTcpJURlYJ0Z1oZ0lQ
-        sesion:
-          type: string
-          description: Id de la búsqueda (el mismo que se mandó a las sugerencias). Opcional.
+          description: Id de Georef (8 dígitos) de la localidad elegida.
+          example: "06357110"
 
     DireccionResponse:
       type: object

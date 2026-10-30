@@ -1,0 +1,41 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/admin/productos">Productos</a>
+    <span aria-hidden="true">/</span>
+    @if (producto(); as actual) {
+      <a [routerLink]="['/admin/productos', actual.id, 'editar']">{{ actual.nombre }}</a>
+      <span aria-hidden="true">/</span>
+    }
+    <span aria-current="page">Imagen</span>
+  </nav>
+
+  @if (cargando()) {
+    <div class="esqueleto" aria-busy="true"></div>
+  } @else if (noExiste()) {
+    <div class="vacio">
+      <h1 class="titulo-display titulo">Producto no encontrado</h1>
+      <p class="bajada">Puede que lo hayan dado de baja o que el enlace esté mal.</p>
+      <a routerLink="/admin" class="btn btn-secundario volver">Volver al panel</a>
+    </div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (producto(); as actual) {
+    <div class="encabezado">
+      <h1 class="titulo-display titulo">{{ actual.nombre }}</h1>
+      <p class="bajada">
+        {{ actual.categoria?.nombre ?? 'Sin categoría' }} · Cada producto tiene una imagen: si subís otra, reemplaza a la actual.
+      </p>
+    </div>
+
+    <app-cargador-imagen [productoId]="actual.id" [imagenUrl]="actual.imagenUrl" />
+  }
+</div>

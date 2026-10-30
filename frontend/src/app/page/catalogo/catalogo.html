@@ -1,0 +1,192 @@
+<div class="contenedor">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/">Inicio</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Catálogo</span>
+  </nav>
+
+  <div class="catalogo-encabezado">
+    <h1 class="titulo-display catalogo-titulo">{{ titulo() }}</h1>
+    <p class="catalogo-resultado" aria-live="polite">
+      @if (resultado(); as r) {
+        @if (r.total === 0) {
+          <strong>0</strong> productos
+        } @else {
+          Mostrando <strong>{{ r.desde }}–{{ r.hasta }}</strong> de <strong>{{ r.total }}</strong>
+          {{ r.total === 1 ? 'producto' : 'productos' }}
+        }
+      } @else if (estado().cargando) {
+        Buscando productos…
+      }
+    </p>
+  </div>
+
+  <div class="catalogo">
+    @if (filtrosAbiertos()) {
+      <div class="fondo-drawer" (click)="cerrarFiltros()"></div>
+    }
+
+    <aside class="filtros" [ngClass]="{ abierto: filtrosAbiertos() }" aria-label="Filtros" id="filtros">
+      <div class="filtros-titulo">
+        <h2>Filtros</h2>
+        @if (chips().length) {
+          <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">Limpiar todo</button>
+        }
+        <button type="button" class="btn-icono cerrar-drawer" aria-label="Cerrar filtros" (click)="cerrarFiltros()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <fieldset class="grupo">
+        <legend class="grupo-titulo">Categoría</legend>
+        <label class="opcion" [ngClass]="{ activa: filtros().categoriaId === null }">
+          <input type="radio" name="categoria" [checked]="filtros().categoriaId === null" (change)="seleccionarCategoria(null)" />
+          Todas
+        </label>
+        @for (categoria of categorias(); track categoria.id) {
+          <label class="opcion" [ngClass]="{ activa: filtros().categoriaId === categoria.id }">
+            <input type="radio" name="categoria" [checked]="filtros().categoriaId === categoria.id" (change)="seleccionarCategoria(categoria.id)" />
+            {{ categoria.nombre }}
+          </label>
+        }
+      </fieldset>
+
+      <fieldset class="grupo">
+        <legend class="grupo-titulo">Precio</legend>
+        <div class="rango">
+          <div class="prefijo">
+            <span aria-hidden="true">$</span>
+            <label for="precio-min" class="solo-lectores">Precio mínimo</label>
+            <input id="precio-min" class="input" inputmode="numeric" placeholder="Mínimo" [formControl]="precioMin"
+              [ngClass]="{ 'input-error': errorPrecio() }" [attr.aria-invalid]="errorPrecio() ? true : null" aria-describedby="precio-ayuda" />
+          </div>
+          <div class="prefijo">
+            <span aria-hidden="true">$</span>
+            <label for="precio-max" class="solo-lectores">Precio máximo</label>
+            <input id="precio-max" class="input" inputmode="numeric" placeholder="Máximo" [formControl]="precioMax"
+              [ngClass]="{ 'input-error': errorPrecio() }" [attr.aria-invalid]="errorPrecio() ? true : null" aria-describedby="precio-ayuda" />
+          </div>
+        </div>
+        @if (errorPrecio(); as mensaje) {
+          <p class="msj-error" id="precio-ayuda">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            {{ mensaje }}
+          </p>
+        } @else {
+          <p class="ayuda" id="precio-ayuda">Sin puntos. Se aplica al terminar de escribir.</p>
+        }
+      </fieldset>
+
+      <div class="pie-drawer">
+        <button type="button" class="btn btn-secundario" (click)="limpiarFiltros()">Limpiar</button>
+        <button type="button" class="btn btn-primario" (click)="cerrarFiltros()">
+          @if (resultado(); as r) {
+            Ver {{ r.total }} {{ r.total === 1 ? 'producto' : 'productos' }}
+          } @else {
+            Ver productos
+          }
+        </button>
+      </div>
+    </aside>
+
+    <section aria-label="Productos">
+      <div class="barra">
+        <button type="button" class="btn-filtros" aria-controls="filtros" [attr.aria-expanded]="filtrosAbiertos()" (click)="abrirFiltros()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Filtros
+          @if (chips().length) {
+            <span class="num">{{ chips().length }}</span>
+          }
+        </button>
+
+        @if (chips().length) {
+          <ul class="chips" aria-label="Filtros aplicados">
+            @for (chip of chips(); track chip.texto) {
+              <li>
+                <button type="button" class="chip" (click)="quitarChip(chip)" [attr.aria-label]="'Quitar filtro ' + chip.texto">
+                  {{ chip.texto }}
+                  <span class="chip-x" aria-hidden="true">×</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <label class="ordenar">
+          <span>Ordenar por</span>
+          <select class="select" (change)="ordenar($event)">
+            @for (opcion of ordenes; track opcion.valor) {
+              <option [value]="opcion.valor" [selected]="opcion.valor === filtros().orden">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      @if (estado().cargando) {
+        <div class="grilla-catalogo" aria-busy="true">
+          @for (esqueleto of esqueletos; track esqueleto) {
+            <div class="esqueleto">
+              <div class="esqueleto-imagen"></div>
+              <div class="esqueleto-info">
+                <span class="linea corta"></span>
+                <span class="linea"></span>
+                <span class="linea media"></span>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (estado().error; as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div class="alerta-cuerpo">
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+          <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+        </div>
+      } @else if (estado().pagina; as pagina) {
+        @if (pagina.content.length) {
+          <div class="grilla-catalogo">
+            @for (producto of pagina.content; track producto.id) {
+              <app-tarjeta-producto [producto]="producto" />
+            }
+          </div>
+
+          @if (paginas().length) {
+            <nav class="paginacion" aria-label="Páginas">
+              <button type="button" class="pag" aria-label="Página anterior" [disabled]="pagina.page === 0" (click)="irAPagina(pagina.page - 1)">‹</button>
+              @for (numero of paginas(); track numero) {
+                <button type="button" class="pag" [ngClass]="{ actual: numero === pagina.page }"
+                  [attr.aria-current]="numero === pagina.page ? 'page' : null" (click)="irAPagina(numero)">
+                  {{ numero + 1 }}
+                </button>
+              }
+              <button type="button" class="pag" aria-label="Página siguiente" [disabled]="pagina.page >= pagina.totalPages - 1" (click)="irAPagina(pagina.page + 1)">›</button>
+            </nav>
+          }
+        } @else {
+          <div class="vacio">
+            <div class="vacio-icono" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/></svg>
+            </div>
+            @if (chips().length) {
+              <h2>No encontramos productos</h2>
+              <p>
+                @if (filtros().search) {
+                  No hay resultados para <strong>“{{ filtros().search }}”</strong>{{ filtros().categoriaId !== null ? ' en ' + titulo() : '' }}.
+                } @else {
+                  No hay productos que cumplan con estos filtros.
+                }
+                Probá con otra palabra o sacá algún filtro.
+              </p>
+              <button type="button" class="btn btn-primario" (click)="limpiarFiltros()">Limpiar filtros</button>
+            } @else {
+              <h2>Todavía no hay productos</h2>
+              <p>Estamos cargando el catálogo. Volvé a visitarnos pronto.</p>
+            }
+          </div>
+        }
+      }
+    </section>
+  </div>
+</div>

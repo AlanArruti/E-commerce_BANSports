@@ -1,20 +1,6 @@
-export interface Pais {
-  idPais: number;
-  nombrePais: string;
-}
+import { Ciudad } from './geo';
 
-export interface Provincia {
-  idProvincia: number;
-  nombreProvincia: string;
-  pais: Pais;
-}
-
-export interface Ciudad {
-  idCiudad: number;
-  nombreCiudad: string;
-  provincia: Provincia;
-}
-
+// Dirección de entrega del cliente (DireccionResponse).
 export interface Direccion {
   id: number;
   uuidDireccion: string;
@@ -22,4 +8,9 @@ export interface Direccion {
   numeroCalle: number;
   codigoPostal: string;
   ciudad: Ciudad;
+}
+
+/** "Mar del Plata, Buenos Aires · CP 7600" */
+export function localidadDeDireccion(direccion: Direccion): string {
+  return `${direccion.ciudad.nombreCiudad}, ${direccion.ciudad.provincia.nombreProvincia} · CP ${direccion.codigoPostal}`;
 }

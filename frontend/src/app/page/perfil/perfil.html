@@ -1,0 +1,6 @@
+<section class="contenedor seccion">
+  <h1 class="titulo-display titulo">Mi <span class="acento">perfil</span></h1>
+  @if (authService.cliente(); as cliente) {
+    <p class="bajada">Hola, {{ cliente.nombre }} {{ cliente.apellido }} · {{ cliente.email }}</p>
+  }
+</section>

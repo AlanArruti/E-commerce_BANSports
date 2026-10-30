@@ -1,0 +1,205 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Productos</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Productos</h1>
+      <p class="cuenta" aria-live="polite">
+        @if (resultado(); as r) {
+          {{ r.total }} {{ r.total === 1 ? 'producto activo' : 'productos activos' }}{{ hayFiltros() ? ' con estos filtros' : '' }}
+        } @else if (estado().cargando) {
+          Buscando productos…
+        }
+      </p>
+    </div>
+    <a routerLink="/admin/productos/nuevo" class="btn btn-primario btn-nuevo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Nuevo producto
+    </a>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+
+  <!-- ── Filtros ────────────────────────────────────────── -->
+  <div class="filtros" role="search" aria-label="Filtrar productos">
+    <div class="filtro filtro-nombre">
+      <label for="filtro-nombre" class="solo-lectores">Buscar por nombre</label>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="filtro-nombre" type="search" placeholder="Buscar producto…" [formControl]="busqueda" />
+    </div>
+    <label class="solo-lectores" for="filtro-categoria">Categoría</label>
+    <select id="filtro-categoria" class="input filtro" [formControl]="categoria">
+      <option [ngValue]="null">Todas las categorías</option>
+      @for (opcion of categorias(); track opcion.id) {
+        <option [ngValue]="opcion.id">{{ opcion.nombre }}</option>
+      }
+    </select>
+    <div class="prefijo filtro">
+      <span aria-hidden="true">$</span>
+      <label for="filtro-min" class="solo-lectores">Precio mínimo</label>
+      <input id="filtro-min" class="input" inputmode="numeric" placeholder="Mínimo" [formControl]="precioMin" />
+    </div>
+    <div class="prefijo filtro">
+      <span aria-hidden="true">$</span>
+      <label for="filtro-max" class="solo-lectores">Precio máximo</label>
+      <input id="filtro-max" class="input" inputmode="numeric" placeholder="Máximo" [formControl]="precioMax" />
+    </div>
+    <label class="solo-lectores" for="filtro-orden">Ordenar por</label>
+    <select id="filtro-orden" class="input filtro" [formControl]="orden">
+      @for (opcion of ordenes; track opcion.valor) {
+        <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────── -->
+  @if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor" [attr.aria-busy]="estado().cargando">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="col-imagen"><span class="solo-lectores">Imagen</span></th>
+            <th scope="col">Producto</th>
+            <th scope="col">Categoría</th>
+            <th scope="col" class="col-precio">Precio base</th>
+            <th scope="col" class="col-stock">Stock</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (estado().cargando) {
+            @for (fila of [1, 2, 3, 4, 5]; track fila) {
+              <tr class="fila-esqueleto">
+                <td colspan="6"><span class="esqueleto"></span></td>
+              </tr>
+            }
+          } @else {
+            @for (producto of estado().pagina?.content ?? []; track producto.id) {
+              <tr>
+                <td class="col-imagen">
+                  <div class="miniatura">
+                    @if (producto.imagenUrl; as imagen) {
+                      <img [src]="imagen" alt="" loading="lazy" />
+                    } @else {
+                      <app-pote-producto class="mini-pote" [nombre]="abreviatura(producto)" />
+                    }
+                  </div>
+                </td>
+                <td>
+                  <a class="nombre" [routerLink]="['/admin/productos', producto.id, 'editar']">{{ producto.nombre }}</a>
+                  <span class="id">#{{ producto.id }}</span>
+                </td>
+                <td>
+                  @if (producto.categoria; as categoriaProducto) {
+                    {{ categoriaProducto.nombre }}
+                  } @else {
+                    <span class="sin-dato">Sin categoría</span>
+                  }
+                </td>
+                <td class="col-precio">{{ producto.precioBase | precio }}</td>
+                <td class="col-stock">
+                  @if (stockTotal(producto); as stock) {
+                    <span class="stock">
+                      <span class="punto-stock" [ngClass]="{ bajo: stock <= stockBajo }" aria-hidden="true"></span>
+                      {{ stock }} u.
+                    </span>
+                  } @else if (stockTotal(producto) === 0) {
+                    <span class="stock">
+                      <span class="punto-stock cero" aria-hidden="true"></span>
+                      Sin stock
+                    </span>
+                  } @else {
+                    <span class="sin-dato">Sin variantes</span>
+                  }
+                </td>
+                <td class="col-acciones">
+                  <a class="btn-accion" [routerLink]="['/admin/productos', producto.id, 'editar']" [attr.aria-label]="'Editar ' + producto.nombre" title="Editar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+                  </a>
+                  <a class="btn-accion" [routerLink]="['/admin/productos', producto.id, 'imagen']" [attr.aria-label]="'Imagen de ' + producto.nombre" title="Imagen">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
+                  </a>
+                  <!-- Variantes y stock llegan con SCRUM-116 y SCRUM-117. -->
+                  <button type="button" class="btn-accion" [attr.aria-label]="'Variantes y stock de ' + producto.nombre + ' (próximamente)'" title="Variantes y stock (próximamente)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                  </button>
+                  <button type="button" class="btn-accion borrar" [attr.aria-label]="'Dar de baja ' + producto.nombre" title="Dar de baja" (click)="pedirBaja(producto)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="sin-resultados">
+                  @if (hayFiltros()) {
+                    No hay productos con estos filtros.
+                    <button type="button" class="link" (click)="limpiarFiltros()">Limpiar filtros</button>
+                  } @else {
+                    Todavía no hay productos. Cargá el primero con "Nuevo producto".
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (resultado(); as r) {
+      <div class="pie-tabla">
+        <span class="rango">Mostrando {{ r.desde }}–{{ r.hasta }} de {{ r.total }}</span>
+        @if (paginas().length && estado().pagina; as pagina) {
+          <nav class="paginacion" aria-label="Páginas">
+            <button type="button" class="pag" aria-label="Página anterior" [disabled]="pagina.page === 0" (click)="irAPagina(pagina.page - 1)">‹</button>
+            @for (numero of paginas(); track numero) {
+              <button type="button" class="pag" [ngClass]="{ actual: numero === pagina.page }"
+                [attr.aria-current]="numero === pagina.page ? 'page' : null" (click)="irAPagina(numero)">{{ numero + 1 }}</button>
+            }
+            <button type="button" class="pag" aria-label="Página siguiente" [disabled]="pagina.page >= pagina.totalPages - 1" (click)="irAPagina(pagina.page + 1)">›</button>
+          </nav>
+        }
+      </div>
+    }
+  }
+</div>
+
+@if (productoBaja(); as producto) {
+  <div class="fondo-modal" (click)="cerrarBaja()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-baja">
+    @if (errorBaja(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div>
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+      </div>
+    }
+    <h2 class="titulo-display titulo-modal" id="titulo-baja">¿Dar de baja "{{ producto.nombre }}"?</h2>
+    <p class="texto-modal">Deja de verse en la tienda y en este listado. Los pedidos que ya lo incluyen no cambian.</p>
+    <div class="acciones-modal">
+      <button type="button" class="btn btn-secundario" [disabled]="dandoDeBaja()" (click)="cerrarBaja()">Cancelar</button>
+      <button type="button" class="btn btn-peligro" [disabled]="dandoDeBaja()" (click)="confirmarBaja()">
+        {{ dandoDeBaja() ? 'Dando de baja…' : 'Sí, dar de baja' }}
+      </button>
+    </div>
+  </div>
+}

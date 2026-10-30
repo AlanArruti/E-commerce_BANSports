@@ -9,7 +9,7 @@ import {
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Direccion } from '../../models/direccion';
-import { EstadoPedido, Pedido } from '../../models/pedido';
+import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { AuthService } from '../../services/auth.service';
 import { ClienteService } from '../../services/cliente.service';
 import {
@@ -67,14 +67,7 @@ export class PerfilModal {
   protected readonly contraseniaNueva: FormControl<string>;
   protected readonly repetirContrasenia: FormControl<string>;
 
-  private readonly etiquetasEstado: Record<EstadoPedido, string> = {
-    PENDIENTE_PAGO: 'Pendiente de pago',
-    PAGADO: 'Pagado',
-    EN_PREPARACION: 'En preparación',
-    DESPACHADO: 'Despachado',
-    ENTREGADO: 'Entregado',
-    CANCELADO: 'Cancelado'
-  };
+  private readonly etiquetasEstado = ETIQUETAS_ESTADO_PEDIDO;
 
   constructor(
     private authService: AuthService,

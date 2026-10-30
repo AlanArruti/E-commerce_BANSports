@@ -14,7 +14,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const esNuestraApi = req.url.startsWith(environment.apiUrl);
-  const esAuth = req.url.startsWith(`${environment.apiUrl}/auth/`);
+  // Login y registro van sin token. /auth/me sí lo necesita (con él se valida la sesión del admin).
+  const esAuth = ['/auth/login', '/auth/register'].some((ruta) =>
+    req.url.startsWith(`${environment.apiUrl}${ruta}`)
+  );
   // En el cambio de contraseña un 401 significa "contraseña actual incorrecta",
   // no que el token sea inválido: lo maneja el formulario del perfil.
   const esCambioPassword = /\/cliente\/\d+\/password$/.test(req.url);
@@ -42,8 +45,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         !esAuth &&
         !esPasswordIncorrecta
       ) {
+        // Se mira el rol antes de cerrar la sesión, para mandarlo al login que le corresponde.
+        const login = authService.esAdmin() ? '/admin/login' : '/login';
         authService.logout(true);
-        router.navigate(['/login'], { queryParams: { redirect: router.url } });
+        router.navigate([login], { queryParams: { redirect: router.url } });
       }
       return throwError(() => error);
     })

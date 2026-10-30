@@ -1,0 +1,219 @@
+:host {
+  display: block;
+}
+
+.producto {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.producto:hover {
+  border-color: var(--color-verde);
+}
+
+.producto-imagen {
+  position: relative;
+  height: 240px;
+  background: var(--color-superficie-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.producto-foto {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: var(--espacio-4);
+}
+
+.producto-etiqueta {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: var(--radio-chico);
+  text-transform: uppercase;
+}
+
+.etiqueta-gris {
+  background: var(--color-borde-input);
+  color: var(--color-texto);
+}
+
+.sin-stock .producto-foto,
+.sin-stock .producto-pote {
+  opacity: 0.35;
+}
+
+.producto-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: 20px;
+}
+
+.producto-categoria {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-verde);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.producto-nombre {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.producto-variante,
+.producto-stock {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.producto-variante {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.producto-stock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.punto-stock {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-verde);
+}
+
+.punto-stock.bajo {
+  background: var(--color-aviso);
+}
+
+.punto-stock.cero {
+  background: var(--color-error);
+}
+
+.producto-pie {
+  margin-top: auto;
+  padding-top: var(--espacio-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.producto-precio {
+  min-width: 0;
+  white-space: nowrap;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.btn-ver {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radio);
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-ver.apagado {
+  background: var(--color-superficie-2);
+  color: var(--color-texto-secundario);
+}
+
+/* Toda la tarjeta es clickeable: el link del nombre se estira encima. */
+.producto-link {
+  color: inherit;
+}
+
+.producto-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.producto-link:focus-visible {
+  outline: none;
+}
+
+.producto:has(.producto-link:focus-visible) {
+  border-color: var(--color-verde);
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+
+/* Mobile: grilla de 2 columnas, todo más compacto */
+@media (max-width: 900px) {
+  .producto-imagen {
+    height: 170px;
+    padding-top: 28px;
+  }
+
+  .producto-etiqueta {
+    top: 10px;
+    left: 10px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .producto-pote {
+    transform: scale(0.75);
+  }
+
+  .producto-info {
+    padding: 14px;
+  }
+
+  .producto-nombre {
+    font-size: 15px;
+  }
+
+  .producto-variante,
+  .producto-stock {
+    font-size: 12px;
+  }
+
+  .producto-precio {
+    font-size: 21px;
+  }
+
+  .producto-pie {
+    gap: var(--espacio-2);
+  }
+
+  .btn-ver {
+    width: 40px;
+    height: 40px;
+  }
+}

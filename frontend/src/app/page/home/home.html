@@ -8,10 +8,10 @@
         Proteínas, creatinas y pre-entrenos originales para entrenar más fuerte y recuperarte mejor. Envíos a todo el país.
       </p>
       <div class="hero-botones">
-        <button type="button" class="btn btn-primario">
+        <a routerLink="/productos" class="btn btn-primario">
           Ver productos
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
+        </a>
         <button type="button" class="btn btn-secundario">Crear cuenta</button>
       </div>
     </div>
@@ -62,7 +62,7 @@
 <section class="contenedor seccion seccion-categorias">
   <div class="seccion-encabezado">
     <h2 class="titulo-display titulo-seccion">Elegí tu <span class="acento">objetivo</span></h2>
-    <button type="button" class="link-seccion">Ver todas las categorías →</button>
+    <a routerLink="/productos" class="link-seccion">Ver todas las categorías →</a>
   </div>
   <div class="grilla-tarjetas">
     @for (categoria of categorias; track categoria.numero) {
@@ -81,7 +81,7 @@
 <section class="contenedor seccion">
   <div class="seccion-encabezado">
     <h2 class="titulo-display titulo-seccion">Más vendidos</h2>
-    <button type="button" class="link-seccion">Ver todos →</button>
+    <a routerLink="/productos" class="link-seccion">Ver todos →</a>
   </div>
   <div class="grilla-tarjetas productos">
     @for (producto of productos; track producto.nombre) {

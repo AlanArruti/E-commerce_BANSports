@@ -27,6 +27,7 @@
   --color-error: #ff7a6b;          /* borde e ícono de error */
   --color-error-texto: #ffb3a9;    /* texto del mensaje de error */
   --color-error-fondo: #2a1512;    /* fondo de alertas de error */
+  --color-aviso: #f5c04a;          /* avisos: poco stock */
 
   /* Tipografías */
   --fuente-titulos: 'Barlow Condensed', 'Arial Narrow', sans-serif;

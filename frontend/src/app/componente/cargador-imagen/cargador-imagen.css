@@ -1,0 +1,212 @@
+.cargador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-5);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.subtitulo {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Cuadrado, como las tarjetas del catálogo, para ver la foto tal cual va a aparecer. */
+.marco {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-superficie-2);
+  border-radius: var(--radio);
+}
+
+.foto {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sin-imagen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-2);
+  color: var(--color-texto-secundario);
+  font-size: 14px;
+  text-align: center;
+  padding: var(--espacio-4);
+}
+
+.btn-eliminar {
+  gap: var(--espacio-2);
+  min-height: 48px;
+  font-size: 14px;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}
+
+/* ── Zona para arrastrar o elegir ───────────────────────── */
+.zona {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-5);
+  border: 2px dashed var(--color-borde-input);
+  border-radius: var(--radio);
+  color: var(--color-texto-secundario);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.zona:hover,
+.zona.arrastrando {
+  border-color: var(--color-verde);
+  background: rgba(43, 227, 122, 0.06);
+  color: var(--color-texto);
+}
+
+.zona.con-error {
+  border-color: var(--color-error);
+}
+
+/* El input está oculto: el foco del teclado se muestra en la zona. */
+input[type='file']:focus-visible + .zona {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 3px;
+}
+
+.zona-titulo {
+  max-width: 260px;
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+.zona-ayuda {
+  font-size: 13px;
+}
+
+.datos-archivo {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.nombre-archivo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-texto);
+}
+
+.acciones {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.acciones .btn {
+  flex: 1;
+  min-height: 48px;
+  font-size: 14px;
+}
+
+/* ── Confirmación (mismo estilo que la de categorías) ───── */
+.fondo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(6, 8, 7, 0.78);
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 51;
+  width: min(460px, calc(100% - 2 * var(--espacio-4)));
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.titulo-modal {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.texto-modal {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+.acciones-modal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--espacio-3);
+}
+
+.acciones-modal .btn {
+  min-height: 48px;
+  padding: 0 var(--espacio-5);
+  font-size: 14px;
+}
+
+.btn-peligro {
+  background: var(--color-error-fondo);
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: var(--color-error);
+  color: var(--color-texto-sobre-verde);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zona {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .grilla {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-modal .btn {
+    flex: 1;
+  }
+}

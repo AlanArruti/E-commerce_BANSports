@@ -38,6 +38,8 @@ export class Login implements OnInit {
   protected readonly errorServidor = signal<ErrorTraducido | null>(null);
   protected readonly aviso = signal<string | null>(null);
   protected readonly cuentaCreada = signal(false);
+  /** Llegó desde "Agregar al carrito" sin sesión: al entrar vuelve al producto. */
+  protected readonly paraCarrito = signal(false);
 
   constructor(
     private authService: AuthService,
@@ -62,6 +64,8 @@ export class Login implements OnInit {
 
     // Si viene del registro y no se pudo entrar automáticamente.
     this.cuentaCreada.set(this.route.snapshot.queryParamMap.has('cuentaCreada'));
+
+    this.paraCarrito.set(this.route.snapshot.queryParamMap.get('motivo') === 'carrito');
   }
 
   /** Mensaje de error del campo, solo si el usuario ya lo tocó o intentó enviar. */

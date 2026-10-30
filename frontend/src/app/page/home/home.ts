@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { PoteProducto } from '../../componente/pote-producto/pote-producto';
 import { CategoriaDestacada } from '../../models/categoria-destacada';
 import { ProductoDestacado } from '../../models/producto-destacado';
@@ -12,7 +13,7 @@ interface Beneficio {
 
 @Component({
   selector: 'app-home',
-  imports: [NgClass, PoteProducto],
+  imports: [NgClass, RouterLink, PoteProducto],
   templateUrl: './home.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.css'

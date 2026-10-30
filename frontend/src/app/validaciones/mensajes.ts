@@ -63,8 +63,54 @@ export const MENSAJES: Record<string, Mensajes> = {
     requerido: () => 'Ingresá el email con el que te registraste.',
     emailValido: () => MSJ_EMAIL_FORMATO
   },
+  loginUsuario: {
+    requerido: () => 'Ingresá tu usuario de administrador.'
+  },
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
+  },
+  categoriaNombre: {
+    requerido: () => 'Ingresá el nombre de la categoría.',
+    maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`,
+    repetido: (_d, valor) => `Ya existe una categoría llamada "${valor.trim()}".`
+  },
+  productoNombre: {
+    requerido: () => 'Ingresá el nombre del producto.',
+    maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  productoCategoria: {
+    required: () => 'Elegí la categoría del producto.'
+  },
+  precioBase: {
+    requerido: () => 'Ingresá el precio base.',
+    precioFormato: () => 'El precio solo puede tener números, puntos para los miles y coma para los centavos (por ejemplo 42.999,99).',
+    precioCero: () => 'El precio tiene que ser mayor a $ 0.'
+  },
+  productoDescripcion: {
+    requerido: () => 'Ingresá una descripción: es lo que lee el cliente en el detalle del producto.',
+    maxlength: (d) => `La descripción puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  pais: {
+    required: () => 'Elegí el país.'
+  },
+  provincia: {
+    required: () => 'Elegí la provincia.'
+  },
+  ciudad: {
+    required: () => 'Elegí la ciudad.'
+  },
+  calle: {
+    requerido: () => 'Ingresá la calle.',
+    maxlength: (d) => `La calle puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  numeroCalle: {
+    requerido: () => 'Ingresá la altura de la calle.',
+    soloNumeros: () => 'La altura solo puede tener números, sin espacios ni letras (por ejemplo 1234).',
+    min: () => 'La altura tiene que ser mayor a 0.'
+  },
+  codigoPostal: {
+    requerido: () => 'Ingresá el código postal.',
+    maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   }
 };
 
@@ -86,3 +132,5 @@ export function mensajeDeError(control: AbstractControl | null, campo: string): 
   }
   return null;
 }
+
+export const MSJ_PRECIO_RANGO = 'El precio mínimo no puede ser mayor que el máximo.';

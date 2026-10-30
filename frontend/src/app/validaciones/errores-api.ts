@@ -139,6 +139,53 @@ export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
+export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+
+  const disponible = /Disponible:\s*(\d+)/.exec(mensaje)?.[1];
+  if (error.status === 400 && disponible !== undefined) {
+    return {
+      titulo: 'No hay stock suficiente',
+      detalle: `De uno de los productos quedan ${disponible} unidades. Ajustá el carrito y volvé a confirmar.`
+    };
+  }
+  if (error.status === 409) {
+    return {
+      titulo: 'Tu carrito está vacío',
+      detalle: 'Agregá productos antes de confirmar el pedido.'
+    };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return {
+      titulo: 'No pudimos usar esa dirección',
+      detalle: 'Puede que la hayan borrado. Actualizá la página y elegí otra.'
+    };
+  }
+  return {
+    titulo: 'No pudimos confirmar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorDireccion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá los datos de la dirección', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar la dirección',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

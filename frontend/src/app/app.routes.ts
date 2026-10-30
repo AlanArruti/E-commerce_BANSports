@@ -27,6 +27,13 @@ export const routes: Routes = [
     title: 'Carrito | BAN Sports'
   },
 
+  {
+    path: 'checkout',
+    loadComponent: () => import('./page/checkout/checkout').then((m) => m.Checkout),
+    canActivate: [rolGuard('CLIENTE')],
+    title: 'Confirmar pedido | BAN Sports'
+  },
+
   { path: 'login', component: Login, canActivate: [guestGuard], title: 'Iniciar sesión | BAN Sports' },
   { path: 'registro', component: Registro, canActivate: [guestGuard], title: 'Crear cuenta | BAN Sports' },
 

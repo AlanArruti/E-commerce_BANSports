@@ -143,11 +143,10 @@
           <span>Total</span>
           <strong>{{ carritoService.carrito()?.total | precio }}</strong>
         </div>
-        <!-- El checkout (dirección, envío y pago) llega con su propia historia. -->
-        <button type="button" class="btn btn-primario btn-bloque" title="Próximamente">
+        <a routerLink="/checkout" class="btn btn-primario btn-bloque">
           Continuar compra
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
+        </a>
         <p class="resumen-nota centrada">Pagás con Mercado Pago en el siguiente paso.</p>
       </aside>
     </div>

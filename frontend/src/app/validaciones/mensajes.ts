@@ -50,6 +50,28 @@ export const MENSAJES: Record<string, Mensajes> = {
   },
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
+  },
+  pais: {
+    required: () => 'Elegí el país.'
+  },
+  provincia: {
+    required: () => 'Elegí la provincia.'
+  },
+  ciudad: {
+    required: () => 'Elegí la ciudad.'
+  },
+  calle: {
+    requerido: () => 'Ingresá la calle.',
+    maxlength: (d) => `La calle puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  numeroCalle: {
+    requerido: () => 'Ingresá la altura de la calle.',
+    soloNumeros: () => 'La altura solo puede tener números, sin espacios ni letras (por ejemplo 1234).',
+    min: () => 'La altura tiene que ser mayor a 0.'
+  },
+  codigoPostal: {
+    requerido: () => 'Ingresá el código postal.',
+    maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   }
 };
 

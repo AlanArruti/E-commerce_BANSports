@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Carrito } from '../models/carrito';
 import { ItemCarritoRequest } from '../models/item-carrito-request';
+import { Pedido } from '../models/pedido';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -63,6 +64,16 @@ export class CarritoService {
     return this.http.delete<void>(this.url()).pipe(
       tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito)))
     );
+  }
+
+  /**
+   * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock
+   * y que la dirección sea del cliente, y vacía el carrito.
+   */
+  checkout(idDireccion: number): Observable<Pedido> {
+    return this.http
+      .post<Pedido>(`${this.url()}/checkout`, { idDireccion })
+      .pipe(tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito))));
   }
 
   /** Cuántas unidades de esa variante ya hay en el carrito (para no ofrecer más que el stock). */

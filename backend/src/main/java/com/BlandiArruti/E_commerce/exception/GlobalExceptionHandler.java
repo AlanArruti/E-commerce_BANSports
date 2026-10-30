@@ -75,6 +75,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ServicioExternoException.class)
+    public ResponseEntity<ErrorResponse> handleServicioExterno(
+            ServicioExternoException ex, HttpServletRequest request) {
+        // La causa (respuesta de Google, timeout) queda en el log; al cliente le llega solo el mensaje.
+        log.warn("Servicio externo no disponible en {}: {}", request.getRequestURI(), ex.getMessage(), ex.getCause());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(DemasiadosIntentosException.class)
     public ResponseEntity<ErrorResponse> handleDemasiadosIntentos(
             DemasiadosIntentosException ex, HttpServletRequest request) {

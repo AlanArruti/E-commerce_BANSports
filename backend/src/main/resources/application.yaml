@@ -81,6 +81,12 @@ correo-argentino:
   customer-id: ${CORREO_ARGENTINO_CUSTOMER_ID:}
   codigo-postal-origen: "1425"
 
+# Búsqueda de direcciones (Places API "New"). Sin key, /api/v1/geo responde 503.
+google-maps:
+  base-url: ${GOOGLE_MAPS_BASE_URL:https://places.googleapis.com/v1}
+  api-key: ${GOOGLE_MAPS_API_KEY:}
+  region: AR
+
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
 

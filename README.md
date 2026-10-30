@@ -177,7 +177,33 @@ La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
   un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
   siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
 - **Catálogo:** categorías y productos se cargan desde el panel de administración.
-- **Provincias y ciudades:** van a venir de una API externa de geo (pendiente).
+- **Provincias y ciudades:** no se precargan. Las direcciones se buscan con Google
+  Maps y, al guardar una, el back crea la provincia y la ciudad si todavía no existen.
+
+### Google Maps (búsqueda de direcciones)
+
+El formulario de dirección usa el autocompletado de **Places API (New)**. La key
+vive solo en el back: el front le pide las sugerencias a `/api/v1/geo/...` y el
+back llama a Google.
+
+1. En [Google Cloud Console](https://console.cloud.google.com/), creá un proyecto
+   y activá la facturación (Google pide una tarjeta; el uso de prueba entra en el
+   crédito gratis mensual).
+2. En *APIs y servicios → Biblioteca*, habilitá **Places API (New)**.
+3. En *APIs y servicios → Credenciales*, creá una **clave de API** y restringila:
+   *Restricciones de API* → solo **Places API (New)**.
+4. Agregala al `.env` de la raíz y reiniciá el back:
+
+   ```env
+   GOOGLE_MAPS_API_KEY=tu-clave
+   ```
+
+   ```bash
+   docker compose up -d app
+   ```
+
+Sin key, la búsqueda de direcciones responde 503 y el formulario avisa que no
+está configurada; el resto de la app funciona igual.
 
 ### Servicios opcionales
 

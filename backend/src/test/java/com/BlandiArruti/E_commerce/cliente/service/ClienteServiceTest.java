@@ -14,7 +14,7 @@ import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
 import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
-import com.BlandiArruti.E_commerce.geo.repository.CiudadRepository;
+import com.BlandiArruti.E_commerce.geo.service.LugarService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.mapper.PedidoMapper;
 import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
@@ -42,7 +42,7 @@ class ClienteServiceTest {
 
     @Mock ClienteRepository clienteRepository;
     @Mock DireccionRepository direccionRepository;
-    @Mock CiudadRepository ciudadRepository;
+    @Mock LugarService lugarService;
     @Mock PedidoRepository pedidoRepository;
     @Mock ClienteMapper clienteMapper;
     @Mock DireccionMapper direccionMapper;

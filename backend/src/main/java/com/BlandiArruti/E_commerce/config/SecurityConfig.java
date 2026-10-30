@@ -109,6 +109,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/pedido/**").hasAnyRole("ADMIN", "CLIENTE")
                 .requestMatchers("/api/v1/cliente/**").hasAnyRole("ADMIN", "CLIENTE")
                 .requestMatchers("/api/v1/cotizacion/**").hasAnyRole("ADMIN", "CLIENTE")
+                // Cada búsqueda le cuesta a la cuenta de Google: no es pública.
+                .requestMatchers("/api/v1/geo/**").hasAnyRole("ADMIN", "CLIENTE")
 
                 .anyRequest().authenticated()
             )

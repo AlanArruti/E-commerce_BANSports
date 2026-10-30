@@ -1,7 +1,10 @@
-// Cuerpo de POST /cliente/{id}/direccion (DireccionRequest). Todos los campos son obligatorios.
+// Cuerpo de POST /cliente/{id}/direccion (DireccionRequest).
+// La ciudad y la provincia las saca el back del placeId de Google Maps.
 export interface DireccionRequest {
   nombreCalle: string;
   numeroCalle: number;
   codigoPostal: string;
-  idCiudad: number;
+  placeId: string;
+  /** Id de la búsqueda (el mismo de las sugerencias). */
+  sesion: string;
 }

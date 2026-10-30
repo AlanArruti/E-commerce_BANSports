@@ -181,6 +181,19 @@ export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido 
 }
 
 export function traducirErrorDireccion(error: HttpErrorResponse): ErrorTraducido {
+  // 503: Google Maps no está configurado o no respondió. El back explica cuál de las dos.
+  if (error.status === 503) {
+    return {
+      titulo: 'La búsqueda de direcciones no está disponible',
+      detalle: mensajeDelBack(error) || 'Intentá de nuevo en unos minutos.'
+    };
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'No encontramos esa dirección',
+      detalle: mensajeDelBack(error) || 'Buscala de nuevo y elegila de la lista.'
+    };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;

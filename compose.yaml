@@ -105,6 +105,10 @@ services:
       CORREO_ARGENTINO_USER_TOKEN: ${CORREO_ARGENTINO_USER_TOKEN:-}
       CORREO_ARGENTINO_PASSWORD_TOKEN: ${CORREO_ARGENTINO_PASSWORD_TOKEN:-}
       CORREO_ARGENTINO_CUSTOMER_ID: ${CORREO_ARGENTINO_CUSTOMER_ID:-}
+      # Búsqueda de direcciones. La URL lleva default acá porque, si llegara
+      # vacía, Spring usaría "" en vez del default del application.yaml.
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_MAPS_BASE_URL: ${GOOGLE_MAPS_BASE_URL:-https://places.googleapis.com/v1}
 
       TZ: America/Argentina/Buenos_Aires
     healthcheck:

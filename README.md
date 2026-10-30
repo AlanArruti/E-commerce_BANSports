@@ -84,7 +84,7 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── carrito/              ← Carrito de compras
 ├── categoria/            ← Categorías de productos
 ├── cliente/              ← Clientes, direcciones
-├── config/               ← DataLoader, SecurityConfig
+├── config/               ← SecurityConfig
 ├── cotizacion/           ← Cotización de envío (Correo Argentino)
 ├── envio/                ← Gestión de envíos
 ├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock
@@ -170,8 +170,17 @@ la app); después arranca en segundos.
 | ngrok | http://localhost:4040 | Túnel público para el webhook de MP (profile `mp`) |
 | **Frontend** | http://localhost:4200 | Angular, servido por nginx (profile `front`) |
 
-La base arranca con datos de prueba: usuario **`admin` / `admin123`**, 17
-productos, categorías, clientes y pedidos.
+La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
+
+- **Clientes:** se crean desde "Registrarse" en el front (o `POST /api/v1/auth/register`).
+- **Administradores:** no tienen registro público. El primero se crea a mano con
+  un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
+  siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
+- **Catálogo:** categorías y productos se cargan desde el panel de administración.
+- **Provincias y ciudades:** no se precargan. El formulario de dirección busca la
+  localidad en [Georef](https://www.argentina.gob.ar/datos-abiertos/georef), la API
+  de datos geográficos del Estado argentino (gratis, sin key ni registro), y al
+  guardar el back crea la provincia y la ciudad si todavía no existen.
 
 ### Servicios opcionales
 

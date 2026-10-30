@@ -1,19 +1,25 @@
-import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { Direccion } from '../../models/direccion';
-import { Ciudad, Pais, Provincia } from '../../models/geo';
+import { Localidad } from '../../models/geo';
 import { DireccionService } from '../../services/direccion.service';
 import { GeoService } from '../../services/geo.service';
 import { ErrorTraducido, traducirErrorDireccion } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
 import { requerido, soloNumeros } from '../../validaciones/validadores';
 
+/** Caracteres mínimos para buscar localidades (el back tampoco busca con menos). */
+const MINIMO_BUSQUEDA = 3;
+
 /**
- * Formulario "Agregar dirección" con selects encadenados país → provincia → ciudad.
- * Guarda en el back y avisa con (guardada). Se usa en el checkout y en "Mis direcciones".
+ * Formulario "Agregar dirección".
+ * El cliente busca su localidad (Georef) y la elige de la lista; calle, altura y CP los escribe.
+ * La ciudad y la provincia las resuelve el back con el id de la localidad.
+ * Se usa en el checkout y en "Mis direcciones".
  */
 @Component({
   selector: 'app-form-direccion',
@@ -22,33 +28,35 @@ import { requerido, soloNumeros } from '../../validaciones/validadores';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './form-direccion.css'
 })
-export class FormDireccion implements OnInit {
+export class FormDireccion {
   /** Muestra "Cancelar" (no tiene sentido si el cliente todavía no tiene ninguna dirección). */
   readonly puedeCancelar = input(true);
   readonly guardada = output<Direccion>();
   readonly cancelar = output<void>();
 
-  pais = new FormControl<number | null>(null, { validators: [Validators.required] });
-  provincia = new FormControl<number | null>({ value: null, disabled: true }, { validators: [Validators.required] });
-  ciudad = new FormControl<number | null>({ value: null, disabled: true }, { validators: [Validators.required] });
+  /** Lo que escribe el cliente en el buscador (no se manda al back al guardar). */
+  busqueda = new FormControl('', { nonNullable: true });
+  /** Id de la localidad elegida: sin él no se puede guardar. */
+  idLocalidad = new FormControl<string | null>(null, { validators: [Validators.required] });
   // Mismas reglas que DireccionRequest en el back.
   calle = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(100)] });
   numeroCalle = new FormControl('', { nonNullable: true, validators: [requerido, soloNumeros, Validators.min(1)] });
   codigoPostal = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(8)] });
 
   formulario = new FormGroup({
-    pais: this.pais,
-    provincia: this.provincia,
-    ciudad: this.ciudad,
+    idLocalidad: this.idLocalidad,
     calle: this.calle,
     numeroCalle: this.numeroCalle,
     codigoPostal: this.codigoPostal
   });
 
-  protected readonly paises = signal<Pais[]>([]);
-  protected readonly provincias = signal<Provincia[]>([]);
-  protected readonly ciudades = signal<Ciudad[]>([]);
-  protected readonly cargandoLista = signal<'provincias' | 'ciudades' | null>(null);
+  protected readonly sugerencias = signal<Localidad[]>([]);
+  protected readonly listaAbierta = signal(false);
+  protected readonly activa = signal(-1);
+  protected readonly buscando = signal(false);
+  protected readonly sinResultados = signal(false);
+  protected readonly elegida = signal<Localidad | null>(null);
+
   protected readonly guardando = signal(false);
   protected readonly intentoEnviar = signal(false);
   protected readonly errorServidor = signal<ErrorTraducido | null>(null);
@@ -57,36 +65,40 @@ export class FormDireccion implements OnInit {
     private geoService: GeoService,
     private direccionService: DireccionService
   ) {
-    // Al cambiar de país se resetean provincia y ciudad; al cambiar de provincia, la ciudad.
-    this.pais.valueChanges.pipe(takeUntilDestroyed()).subscribe((idPais) => {
-      this.reiniciar(this.provincia);
-      this.reiniciar(this.ciudad);
-      this.provincias.set([]);
-      this.ciudades.set([]);
-      if (idPais !== null) {
-        this.cargarProvincias(idPais);
-      }
-    });
-    this.provincia.valueChanges.pipe(takeUntilDestroyed()).subscribe((idProvincia) => {
-      this.reiniciar(this.ciudad);
-      this.ciudades.set([]);
-      if (idProvincia !== null) {
-        this.cargarCiudades(idProvincia);
-      }
-    });
-  }
-
-  ngOnInit(): void {
-    this.geoService.paises().subscribe({
-      next: (paises) => {
-        this.paises.set(paises);
-        // Hoy solo se envía dentro de Argentina: si hay un único país, ya queda elegido.
-        if (paises.length === 1) {
-          this.pais.setValue(paises[0].idPais);
+    this.busqueda.valueChanges
+      .pipe(
+        // Escribir de nuevo invalida la localidad elegida: hay que volver a elegir de la lista.
+        tap(() => this.olvidarLocalidad()),
+        map((texto) => texto.trim()),
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((texto) => {
+          if (texto.length < MINIMO_BUSQUEDA) {
+            this.buscando.set(false);
+            return of<Localidad[] | null>([]);
+          }
+          this.buscando.set(true);
+          return this.geoService.localidades(texto).pipe(
+            catchError((e: unknown) => {
+              this.mostrarError(e);
+              return of(null);
+            })
+          );
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((resultado) => {
+        this.buscando.set(false);
+        if (resultado === null) {
+          this.cerrarLista();
+          return;
         }
-      },
-      error: (e: unknown) => this.mostrarError(e)
-    });
+        this.errorServidor.set(null);
+        this.sugerencias.set(resultado);
+        this.activa.set(resultado.length ? 0 : -1);
+        this.sinResultados.set(this.busqueda.value.trim().length >= MINIMO_BUSQUEDA && !resultado.length);
+        this.listaAbierta.set(resultado.length > 0 || this.sinResultados());
+      });
   }
 
   /** Mensaje de error del campo, solo si el usuario ya lo tocó o intentó guardar. */
@@ -97,11 +109,60 @@ export class FormDireccion implements OnInit {
     return mensajeDeError(control, campo);
   }
 
+  /** "General Pueyrredón, Buenos Aires" (el departamento se omite si se llama igual que la localidad). */
+  protected detalle(localidad: Localidad): string {
+    const partes = [localidad.departamento, localidad.provincia]
+      .filter((p): p is string => !!p && p !== localidad.nombre);
+    return partes.join(', ') || localidad.provincia;
+  }
+
+  // ── Buscador (combobox) ────────────────────────────────
+
+  alTeclear(evento: KeyboardEvent): void {
+    const total = this.sugerencias().length;
+    if (evento.key === 'ArrowDown' && total) {
+      evento.preventDefault();
+      this.listaAbierta.set(true);
+      this.activa.update((i) => (i + 1) % total);
+    } else if (evento.key === 'ArrowUp' && total) {
+      evento.preventDefault();
+      this.listaAbierta.set(true);
+      this.activa.update((i) => (i <= 0 ? total - 1 : i - 1));
+    } else if (evento.key === 'Enter' && this.listaAbierta() && this.activa() >= 0) {
+      // Enter elige la sugerencia marcada en vez de enviar el formulario.
+      evento.preventDefault();
+      this.elegir(this.sugerencias()[this.activa()]);
+    } else if (evento.key === 'Escape' && this.listaAbierta()) {
+      evento.preventDefault();
+      this.cerrarLista();
+    }
+  }
+
+  /** Se usa mousedown (no click) para que corra antes del blur del input. */
+  alApretarSugerencia(evento: MouseEvent, localidad: Localidad): void {
+    evento.preventDefault();
+    this.elegir(localidad);
+  }
+
+  alSalirDelBuscador(): void {
+    this.cerrarLista();
+    this.idLocalidad.markAsTouched();
+  }
+
+  elegir(localidad: Localidad): void {
+    this.cerrarLista();
+    this.busqueda.setValue(localidad.nombre, { emitEvent: false });
+    this.errorServidor.set(null);
+    this.elegida.set(localidad);
+    this.idLocalidad.setValue(localidad.id);
+  }
+
+  // ── Guardar ────────────────────────────────────────────
+
   guardar(): void {
     this.intentoEnviar.set(true);
     this.errorServidor.set(null);
-    // Un select deshabilitado (todavía cargando) no cuenta como inválido: por eso se revisa la ciudad aparte.
-    if (this.formulario.invalid || this.ciudad.value === null) {
+    if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       return;
     }
@@ -112,7 +173,7 @@ export class FormDireccion implements OnInit {
         nombreCalle: this.calle.value.trim(),
         numeroCalle: Number(this.numeroCalle.value),
         codigoPostal: this.codigoPostal.value.trim(),
-        idCiudad: this.ciudad.value!
+        idLocalidad: this.idLocalidad.value!
       })
       .subscribe({
         next: (direccion) => {
@@ -126,40 +187,18 @@ export class FormDireccion implements OnInit {
       });
   }
 
-  private cargarProvincias(idPais: number): void {
-    this.cargandoLista.set('provincias');
-    this.geoService.provincias(idPais).subscribe({
-      next: (provincias) => {
-        this.cargandoLista.set(null);
-        this.provincias.set(provincias);
-        this.provincia.enable({ emitEvent: false });
-      },
-      error: (e: unknown) => {
-        this.cargandoLista.set(null);
-        this.mostrarError(e);
-      }
-    });
+  // ── Internos ───────────────────────────────────────────
+
+  private olvidarLocalidad(): void {
+    if (this.elegida() !== null || this.idLocalidad.value !== null) {
+      this.elegida.set(null);
+      this.idLocalidad.setValue(null);
+    }
   }
 
-  private cargarCiudades(idProvincia: number): void {
-    this.cargandoLista.set('ciudades');
-    this.geoService.ciudades(idProvincia).subscribe({
-      next: (ciudades) => {
-        this.cargandoLista.set(null);
-        this.ciudades.set(ciudades);
-        this.ciudad.enable({ emitEvent: false });
-      },
-      error: (e: unknown) => {
-        this.cargandoLista.set(null);
-        this.mostrarError(e);
-      }
-    });
-  }
-
-  /** Vacía y deshabilita un select dependiente hasta que se cargue su lista. */
-  private reiniciar(control: FormControl<number | null>): void {
-    control.reset(null, { emitEvent: false });
-    control.disable({ emitEvent: false });
+  private cerrarLista(): void {
+    this.listaAbierta.set(false);
+    this.activa.set(-1);
   }
 
   private mostrarError(e: unknown): void {

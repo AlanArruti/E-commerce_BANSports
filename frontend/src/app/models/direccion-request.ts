@@ -1,7 +1,9 @@
-// Cuerpo de POST /cliente/{id}/direccion (DireccionRequest). Todos los campos son obligatorios.
+// Cuerpo de POST /cliente/{id}/direccion (DireccionRequest).
+// La ciudad y la provincia las saca el back de la localidad elegida (Georef).
 export interface DireccionRequest {
   nombreCalle: string;
   numeroCalle: number;
   codigoPostal: string;
-  idCiudad: number;
+  /** Id de Georef de la localidad elegida en el buscador. */
+  idLocalidad: string;
 }

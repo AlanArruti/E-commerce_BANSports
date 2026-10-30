@@ -10,22 +10,102 @@
   align-items: start;
 }
 
-/* Las tres listas bajan a otra fila cuando no entran (el formulario vive en paneles de distinto ancho). */
-.fila-tres {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-}
-
 .fila-calle {
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
-select.input {
+/* ── Buscador de direcciones ────────────────────────────── */
+.input-buscador {
+  position: relative;
+}
+
+.input-buscador .input {
+  width: 100%;
+  padding-left: 42px;
+  padding-right: 42px;
+}
+
+.icono-buscar {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-texto-secundario);
+  pointer-events: none;
+}
+
+.indicador {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  border: 2px solid var(--color-borde-input);
+  border-top-color: var(--color-verde);
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sugerencias {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: var(--espacio-1);
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.sugerencia {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border-radius: var(--radio-chico);
   cursor: pointer;
 }
 
-select.input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.sugerencia.activa {
+  background: var(--color-superficie-2);
+}
+
+.sugerencia-principal {
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+.sugerencia-secundaria {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.sin-resultados {
+  padding: var(--espacio-3);
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.ayuda {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
 }
 
 .acciones {
@@ -40,8 +120,13 @@ select.input:disabled {
   font-size: 14px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .indicador {
+    animation: none;
+  }
+}
+
 @media (max-width: 700px) {
-  .fila-tres,
   .fila-calle {
     grid-template-columns: minmax(0, 1fr);
   }

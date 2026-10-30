@@ -81,6 +81,10 @@ correo-argentino:
   customer-id: ${CORREO_ARGENTINO_CUSTOMER_ID:}
   codigo-postal-origen: "1425"
 
+# Localidades para las direcciones (API del Estado argentino, gratis y sin key).
+georef:
+  base-url: https://apis.datos.gob.ar/georef/api
+
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
 

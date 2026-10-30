@@ -237,6 +237,19 @@ export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido 
 }
 
 export function traducirErrorDireccion(error: HttpErrorResponse): ErrorTraducido {
+  // 503: Georef (la API de localidades) no respondió.
+  if (error.status === 503) {
+    return {
+      titulo: 'La búsqueda de localidades no está disponible',
+      detalle: mensajeDelBack(error) || 'Intentá de nuevo en unos minutos.'
+    };
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'No encontramos esa localidad',
+      detalle: mensajeDelBack(error) || 'Buscala de nuevo y elegila de la lista.'
+    };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;

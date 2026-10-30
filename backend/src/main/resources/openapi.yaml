@@ -1835,7 +1835,11 @@ components:
 
     DireccionRequest:
       type: object
-      required: [nombreCalle, numeroCalle, codigoPostal, idCiudad]
+      description: >
+        La localidad se elige con GET /geo/localidades (Georef); el back obtiene de ahí
+        la ciudad y la provincia y las crea si no existen. Calle, altura y código postal
+        los escribe el cliente.
+      required: [nombreCalle, numeroCalle, codigoPostal, idLocalidad]
       properties:
         nombreCalle:
           type: string
@@ -1846,9 +1850,10 @@ components:
         codigoPostal:
           type: string
           example: "7600"
-        idCiudad:
-          type: integer
-          format: int64
+        idLocalidad:
+          type: string
+          description: Id de Georef (8 dígitos) de la localidad elegida.
+          example: "06357110"
 
     DireccionResponse:
       type: object

@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface CiudadRepository extends JpaRepository<Ciudad, Long> {
     Optional<Ciudad> findByNombre(String nombre);
+
+    Optional<Ciudad> findByNombreIgnoreCaseAndProvinciaId(String nombre, Long provinciaId);
 }

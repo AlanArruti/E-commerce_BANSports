@@ -66,6 +66,12 @@
         @if (producto.categoria; as categoria) {
           <span class="detalle-categoria">{{ categoria.nombre }}</span>
         }
+        @if (authService.esAdmin()) {
+          <a class="link-editar" [routerLink]="['/admin/productos', producto.id, 'editar']">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+            Editar producto
+          </a>
+        }
         <h1 class="titulo-display detalle-nombre">{{ producto.nombre }}</h1>
         <span class="detalle-precio">{{ producto.precioBase | precio }}</span>
         @if (producto.descripcion) {

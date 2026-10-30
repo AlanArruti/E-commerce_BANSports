@@ -14,3 +14,36 @@
   margin: 0;
   color: var(--color-texto-secundario);
 }
+
+.accesos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--espacio-4);
+  margin-top: var(--espacio-5);
+}
+
+.acceso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.acceso:hover {
+  border-color: var(--color-verde);
+}
+
+.acceso-titulo {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 28px;
+  text-transform: uppercase;
+}
+
+.acceso-detalle {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}

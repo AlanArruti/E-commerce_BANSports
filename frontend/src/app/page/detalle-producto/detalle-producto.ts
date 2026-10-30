@@ -97,7 +97,7 @@ export class DetalleProducto {
   constructor(
     private productoService: ProductoService,
     private carritoService: CarritoService,
-    private authService: AuthService,
+    protected authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
     private title: Title

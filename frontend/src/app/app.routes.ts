@@ -56,7 +56,30 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [rolGuard('ADMIN')],
-    children: [{ path: '', component: AdminInicio, title: 'Panel | BAN Sports' }]
+    children: [
+      { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
+      {
+        path: 'categorias',
+        loadComponent: () => import('./page/admin-categorias/admin-categorias').then((m) => m.AdminCategorias),
+        title: 'Categorías | Panel BAN Sports'
+      },
+      {
+        path: 'productos',
+        loadComponent: () => import('./page/admin-productos/admin-productos').then((m) => m.AdminProductos),
+        title: 'Productos | Panel BAN Sports'
+      },
+      {
+        path: 'productos/nuevo',
+        loadComponent: () => import('./page/admin-producto/admin-producto').then((m) => m.AdminProducto),
+        title: 'Nuevo producto | Panel BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el nombre del producto.
+        path: 'productos/:id/editar',
+        loadComponent: () => import('./page/admin-producto/admin-producto').then((m) => m.AdminProducto),
+        title: 'Editar producto | Panel BAN Sports'
+      }
+    ]
   },
 
   { path: '**', redirectTo: '' }

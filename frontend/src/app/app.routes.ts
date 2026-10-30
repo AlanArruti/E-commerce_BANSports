@@ -56,7 +56,16 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [rolGuard('ADMIN')],
-    children: [{ path: '', component: AdminInicio, title: 'Panel | BAN Sports' }]
+    children: [
+      { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
+      {
+        // El título final lo pone la página con el nombre del producto.
+        path: 'productos/:id/imagen',
+        loadComponent: () =>
+          import('./page/admin-imagen-producto/admin-imagen-producto').then((m) => m.AdminImagenProducto),
+        title: 'Imagen del producto | Panel BAN Sports'
+      }
+    ]
   },
 
   { path: '**', redirectTo: '' }

@@ -1,0 +1,97 @@
+<form class="form-direccion" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+  @if (errorServidor(); as errorActual) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div>
+        <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+        <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+      </div>
+    </div>
+  }
+
+  <div class="fila fila-tres">
+    <div class="campo">
+      <label for="dir-pais">País</label>
+      <select id="dir-pais" class="input" formControlName="pais"
+        [ngClass]="{ 'input-error': error(pais, 'pais') }" [attr.aria-invalid]="error(pais, 'pais') ? true : null" aria-describedby="dir-pais-error">
+        <option [ngValue]="null" disabled>Elegí el país</option>
+        @for (opcion of paises(); track opcion.idPais) {
+          <option [ngValue]="opcion.idPais">{{ opcion.nombrePais }}</option>
+        }
+      </select>
+      @if (error(pais, 'pais'); as mensaje) {
+        <p class="msj-error" id="dir-pais-error">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="dir-provincia">Provincia</label>
+      <select id="dir-provincia" class="input" formControlName="provincia"
+        [ngClass]="{ 'input-error': error(provincia, 'provincia') }" [attr.aria-invalid]="error(provincia, 'provincia') ? true : null" aria-describedby="dir-provincia-error">
+        <option [ngValue]="null" disabled>
+          {{ cargandoLista() === 'provincias' ? 'Cargando…' : pais.value === null ? 'Elegí primero el país' : 'Elegí la provincia' }}
+        </option>
+        @for (opcion of provincias(); track opcion.idProvincia) {
+          <option [ngValue]="opcion.idProvincia">{{ opcion.nombreProvincia }}</option>
+        }
+      </select>
+      @if (error(provincia, 'provincia'); as mensaje) {
+        <p class="msj-error" id="dir-provincia-error">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="dir-ciudad">Ciudad</label>
+      <select id="dir-ciudad" class="input" formControlName="ciudad"
+        [ngClass]="{ 'input-error': error(ciudad, 'ciudad') }" [attr.aria-invalid]="error(ciudad, 'ciudad') ? true : null" aria-describedby="dir-ciudad-error">
+        <option [ngValue]="null" disabled>
+          {{ cargandoLista() === 'ciudades' ? 'Cargando…' : provincia.value === null ? 'Elegí primero la provincia' : 'Elegí la ciudad' }}
+        </option>
+        @for (opcion of ciudades(); track opcion.idCiudad) {
+          <option [ngValue]="opcion.idCiudad">{{ opcion.nombreCiudad }}</option>
+        }
+      </select>
+      @if (error(ciudad, 'ciudad'); as mensaje) {
+        <p class="msj-error" id="dir-ciudad-error">{{ mensaje }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="fila fila-calle">
+    <div class="campo">
+      <label for="dir-calle">Calle</label>
+      <input id="dir-calle" class="input" formControlName="calle" autocomplete="address-line1" placeholder="Av. Colón"
+        [ngClass]="{ 'input-error': error(calle, 'calle') }" [attr.aria-invalid]="error(calle, 'calle') ? true : null" aria-describedby="dir-calle-error" />
+      @if (error(calle, 'calle'); as mensaje) {
+        <p class="msj-error" id="dir-calle-error">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="dir-numero">Altura</label>
+      <input id="dir-numero" class="input" formControlName="numeroCalle" inputmode="numeric" placeholder="1234"
+        [ngClass]="{ 'input-error': error(numeroCalle, 'numeroCalle') }" [attr.aria-invalid]="error(numeroCalle, 'numeroCalle') ? true : null" aria-describedby="dir-numero-error" />
+      @if (error(numeroCalle, 'numeroCalle'); as mensaje) {
+        <p class="msj-error" id="dir-numero-error">{{ mensaje }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="dir-cp">Código postal</label>
+      <input id="dir-cp" class="input" formControlName="codigoPostal" autocomplete="postal-code" placeholder="7600"
+        [ngClass]="{ 'input-error': error(codigoPostal, 'codigoPostal') }" [attr.aria-invalid]="error(codigoPostal, 'codigoPostal') ? true : null" aria-describedby="dir-cp-error" />
+      @if (error(codigoPostal, 'codigoPostal'); as mensaje) {
+        <p class="msj-error" id="dir-cp-error">{{ mensaje }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+      {{ guardando() ? 'Guardando…' : 'Guardar dirección' }}
+    </button>
+    @if (puedeCancelar()) {
+      <button type="button" class="btn btn-secundario" [disabled]="guardando()" (click)="cancelar.emit()">Cancelar</button>
+    }
+  </div>
+</form>

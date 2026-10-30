@@ -1,0 +1,48 @@
+.form-direccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.fila {
+  display: grid;
+  gap: var(--espacio-3);
+  align-items: start;
+}
+
+/* Las tres listas bajan a otra fila cuando no entran (el formulario vive en paneles de distinto ancho). */
+.fila-tres {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.fila-calle {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+select.input {
+  cursor: pointer;
+}
+
+select.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+}
+
+.acciones .btn {
+  min-height: 48px;
+  padding: 0 var(--espacio-5);
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .fila-tres,
+  .fila-calle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

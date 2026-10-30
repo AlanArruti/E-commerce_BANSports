@@ -186,6 +186,8 @@
 }
 
 .link-seccion {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
   border: none;
   background: transparent;

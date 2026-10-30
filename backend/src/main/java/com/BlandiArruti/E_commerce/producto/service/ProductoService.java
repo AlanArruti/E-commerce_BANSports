@@ -28,8 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -115,11 +117,33 @@ public class ProductoService implements IProductoService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax, String search, Pageable pageable) {
-        String searchParam = (search != null && !search.isBlank()) ? search.trim() : "";
+        String searchParam = normalizarBusqueda(search);
         return PageResponse.from(
                 productoRepository.buscarConFiltros(categoriaId, precioMin, precioMax, searchParam, pageable)
                         .map(productoMapper::toResponse)
         );
+    }
+
+    // Mismo criterio que ProductoRepository.SIN_TILDES_INICIO: minúsculas y sin tildes (la ñ queda).
+    // Además cada palabra pasa a singular sacándole la "s" final: como la búsqueda es por
+    // "contiene", "proteina" encuentra tanto "Proteína Vegana" como la categoría "Proteínas".
+    private static String normalizarBusqueda(String search) {
+        if (search == null || search.isBlank()) {
+            return "";
+        }
+        String sinTildes = search.trim().toLowerCase()
+                .replace('á', 'a').replace('é', 'e').replace('í', 'i')
+                .replace('ó', 'o').replace('ú', 'u').replace('ü', 'u');
+        return Arrays.stream(sinTildes.split("\\s+"))
+                .map(ProductoService::singular)
+                .collect(Collectors.joining(" "));
+    }
+
+    // Las palabras cortas quedan como están ("gas", "mas"): ahí la "s" no suele ser plural.
+    private static String singular(String palabra) {
+        return palabra.length() > 3 && palabra.endsWith("s")
+                ? palabra.substring(0, palabra.length() - 1)
+                : palabra;
     }
 
     @Transactional(readOnly = true)

@@ -34,6 +34,16 @@
           </div>
         }
 
+        @if (paraCarrito()) {
+          <div class="alerta-ok" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+            <div>
+              <div class="alerta-ok-titulo">Iniciá sesión para agregar productos al carrito</div>
+              <div class="alerta-error-texto">Cuando entres, volvés al producto que estabas viendo.</div>
+            </div>
+          </div>
+        }
+
         @if (aviso()) {
           <div class="alerta-error" role="status">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>

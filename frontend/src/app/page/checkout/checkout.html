@@ -1,0 +1,178 @@
+<div class="contenedor checkout-pagina">
+  @if (pedido(); as pedidoConfirmado) {
+    <!-- ── Pedido confirmado ─────────────────────────────── -->
+    <section class="confirmado" aria-labelledby="titulo-confirmado">
+      <div class="confirmado-icono" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>
+      </div>
+      <h1 class="titulo-display confirmado-titulo" id="titulo-confirmado">¡Pedido confirmado!</h1>
+      <p class="confirmado-numero">
+        Pedido <strong>#{{ pedidoConfirmado.id }}</strong> · {{ pedidoConfirmado.fechaCreacion | date: 'dd/MM/yyyy' }}
+      </p>
+      <span class="estado" [ngClass]="'estado-' + pedidoConfirmado.estado.toLowerCase()">
+        {{ etiquetasEstado[pedidoConfirmado.estado] }}
+      </span>
+
+      <div class="confirmado-datos">
+        @if (direccionDelPedido(); as direccion) {
+          <div class="tarjeta">
+            <span class="tarjeta-titulo">Envío a</span>
+            <span class="tarjeta-principal">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</span>
+            <span class="tarjeta-secundaria">{{ localidad(direccion) }}</span>
+          </div>
+        }
+        <div class="tarjeta">
+          <span class="tarjeta-titulo">Total</span>
+          <span class="tarjeta-total">{{ pedidoConfirmado.total | precio }}</span>
+          <span class="tarjeta-secundaria">{{ unidadesDelPedido() }} {{ unidadesDelPedido() === 1 ? 'producto' : 'productos' }}</span>
+        </div>
+      </div>
+
+      <div class="confirmado-acciones">
+        <!-- El pago (SCRUM-122) y "Mis pedidos" (SCRUM-121) llegan con sus historias. -->
+        <button type="button" class="btn btn-primario" title="Próximamente">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+          Pagar con Mercado Pago
+        </button>
+        <button type="button" class="btn btn-secundario" title="Próximamente">Ver mis pedidos</button>
+      </div>
+      <p class="confirmado-nota">El stock se reserva cuando se confirma el pago.</p>
+      <a routerLink="/productos" class="link">Seguir comprando</a>
+    </section>
+  } @else {
+    <nav class="migas" aria-label="Ubicación">
+      <a routerLink="/">Inicio</a>
+      <span aria-hidden="true">/</span>
+      <a routerLink="/carrito">Carrito</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Confirmar pedido</span>
+    </nav>
+    <h1 class="titulo-display checkout-titulo">Confirmar pedido</h1>
+
+    @if (cargando()) {
+      <div class="checkout" aria-busy="true">
+        <div class="esqueleto esqueleto-direcciones"></div>
+        <div class="esqueleto esqueleto-resumen"></div>
+      </div>
+    } @else if (errorCarga(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+        <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (!items().length) {
+      <div class="vacio">
+        <h2>Tu carrito está vacío</h2>
+        <p>Agregá productos para poder confirmar un pedido.</p>
+        <a routerLink="/productos" class="btn btn-primario">Ver el catálogo</a>
+      </div>
+    } @else {
+      @if (errorConfirmar(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div class="alerta-cuerpo">
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+          <a routerLink="/carrito" class="btn-texto">Volver al carrito</a>
+        </div>
+      }
+
+      <div class="checkout">
+        <!-- ── 1. Dirección ─────────────────────────────── -->
+        <section class="panel" aria-labelledby="titulo-direccion">
+          <h2 class="paso" id="titulo-direccion"><span class="paso-numero" aria-hidden="true">1</span> Dirección de entrega</h2>
+
+          @if (direcciones().length) {
+            <div class="direcciones" role="radiogroup" aria-labelledby="titulo-direccion">
+              @for (direccion of direcciones(); track direccion.id) {
+                <label class="direccion" [ngClass]="{ elegida: direccion.id === idDireccionElegida() }">
+                  <input
+                    type="radio"
+                    name="direccion"
+                    [checked]="direccion.id === idDireccionElegida()"
+                    (change)="elegirDireccion(direccion.id)"
+                  />
+                  <span class="direccion-texto">
+                    <span class="direccion-calle">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</span>
+                    <span class="direccion-localidad">{{ localidad(direccion) }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          } @else {
+            <div class="sin-direcciones">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <div>
+                <strong>Todavía no tenés direcciones</strong>
+                <span>Cargá una para que sepamos a dónde enviar tu pedido.</span>
+              </div>
+            </div>
+          }
+
+          @if (agregandoDireccion()) {
+            <div class="nueva-direccion">
+              @if (direcciones().length) {
+                <h3 class="nueva-titulo">Nueva dirección</h3>
+              }
+              <app-form-direccion
+                [puedeCancelar]="direcciones().length > 0"
+                (guardada)="direccionGuardada($event)"
+                (cancelar)="agregandoDireccion.set(false)"
+              />
+            </div>
+          } @else {
+            <button type="button" class="btn-agregar" (click)="agregandoDireccion.set(true)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Agregar otra dirección
+            </button>
+          }
+        </section>
+
+        <!-- ── 2. Resumen ───────────────────────────────── -->
+        <aside class="panel resumen" aria-labelledby="titulo-resumen">
+          <h2 class="paso" id="titulo-resumen"><span class="paso-numero" aria-hidden="true">2</span> Tu pedido</h2>
+          <ul class="resumen-items">
+            @for (item of items(); track item.idItemCarrito) {
+              <li>
+                <span class="resumen-producto">
+                  {{ item.cantidad }} × {{ item.producto.nombre }}
+                  @if (descripcionVariante(item)) {
+                    <span class="resumen-variante">{{ descripcionVariante(item) }}</span>
+                  }
+                </span>
+                <span>{{ item.subtotal | precio }}</span>
+              </li>
+            }
+          </ul>
+          <a routerLink="/carrito" class="link link-chico">Editar carrito</a>
+          <div class="resumen-total">
+            <span>Total</span>
+            <strong>{{ carritoService.carrito()?.total | precio }}</strong>
+          </div>
+          @if (direccionElegida(); as direccion) {
+            <p class="resumen-envio">Se envía a <strong>{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</strong></p>
+          }
+          <button
+            type="button"
+            class="btn btn-primario btn-bloque"
+            [disabled]="!direccionElegida() || confirmando()"
+            (click)="confirmar()"
+          >
+            {{ confirmando() ? 'Confirmando…' : 'Confirmar pedido' }}
+            @if (!confirmando()) {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            }
+          </button>
+          @if (!direccionElegida()) {
+            <p class="resumen-falta">Cargá una dirección para poder confirmar.</p>
+          }
+          <p class="resumen-nota">El pedido queda pendiente de pago. Pagás con Mercado Pago en el siguiente paso.</p>
+        </aside>
+      </div>
+    }
+  }
+</div>

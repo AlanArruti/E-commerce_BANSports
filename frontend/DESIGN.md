@@ -29,6 +29,7 @@ Todas las variables están en `src/styles/variables.css`. Usalas siempre en luga
 | `--color-error` | `#ff7a6b` | Borde e ícono de error |
 | `--color-error-texto` | `#ffb3a9` | Texto de los mensajes de error |
 | `--color-error-fondo` | `#2a1512` | Fondo de las alertas de error |
+| `--color-aviso` | `#f5c04a` | Avisos (por ejemplo, poco stock) |
 
 ## Tipografías
 

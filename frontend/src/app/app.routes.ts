@@ -11,6 +11,33 @@ import { rolGuard } from './guards/rol.guard';
 export const routes: Routes = [
   // ── Públicas ───────────────────────────────────────────
   { path: '', component: Home, title: 'BAN Sports | Suplementos deportivos' },
+
+  // Catálogo, detalle y carrito se cargan recién al entrar, para que la primera carga sea liviana.
+  {
+    path: 'productos',
+    loadComponent: () => import('./page/catalogo/catalogo').then((m) => m.Catalogo),
+    title: 'Catálogo | BAN Sports'
+  },
+  {
+    // El título final lo pone la página con el nombre del producto.
+    path: 'productos/:id',
+    loadComponent: () => import('./page/detalle-producto/detalle-producto').then((m) => m.DetalleProducto),
+    title: 'Producto | BAN Sports'
+  },
+  {
+    path: 'carrito',
+    loadComponent: () => import('./page/carrito/carrito').then((m) => m.Carrito),
+    canActivate: [rolGuard('CLIENTE')],
+    title: 'Carrito | BAN Sports'
+  },
+
+  {
+    path: 'checkout',
+    loadComponent: () => import('./page/checkout/checkout').then((m) => m.Checkout),
+    canActivate: [rolGuard('CLIENTE')],
+    title: 'Confirmar pedido | BAN Sports'
+  },
+
   { path: 'login', component: Login, canActivate: [guestGuard], title: 'Iniciar sesión | BAN Sports' },
   { path: 'registro', component: Registro, canActivate: [guestGuard], title: 'Crear cuenta | BAN Sports' },
   // Va antes de 'admin' para que no la tape el guard del panel.

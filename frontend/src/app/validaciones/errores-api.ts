@@ -15,6 +15,11 @@ export const MSJ_SOLO_CLIENTES: ErrorTraducido = {
   detalle: 'Los administradores ingresan desde su propio panel.'
 };
 
+export const MSJ_SOLO_ADMINS: ErrorTraducido = {
+  titulo: 'Este acceso es solo para administradores',
+  detalle: 'Si sos cliente, ingresá desde la tienda.'
+};
+
 export const MSJ_SESION_INVALIDA = 'Tu sesión expiró o no es válida. Iniciá sesión de nuevo.';
 
 function mensajeDelBack(error: HttpErrorResponse): string {
@@ -39,7 +44,11 @@ function errorGeneral(error: HttpErrorResponse): ErrorTraducido | null {
   return null;
 }
 
-export function traducirErrorLogin(error: HttpErrorResponse): ErrorTraducido {
+/** @param credencial cómo se llama el dato de ingreso en ese login (email para clientes, usuario para admins). */
+export function traducirErrorLogin(
+  error: HttpErrorResponse,
+  credencial: 'email' | 'usuario' = 'email'
+): ErrorTraducido {
   const general = errorGeneral(error);
   if (general) {
     return general;
@@ -60,7 +69,7 @@ export function traducirErrorLogin(error: HttpErrorResponse): ErrorTraducido {
   }
   if (error.status === 401 || error.status === 404) {
     return {
-      titulo: 'El email o la contraseña son incorrectos',
+      titulo: `El ${credencial} o la contraseña son incorrectos`,
       detalle: 'Revisalos y probá de nuevo. Después de 5 intentos fallidos se bloquea el ingreso por 15 minutos.'
     };
   }

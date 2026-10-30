@@ -28,16 +28,24 @@
 
     <div class="acciones">
       @if (authService.estaLogueado()) {
-        <span class="saludo">
+        <a
+          [routerLink]="authService.esAdmin() ? '/admin' : '/perfil'"
+          class="link-ingresar"
+          [attr.aria-label]="authService.esAdmin() ? 'Ir al panel de administración' : 'Ir a mi perfil'"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          Hola, {{ nombreUsuario() }}
-        </span>
-        <button type="button" class="btn-texto" (click)="cerrarSesion()">Cerrar sesión</button>
+          <span>Hola, {{ nombreUsuario() }}</span>
+        </a>
+        <button type="button" class="btn-texto btn-salir" aria-label="Cerrar sesión" (click)="cerrarSesion()">
+          <svg class="icono-salir" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Cerrar sesión</span>
+        </button>
       } @else {
         <a routerLink="/login" class="link-ingresar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
           <span>Ingresar</span>
         </a>
+        <a routerLink="/registro" class="btn-texto link-registro">Registrarse</a>
       }
       <button type="button" class="btn-icono carrito" aria-label="Carrito, 0 productos">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>

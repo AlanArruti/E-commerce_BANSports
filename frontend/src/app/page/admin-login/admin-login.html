@@ -1,0 +1,106 @@
+<div class="pantalla-auth">
+  <app-panel-auth variante="oscuro">
+    <h1 class="titulo-display panel-titulo">Panel de<br /><span class="acento cursiva">gestión</span></h1>
+    <p class="panel-bajada">Catálogo, categorías, stock y pedidos de BAN Sports.</p>
+  </app-panel-auth>
+
+  <div class="auth-lado-formulario">
+    <a routerLink="/" class="auth-volver">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver a la tienda
+    </a>
+
+    <div class="auth-centro">
+      <div class="auth-caja">
+        <div class="auth-encabezado">
+          <h2 class="titulo-display auth-titulo">Acceso administradores</h2>
+          <p class="auth-bajada">Ingresá con tu usuario y contraseña de administrador.</p>
+        </div>
+
+        @if (aviso()) {
+          <div class="alerta-error" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">Se cerró tu sesión</div>
+              <div class="alerta-error-texto">{{ aviso() }}</div>
+            </div>
+          </div>
+        }
+
+        @if (errorServidor(); as errorActual) {
+          <div class="alerta-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+              <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+            </div>
+          </div>
+        }
+
+        <form class="auth-formulario" [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" novalidate>
+          <div class="campo">
+            <label for="usuario">Usuario</label>
+            <input
+              id="usuario"
+              type="text"
+              class="input"
+              formControlName="usuario"
+              autocomplete="username"
+              placeholder="Tu usuario"
+              [ngClass]="{ 'input-error': error(usuario, 'loginUsuario') }"
+              [attr.aria-invalid]="error(usuario, 'loginUsuario') ? true : null"
+              aria-describedby="usuario-error"
+            />
+            @if (error(usuario, 'loginUsuario'); as mensaje) {
+              <p class="msj-error" id="usuario-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+          </div>
+
+          <div class="campo">
+            <label for="contrasenia">Contraseña</label>
+            <div class="input-con-boton">
+              <input
+                id="contrasenia"
+                class="input"
+                formControlName="contrasenia"
+                autocomplete="current-password"
+                placeholder="Tu contraseña"
+                [type]="mostrarContrasenia() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(contrasenia, 'loginContrasenia') }"
+                [attr.aria-invalid]="error(contrasenia, 'loginContrasenia') ? true : null"
+                aria-describedby="contrasenia-error"
+              />
+              <button
+                type="button"
+                class="btn-ojo"
+                (click)="alternarContrasenia()"
+                [attr.aria-label]="mostrarContrasenia() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                @if (mostrarContrasenia()) {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                } @else {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (error(contrasenia, 'loginContrasenia'); as mensaje) {
+              <p class="msj-error" id="contrasenia-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                {{ mensaje }}
+              </p>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+            {{ cargando() ? 'Ingresando…' : 'Ingresar al panel' }}
+          </button>
+        </form>
+
+        <p class="auth-pie">¿Sos cliente? <a routerLink="/login" class="link">Ingresá desde la tienda</a></p>
+      </div>
+    </div>
+  </div>
+</div>

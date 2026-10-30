@@ -76,8 +76,7 @@
   gap: var(--espacio-2);
 }
 
-.link-ingresar,
-.saludo {
+.link-ingresar {
   display: inline-flex;
   align-items: center;
   gap: var(--espacio-2);
@@ -102,6 +101,20 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.link-registro {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.btn-salir {
+  white-space: nowrap;
+}
+
+.icono-salir {
+  display: none;
 }
 
 .btn-texto:hover {
@@ -186,14 +199,27 @@
     grid-area: acciones;
   }
 
+  /* En celular queda solo el ícono de usuario; registrarse sigue a un toque desde el login. */
   .link-ingresar span,
-  .saludo {
+  .link-registro {
     display: none;
   }
 
-  .btn-texto {
-    font-size: 13px;
-    padding: 0 var(--espacio-2);
+  /* "Cerrar sesión" pasa a ser un ícono para que el carrito entre en la fila. */
+  .btn-salir {
+    width: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-salir span {
+    display: none;
+  }
+
+  .icono-salir {
+    display: block;
   }
 
   .buscador {

@@ -1,0 +1,12 @@
+.panel-titulo {
+  font-size: clamp(56px, 6vw, 80px);
+}
+
+.cursiva {
+  font-style: italic;
+}
+
+.panel-bajada {
+  margin: 0;
+  color: var(--color-texto-suave);
+}

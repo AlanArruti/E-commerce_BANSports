@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import { FiltrosCatalogo, ORDENES } from '../models/filtros-catalogo';
 import { Pagina } from '../models/pagina';
 import { Producto } from '../models/producto';
+import { ProductoRequest } from '../models/producto-request';
 import { Variante } from '../models/variante';
 
 @Injectable({
@@ -51,6 +52,16 @@ export class ProductoService {
   /** Un producto por id (GET /producto/{id}). Si no existe o está dado de baja, el back responde 404. */
   obtener(id: number): Observable<Producto> {
     return this.http.get<Producto>(`${this.API_URL}/producto/${id}`);
+  }
+
+  /** Solo ADMIN. El producto nace sin variantes ni imagen. */
+  crear(producto: ProductoRequest): Observable<Producto> {
+    return this.http.post<Producto>(`${this.API_URL}/producto`, producto);
+  }
+
+  /** Solo ADMIN. Reemplaza nombre, descripción, precio y categoría. */
+  actualizar(id: number, producto: ProductoRequest): Observable<Producto> {
+    return this.http.put<Producto>(`${this.API_URL}/producto/${id}`, producto);
   }
 
   /** Variantes activas del producto (GET /producto/{id}/variante). */

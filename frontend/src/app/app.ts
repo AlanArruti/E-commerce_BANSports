@@ -6,7 +6,7 @@ import { Header } from './componente/header/header';
 import { Footer } from './componente/footer/footer';
 
 // Rutas que se muestran a pantalla completa, sin header ni footer.
-const RUTAS_SIN_LAYOUT = ['/login', '/registro'];
+const RUTAS_SIN_LAYOUT = ['/login', '/registro', '/admin/login'];
 
 @Component({
   selector: 'app-root',

@@ -48,6 +48,9 @@ export const MENSAJES: Record<string, Mensajes> = {
     requerido: () => 'Ingresá el email con el que te registraste.',
     emailValido: () => MSJ_EMAIL_FORMATO
   },
+  loginUsuario: {
+    requerido: () => 'Ingresá tu usuario de administrador.'
+  },
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
   }

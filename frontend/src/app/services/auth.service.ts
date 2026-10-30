@@ -6,13 +6,22 @@ import { Cliente } from '../models/cliente';
 import { JwtPayload } from '../models/jwt-payload';
 import { LoginRequest } from '../models/login-request';
 import { RegistroRequest } from '../models/registro-request';
+import { Rol } from '../models/rol';
 import { TokenResponse } from '../models/token-response';
+import { UsuarioActual } from '../models/usuario-actual';
 import { MSJ_SESION_INVALIDA } from '../validaciones/errores-api';
 
 /** Error que se lanza cuando alguien que no es cliente usa el login de clientes. */
 export class SoloClientesError extends Error {
   constructor() {
     super('SOLO_CLIENTES');
+  }
+}
+
+/** Error que se lanza cuando alguien que no es admin usa el login del panel. */
+export class SoloAdminsError extends Error {
+  constructor() {
+    super('SOLO_ADMINS');
   }
 }
 
@@ -30,6 +39,7 @@ export class AuthService {
   readonly usuario = computed<JwtPayload | null>(() => this.decodificar(this.token()));
   readonly estaLogueado = computed(() => this.usuario() !== null);
   readonly esCliente = computed(() => this.usuario()?.rol === 'CLIENTE');
+  readonly esAdmin = computed(() => this.usuario()?.rol === 'ADMIN');
 
   /** Datos del cliente que confirmó el back. Se usan en el header. */
   readonly cliente = signal<Cliente | null>(null);
@@ -51,17 +61,17 @@ export class AuthService {
   /**
    * @param recordar true: el token queda guardado al cerrar el navegador (localStorage).
    *                 false: se borra al cerrar la pestaña (sessionStorage).
+   * @param rolEsperado cada login acepta un solo rol: /login es de clientes y /admin/login de admins.
    */
-  login(credenciales: LoginRequest, recordar = true): Observable<TokenResponse> {
+  login(credenciales: LoginRequest, recordar = true, rolEsperado: Rol = 'CLIENTE'): Observable<TokenResponse> {
     return this.http.post<TokenResponse>(`${this.API_URL}/auth/login`, credenciales).pipe(
       tap((respuesta) => {
-        // Por ahora esta app es solo para clientes; el admin tendrá su propio acceso.
-        if (respuesta.rol !== 'CLIENTE' || this.decodificar(respuesta.token)?.rol !== 'CLIENTE') {
-          throw new SoloClientesError();
+        if (respuesta.rol !== rolEsperado || this.decodificar(respuesta.token)?.rol !== rolEsperado) {
+          throw rolEsperado === 'CLIENTE' ? new SoloClientesError() : new SoloAdminsError();
         }
         this.guardarSesion(respuesta.token, recordar);
       }),
-      // Confirma el token con el back y trae el nombre del cliente para el header.
+      // Confirma el token con el back (y, si es cliente, trae su nombre para el header).
       switchMap((respuesta) => this.validarSesion().pipe(map(() => respuesta)))
     );
   }
@@ -113,18 +123,28 @@ export class AuthService {
       return of(true);
     }
 
-    if (payload.rol !== 'CLIENTE') {
-      // Esta app todavía no maneja sesiones de admin.
-      this.logout(true);
-      return of(false);
-    }
+    // El cliente se confirma con su ficha (que además trae el nombre para el header);
+    // el admin, con /auth/me, que devuelve quién es el dueño del token.
+    const confirmacion: Observable<void> =
+      payload.rol === 'CLIENTE'
+        ? this.http.get<Cliente>(`${this.API_URL}/cliente/${payload.id}`).pipe(
+            map((cliente) => {
+              if (cliente.email !== payload.sub) {
+                throw new Error('El token no corresponde al cliente.');
+              }
+              this.cliente.set(cliente);
+            })
+          )
+        : this.http.get<UsuarioActual>(`${this.API_URL}/auth/me`).pipe(
+            map((actual) => {
+              if (actual.id !== payload.id || actual.rol !== payload.rol || actual.username !== payload.sub) {
+                throw new Error('El token no corresponde al administrador.');
+              }
+            })
+          );
 
-    return this.http.get<Cliente>(`${this.API_URL}/cliente/${payload.id}`).pipe(
-      map((cliente) => {
-        if (cliente.email !== payload.sub) {
-          throw new Error('El token no corresponde al cliente.');
-        }
-        this.cliente.set(cliente);
+    return confirmacion.pipe(
+      map(() => {
         this.tokenValidado = token;
         return true;
       }),

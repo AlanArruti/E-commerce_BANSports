@@ -170,16 +170,14 @@ la app); después arranca en segundos.
 | ngrok | http://localhost:4040 | Túnel público para el webhook de MP (profile `mp`) |
 | **Frontend** | http://localhost:4200 | Angular, servido por nginx (profile `front`) |
 
-La base arranca vacía: la app crea las tablas, pero no carga datos. La primera
-vez, con todo levantado, cargá los datos iniciales (Argentina con provincias y
-ciudades, categorías, 17 suplementos con sus variantes y el usuario
-**`admin` / `admin123`**):
+La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
 
-```powershell
-Get-Content scripts\datos-iniciales.sql | docker exec -i ecommerce-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
-```
-
-Se puede correr más de una vez: solo agrega lo que falta.
+- **Clientes:** se crean desde "Registrarse" en el front (o `POST /api/v1/auth/register`).
+- **Administradores:** no tienen registro público. El primero se crea a mano con
+  un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
+  siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
+- **Catálogo:** categorías y productos se cargan desde el panel de administración.
+- **Provincias y ciudades:** van a venir de una API externa de geo (pendiente).
 
 ### Servicios opcionales
 

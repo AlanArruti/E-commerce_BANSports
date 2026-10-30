@@ -56,7 +56,14 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [rolGuard('ADMIN')],
-    children: [{ path: '', component: AdminInicio, title: 'Panel | BAN Sports' }]
+    children: [
+      { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
+      {
+        path: 'categorias',
+        loadComponent: () => import('./page/admin-categorias/admin-categorias').then((m) => m.AdminCategorias),
+        title: 'Categorías | Panel BAN Sports'
+      }
+    ]
   },
 
   { path: '**', redirectTo: '' }

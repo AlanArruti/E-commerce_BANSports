@@ -1,4 +1,12 @@
 <section class="contenedor seccion">
   <h1 class="titulo-display titulo">Panel de <span class="acento">administración</span></h1>
   <p class="bajada">Sesión iniciada como {{ authService.usuario()?.sub }}.</p>
+
+  <!-- Accesos provisorios hasta que llegue la navegación del panel (SCRUM-111). -->
+  <nav class="accesos" aria-label="Secciones del panel">
+    <a routerLink="/admin/categorias" class="acceso">
+      <span class="acceso-titulo">Categorías</span>
+      <span class="acceso-detalle">Crear, renombrar y eliminar</span>
+    </a>
+  </nav>
 </section>

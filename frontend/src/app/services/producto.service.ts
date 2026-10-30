@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FiltrosCatalogo, ORDENES } from '../models/filtros-catalogo';
 import { Pagina } from '../models/pagina';
@@ -38,6 +38,14 @@ export class ProductoService {
     }
 
     return this.http.get<Pagina<Producto>>(`${this.API_URL}/producto`, { params });
+  }
+
+  /** Cuántos productos activos tiene la categoría (el back no lo informa en GET /categorias). */
+  contarPorCategoria(idCategoria: number): Observable<number> {
+    const params = new HttpParams().set('categoriaId', idCategoria).set('size', 1);
+    return this.http
+      .get<Pagina<Producto>>(`${this.API_URL}/producto`, { params })
+      .pipe(map((pagina) => pagina.totalElements));
   }
 
   /** Un producto por id (GET /producto/{id}). Si no existe o está dado de baja, el back responde 404. */

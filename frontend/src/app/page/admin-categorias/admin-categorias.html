@@ -1,0 +1,173 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Categorías</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Categorías</h1>
+      @if (!cargando() && !errorCarga()) {
+        <p class="cuenta">{{ filas().length }} {{ filas().length === 1 ? 'categoría' : 'categorías' }}</p>
+      }
+    </div>
+    <button type="button" class="btn btn-primario btn-nueva" [disabled]="cargando()" (click)="abrirFormulario(null)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Nueva categoría
+    </button>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="esqueleto" aria-busy="true"></div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="buscador">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label for="buscar-categoria" class="solo-lectores">Buscar categoría</label>
+      <input id="buscar-categoria" type="search" placeholder="Buscar categoría…" [formControl]="busqueda" />
+    </div>
+
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col" class="col-productos">Productos</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filasVisibles(); track fila.categoria.id) {
+            <tr>
+              <td class="nombre">{{ fila.categoria.nombre }}</td>
+              <td class="col-productos" [ngClass]="{ apagado: !fila.productos }">
+                @if (fila.productos === null) {
+                  <span aria-label="Contando productos">—</span>
+                } @else if (fila.productos === 0) {
+                  Sin productos
+                } @else {
+                  {{ fila.productos }} {{ fila.productos === 1 ? 'producto' : 'productos' }}
+                }
+              </td>
+              <td class="col-acciones">
+                <button type="button" class="btn-accion" [attr.aria-label]="'Renombrar ' + fila.categoria.nombre" title="Renombrar" (click)="abrirFormulario(fila.categoria)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+                </button>
+                <button type="button" class="btn-accion borrar" [attr.aria-label]="'Eliminar ' + fila.categoria.nombre" title="Eliminar" (click)="abrirEliminar(fila.categoria)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3" class="sin-resultados">
+                @if (filas().length) {
+                  No hay categorías que coincidan con "{{ busqueda.value }}".
+                } @else {
+                  Todavía no hay categorías. Creá la primera con "Nueva categoría".
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (modal(); as modalAbierto) {
+  <div class="fondo-modal" (click)="cerrarModal()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+    @if (errorModal(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div>
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+      </div>
+    }
+
+    @if (modalAbierto.tipo === 'formulario') {
+      <h2 class="titulo-display titulo-modal" id="titulo-modal">
+        {{ modalAbierto.categoria ? 'Renombrar categoría' : 'Nueva categoría' }}
+      </h2>
+      <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+        <div class="campo">
+          <label for="nombre-categoria">Nombre</label>
+          <input
+            #campoNombre
+            id="nombre-categoria"
+            class="input"
+            formControlName="nombre"
+            placeholder="Por ejemplo, Accesorios"
+            autocomplete="off"
+            [ngClass]="{ 'input-error': errorNombre() }"
+            [attr.aria-invalid]="errorNombre() ? true : null"
+            aria-describedby="nombre-categoria-ayuda"
+          />
+          <div class="ayuda-campo" id="nombre-categoria-ayuda">
+            @if (errorNombre(); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            } @else {
+              <span></span>
+            }
+            <span class="contador" [ngClass]="{ excedido: largoNombre() > 50 }">{{ largoNombre() }}/50</span>
+          </div>
+        </div>
+        <div class="acciones-modal">
+          <button type="button" class="btn btn-secundario" [disabled]="guardando()" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+            @if (guardando()) {
+              Guardando…
+            } @else {
+              {{ modalAbierto.categoria ? 'Guardar' : 'Crear categoría' }}
+            }
+          </button>
+        </div>
+      </form>
+    } @else {
+      <h2 class="titulo-display titulo-modal" id="titulo-modal">¿Eliminar "{{ modalAbierto.categoria.nombre }}"?</h2>
+      @if (modalAbierto.consultando) {
+        <p class="texto-modal">Revisando qué productos usan esta categoría…</p>
+      } @else if (modalAbierto.afectados.length) {
+        <p class="texto-modal aviso">
+          @if (modalAbierto.afectados.length === 1) {
+            Este producto va a quedar <strong>sin categoría</strong> y no va a aparecer en los filtros del catálogo hasta que le asignes otra:
+          } @else {
+            Estos {{ modalAbierto.afectados.length }} productos van a quedar <strong>sin categoría</strong> y no van a aparecer en los filtros del catálogo hasta que les asignes otra:
+          }
+        </p>
+        <ul class="afectados">
+          @for (producto of modalAbierto.afectados; track producto) {
+            <li>{{ producto }}</li>
+          }
+        </ul>
+      } @else {
+        <p class="texto-modal">No tiene productos asociados. Esta acción no se puede deshacer.</p>
+      }
+      <div class="acciones-modal">
+        <button type="button" class="btn btn-secundario" [disabled]="guardando()" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-peligro" [disabled]="modalAbierto.consultando || guardando()" (click)="confirmarEliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    }
+  </div>
+}

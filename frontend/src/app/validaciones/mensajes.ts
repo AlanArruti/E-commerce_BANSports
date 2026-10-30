@@ -54,6 +54,11 @@ export const MENSAJES: Record<string, Mensajes> = {
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
   },
+  categoriaNombre: {
+    requerido: () => 'Ingresá el nombre de la categoría.',
+    maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`,
+    repetido: (_d, valor) => `Ya existe una categoría llamada "${valor.trim()}".`
+  },
   pais: {
     required: () => 'Elegí el país.'
   },

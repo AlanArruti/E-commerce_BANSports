@@ -195,6 +195,28 @@ export function traducirErrorDireccion(error: HttpErrorResponse): ErrorTraducido
   };
 }
 
+/** El 409 (nombre repetido) lo muestra el formulario junto al campo; acá llega el resto. */
+export function traducirErrorCategoria(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return {
+      titulo: 'Esa categoría ya no existe',
+      detalle: 'Puede que la haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá el nombre de la categoría', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar los cambios',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

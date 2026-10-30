@@ -197,6 +197,73 @@
   color: var(--color-error-texto);
 }
 
+/* ── Cantidad y carrito ─────────────────────────────────── */
+.fila-cantidad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-4);
+}
+
+.fila-cantidad .grupo-titulo {
+  float: none;
+  width: auto;
+  margin: 0;
+}
+
+.selector-cantidad {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+
+.selector-cantidad button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.selector-cantidad button:hover:not(:disabled) {
+  color: var(--color-verde);
+}
+
+.selector-cantidad button:disabled {
+  color: var(--color-borde-input);
+  cursor: not-allowed;
+}
+
+.selector-cantidad span {
+  min-width: 44px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.en-carrito {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.aviso-maximo {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-aviso);
+}
+
+.alerta-ok {
+  align-items: center;
+}
+
+.link-ver-carrito {
+  flex: none;
+  font-weight: 700;
+}
+
 /* ── Cargando ───────────────────────────────────────────── */
 .esqueleto {
   display: block;

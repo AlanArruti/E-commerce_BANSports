@@ -112,6 +112,33 @@ export function traducirErrorProducto(error: HttpErrorResponse): ErrorTraducido 
   );
 }
 
+export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+
+  // El back responde "Stock insuficiente para la variante id 3. Disponible: 25, solicitado: 26."
+  const disponible = /Disponible:\s*(\d+)/.exec(mensaje)?.[1];
+  if (error.status === 400 && disponible !== undefined) {
+    return {
+      titulo: 'No hay stock suficiente',
+      detalle: `Quedan ${disponible} unidades de esta variante, contando las que ya tenés en el carrito.`
+    };
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese producto ya no está disponible',
+      detalle: 'Puede que lo hayan dado de baja. Actualizá la página para ver el carrito al día.'
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar el carrito',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

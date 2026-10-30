@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { CarritoService } from '../../services/carrito.service';
 import { CategoriaService } from '../../services/categoria.service';
 
 /** Cuántas categorías entran en la barra del header. El resto se ve en el catálogo. */
@@ -35,6 +36,7 @@ export class Header {
 
   constructor(
     protected authService: AuthService,
+    protected carritoService: CarritoService,
     private categoriaService: CategoriaService,
     private router: Router
   ) {

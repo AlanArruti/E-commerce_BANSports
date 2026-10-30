@@ -44,10 +44,16 @@
           <span>Ingresar</span>
         </a>
       }
-      <button type="button" class="btn-icono carrito" aria-label="Carrito, 0 productos">
+      <a
+        routerLink="/carrito"
+        class="btn-icono carrito"
+        [attr.aria-label]="'Carrito, ' + carritoService.cantidadTotal() + (carritoService.cantidadTotal() === 1 ? ' producto' : ' productos')"
+      >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
-        <span class="contador">0</span>
-      </button>
+        @if (carritoService.cantidadTotal()) {
+          <span class="contador" aria-hidden="true">{{ carritoService.cantidadTotal() }}</span>
+        }
+      </a>
     </div>
   </div>
 </header>

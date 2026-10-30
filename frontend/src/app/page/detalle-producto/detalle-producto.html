@@ -116,16 +116,61 @@
           }
         </p>
 
-        <!-- El carrito llega con su propia historia: por ahora el botón no agrega nada. -->
+        @if (varianteElegida(); as variante) {
+          @if (variante.stock > 0) {
+            <div class="fila-cantidad">
+              <span class="grupo-titulo" id="cantidad-titulo">Cantidad</span>
+              <div class="selector-cantidad" role="group" aria-labelledby="cantidad-titulo">
+                <button type="button" aria-label="Restar uno" [disabled]="cantidad() <= 1" (click)="cambiarCantidad(-1)">−</button>
+                <span aria-live="polite">{{ cantidad() }}</span>
+                <button type="button" aria-label="Sumar uno" [disabled]="cantidad() >= maximo()" (click)="cambiarCantidad(1)">+</button>
+              </div>
+              @if (enCarrito()) {
+                <span class="en-carrito">Ya tenés {{ enCarrito() }} en el carrito</span>
+              }
+            </div>
+            @if (maximo() === 0) {
+              <p class="aviso-maximo">Ya tenés en el carrito todo el stock disponible de esta variante.</p>
+            }
+          }
+        }
+
         <button
           type="button"
           class="btn btn-primario btn-bloque"
-          title="Próximamente"
-          [disabled]="!varianteElegida() || varianteElegida()!.stock === 0"
+          [disabled]="!varianteElegida() || varianteElegida()!.stock === 0 || maximo() === 0 || agregando()"
+          (click)="agregarAlCarrito()"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
-          {{ !varianteElegida() || varianteElegida()!.stock === 0 ? 'Sin stock' : 'Agregar al carrito' }}
+          @if (!varianteElegida() || varianteElegida()!.stock === 0) {
+            Sin stock
+          } @else if (agregando()) {
+            Agregando…
+          } @else {
+            Agregar al carrito
+          }
         </button>
+
+        @if (resultadoAgregar(); as resultado) {
+          @if (resultado.ok) {
+            <div class="alerta-ok" role="status">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+              <div class="alerta-cuerpo">
+                <div class="alerta-ok-titulo">Agregado al carrito</div>
+                <div class="alerta-error-texto">{{ producto.nombre }} · {{ descripcionVariante(varianteElegida()!) }}</div>
+              </div>
+              <a routerLink="/carrito" class="link link-ver-carrito">Ver carrito →</a>
+            </div>
+          } @else if (resultado.error; as error) {
+            <div class="alerta-error" role="alert">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+              <div class="alerta-cuerpo">
+                <div class="alerta-error-titulo">{{ error.titulo }}</div>
+                <div class="alerta-error-texto">{{ error.detalle }}</div>
+              </div>
+            </div>
+          }
+        }
       </div>
     </div>
   }

@@ -1,16 +1,18 @@
-import { Component, computed, effect, linkedSignal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, effect, linkedSignal, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
 import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
+import { AuthService } from '../../services/auth.service';
+import { CarritoService } from '../../services/carrito.service';
 import { ProductoService } from '../../services/producto.service';
-import { ErrorTraducido, traducirErrorProducto } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorCarrito, traducirErrorProducto } from '../../validaciones/errores-api';
 
 interface EstadoDetalle {
   cargando: boolean;
@@ -48,9 +50,17 @@ function coincide(variante: Variante, seleccion: Seleccion): boolean {
   );
 }
 
-/** Al entrar se elige la primera variante con stock (o la primera, si ninguna tiene). */
-function varianteInicial(variantes: Variante[]): Variante | null {
-  return variantes.find((variante) => variante.stock > 0) ?? variantes[0] ?? null;
+/**
+ * Al entrar se elige la variante de la URL (?variante=, la que había elegido antes de ir al login),
+ * si no la primera con stock, y si ninguna tiene, la primera.
+ */
+function varianteInicial(variantes: Variante[], idDeLaUrl: string | null): Variante | null {
+  return (
+    variantes.find((variante) => String(variante.id) === idDeLaUrl) ??
+    variantes.find((variante) => variante.stock > 0) ??
+    variantes[0] ??
+    null
+  );
 }
 
 @Component({
@@ -71,11 +81,24 @@ export class DetalleProducto {
   /** La imagen del back no cargó: se muestra el dibujo del pote. */
   protected readonly imagenFallo;
 
+  /** Unidades a agregar al carrito. Vuelve a 1 al cambiar de variante. */
+  protected readonly cantidad;
+  /** Unidades de la variante elegida que ya están en el carrito. */
+  protected readonly enCarrito;
+  /** Cuántas más se pueden agregar sin pasar el stock. */
+  protected readonly maximo;
+  protected readonly agregando = signal(false);
+  /** Resultado del último "Agregar al carrito". Se borra al cambiar de variante. */
+  protected readonly resultadoAgregar;
+
   /** Emite para volver a pedir el producto (botón "Reintentar"). */
   private readonly recargar$ = new BehaviorSubject<void>(undefined);
 
   constructor(
     private productoService: ProductoService,
+    private carritoService: CarritoService,
+    private authService: AuthService,
+    private router: Router,
     private route: ActivatedRoute,
     private title: Title
   ) {
@@ -116,11 +139,24 @@ export class DetalleProducto {
     this.imagenFallo = linkedSignal({ source: () => this.estado().producto?.id, computation: () => false });
 
     // Atributos elegidos. Vuelve a la variante inicial cada vez que se carga otro producto.
-    this.seleccion = linkedSignal<Seleccion>(() => ({ ...varianteInicial(this.estado().variantes)?.atributos }));
+    this.seleccion = linkedSignal<Seleccion>(() => ({
+      ...varianteInicial(this.estado().variantes, this.route.snapshot.queryParamMap.get('variante'))?.atributos
+    }));
 
     this.varianteElegida = computed(
       () => this.estado().variantes.find((variante) => coincide(variante, this.seleccion())) ?? null
     );
+
+    this.cantidad = linkedSignal({ source: this.varianteElegida, computation: () => 1 });
+    this.resultadoAgregar = linkedSignal<Variante | null, { ok: boolean; error: ErrorTraducido | null } | null>({
+      source: this.varianteElegida,
+      computation: () => null
+    });
+    this.enCarrito = computed(() => {
+      const variante = this.varianteElegida();
+      return variante ? this.carritoService.cantidadDeVariante(variante.id) : 0;
+    });
+    this.maximo = computed(() => Math.max((this.varianteElegida()?.stock ?? 0) - this.enCarrito(), 0));
 
     // Un grupo por atributo, con sus valores en el orden en que aparecen: Presentación [1 kg], Sabor [Chocolate, ...].
     this.grupos = computed<GrupoVariante[]>(() => {
@@ -178,6 +214,60 @@ export class DetalleProducto {
     if (variante) {
       this.seleccion.set({ ...variante.atributos });
     }
+  }
+
+  cambiarCantidad(diferencia: number): void {
+    this.cantidad.update((cantidad) => Math.min(Math.max(cantidad + diferencia, 1), Math.max(this.maximo(), 1)));
+  }
+
+  /**
+   * Agrega la variante elegida al carrito. Sin sesión, manda al login y guarda en la URL
+   * la variante elegida, para volver al mismo producto con el mismo sabor.
+   */
+  agregarAlCarrito(): void {
+    const producto = this.estado().producto;
+    const variante = this.varianteElegida();
+    if (!producto || !variante || this.maximo() === 0) {
+      return;
+    }
+
+    if (!this.authService.estaLogueado()) {
+      this.router.navigate(['/login'], {
+        queryParams: { redirect: `/productos/${producto.id}?variante=${variante.id}`, motivo: 'carrito' }
+      });
+      return;
+    }
+
+    this.agregando.set(true);
+    this.resultadoAgregar.set(null);
+    this.carritoService
+      .agregar({ idProducto: producto.id, idVariante: variante.id, cantidad: this.cantidad() })
+      .subscribe({
+        next: () => {
+          this.agregando.set(false);
+          this.cantidad.set(1);
+          this.resultadoAgregar.set({ ok: true, error: null });
+        },
+        error: (e: unknown) => {
+          this.agregando.set(false);
+          // El carrito pudo cambiar en otra pestaña: se trae de nuevo para que "Ya tenés N" quede al día.
+          this.carritoService.cargar().subscribe({ error: () => {} });
+          this.resultadoAgregar.set({
+            ok: false,
+            error:
+              e instanceof HttpErrorResponse
+                ? traducirErrorCarrito(e)
+                : { titulo: 'No pudimos agregar el producto', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
+          });
+        }
+      });
+  }
+
+  /** Texto de la variante para los mensajes: "1 kg · Chocolate". */
+  protected descripcionVariante(variante: Variante): string {
+    return atributosOrdenados(variante)
+      .map(([, valor]) => valor)
+      .join(' · ');
   }
 
   reintentar(): void {

@@ -64,6 +64,11 @@ export const routes: Routes = [
         title: 'Categorías | Panel BAN Sports'
       },
       {
+        path: 'productos',
+        loadComponent: () => import('./page/admin-productos/admin-productos').then((m) => m.AdminProductos),
+        title: 'Productos | Panel BAN Sports'
+      },
+      {
         path: 'productos/nuevo',
         loadComponent: () => import('./page/admin-producto/admin-producto').then((m) => m.AdminProducto),
         title: 'Nuevo producto | Panel BAN Sports'

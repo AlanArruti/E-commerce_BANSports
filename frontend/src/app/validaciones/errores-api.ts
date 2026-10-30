@@ -238,6 +238,23 @@ export function traducirErrorGuardarProducto(error: HttpErrorResponse): ErrorTra
   };
 }
 
+export function traducirErrorBajaProducto(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese producto ya estaba dado de baja',
+      detalle: 'Puede que lo haya dado de baja otro administrador. La lista se actualizó.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja el producto',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

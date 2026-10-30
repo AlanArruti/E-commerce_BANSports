@@ -1,4 +1,4 @@
-export type Orden = 'relevantes' | 'precio-asc' | 'precio-desc' | 'nombre-asc' | 'nombre-desc';
+export type Orden = 'relevantes' | 'nuevos' | 'precio-asc' | 'precio-desc' | 'nombre-asc' | 'nombre-desc';
 
 export interface OpcionOrden {
   valor: Orden;
@@ -15,6 +15,9 @@ export const ORDENES: OpcionOrden[] = [
   { valor: 'nombre-asc', etiqueta: 'Nombre: A–Z', sortBy: 'nombre', sortDir: 'asc' },
   { valor: 'nombre-desc', etiqueta: 'Nombre: Z–A', sortBy: 'nombre', sortDir: 'desc' }
 ];
+
+// Solo para el panel: lo último que se cargó, arriba. No se ofrece en el catálogo del cliente.
+export const ORDEN_NUEVOS: OpcionOrden = { valor: 'nuevos', etiqueta: 'Más nuevos primero', sortBy: 'id', sortDir: 'desc' };
 
 // Filtros del catálogo. Salen de la URL (/productos?search=whey&categoria=2...).
 export interface FiltrosCatalogo {

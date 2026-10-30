@@ -2,7 +2,7 @@
   <nav class="migas" aria-label="Ubicación">
     <a routerLink="/admin">Panel</a>
     <span aria-hidden="true">/</span>
-    <span>Productos</span>
+    <a routerLink="/admin/productos">Productos</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">
       {{ creado() ? 'Producto creado' : idEditado === null ? 'Nuevo producto' : 'Editar producto' }}
@@ -52,7 +52,7 @@
         <span aria-hidden="true">·</span>
         <a class="link" [routerLink]="['/productos', producto.id]">Ver en la tienda</a>
         <span aria-hidden="true">·</span>
-        <a class="link" routerLink="/admin">Volver al panel</a>
+        <a class="link" routerLink="/admin/productos">Volver al listado</a>
       </div>
     </section>
   } @else {
@@ -64,7 +64,7 @@
       <div class="vacio">
         <h2>Producto no encontrado</h2>
         <p>Puede que el link esté mal escrito o que el producto se haya dado de baja.</p>
-        <a routerLink="/admin" class="btn btn-primario">Volver al panel</a>
+        <a routerLink="/admin/productos" class="btn btn-primario">Volver al listado</a>
       </div>
     } @else if (errorCarga(); as error) {
       <div class="alerta-error" role="alert">
@@ -76,15 +76,6 @@
         <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
       </div>
     } @else {
-      @if (guardadoOk(); as texto) {
-        <div class="alerta-ok" role="status">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
-          <span class="alerta-error-texto">{{ texto }}</span>
-          @if (idEditado !== null) {
-            <a class="link link-tienda" [routerLink]="['/productos', idEditado]">Ver en la tienda →</a>
-          }
-        </div>
-      }
       @if (errorGuardar(); as error) {
         <div class="alerta-error" role="alert">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
@@ -147,7 +138,7 @@
           </div>
 
           <div class="acciones">
-            <a routerLink="/admin" class="btn btn-secundario">Cancelar</a>
+            <a routerLink="/admin/productos" class="btn btn-secundario">Cancelar</a>
             <button type="submit" class="btn btn-primario" [disabled]="guardando()">
               @if (guardando()) {
                 Guardando…

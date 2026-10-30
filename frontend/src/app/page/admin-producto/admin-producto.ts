@@ -4,7 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { Categoria } from '../../models/categoria';
@@ -45,8 +45,6 @@ export class AdminProducto implements OnInit {
   protected readonly errorGuardar = signal<ErrorTraducido | null>(null);
   /** Producto recién creado: se muestra la pantalla de próximos pasos. */
   protected readonly creado = signal<Producto | null>(null);
-  /** Edición guardada: se muestra la confirmación arriba del formulario. */
-  protected readonly guardadoOk = signal<string | null>(null);
 
   // Mismas reglas que ProductoRequest en el back.
   nombre = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(100)] });
@@ -67,6 +65,7 @@ export class AdminProducto implements OnInit {
   constructor(
     private productoService: ProductoService,
     private categoriaService: CategoriaService,
+    private router: Router,
     private route: ActivatedRoute,
     private title: Title
   ) {
@@ -142,7 +141,6 @@ export class AdminProducto implements OnInit {
   guardar(): void {
     this.intentoGuardar.set(true);
     this.errorGuardar.set(null);
-    this.guardadoOk.set(null);
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       return;
@@ -166,11 +164,13 @@ export class AdminProducto implements OnInit {
         if (this.idEditado === null) {
           this.creado.set(producto);
           this.title.setTitle(`Producto creado | Panel BAN Sports`);
+          window.scrollTo({ top: 0 });
         } else {
-          this.precargar(producto);
-          this.guardadoOk.set(`Guardaste los cambios de "${producto.nombre}".`);
+          // Vuelve al listado; el mensaje viaja en el estado de la navegación.
+          this.router.navigate(['/admin/productos'], {
+            state: { aviso: `Guardaste los cambios de "${producto.nombre}".` }
+          });
         }
-        window.scrollTo({ top: 0 });
       },
       error: (e: unknown) => {
         this.guardando.set(false);

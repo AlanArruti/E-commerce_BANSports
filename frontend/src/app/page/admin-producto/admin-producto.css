@@ -27,19 +27,6 @@
   line-height: 1;
 }
 
-.alerta-ok {
-  align-items: center;
-}
-
-.alerta-ok .alerta-error-texto {
-  flex: 1;
-}
-
-.link-tienda {
-  flex: none;
-  font-weight: 700;
-}
-
 /* ── Formulario y vista previa ─────────────────────────── */
 .layout {
   display: grid;

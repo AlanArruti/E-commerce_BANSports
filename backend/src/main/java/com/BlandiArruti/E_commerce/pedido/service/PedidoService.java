@@ -153,7 +153,7 @@ public class PedidoService implements IPedidoService {
                     .producto(productos.get(i))
                     .variante(variantes.get(i))
                     .cantidad(itemReq.cantidad())
-                    .precioProducto(productos.get(i).getPrecio() * itemReq.cantidad())
+                    .precioProducto(productos.get(i).getPrecioConDescuento() * itemReq.cantidad())
                     .build();
             pedido.getItems().add(item);
         }

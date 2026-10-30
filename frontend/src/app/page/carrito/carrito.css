@@ -118,6 +118,12 @@
   color: var(--color-texto-secundario);
 }
 
+.item-precio-anterior {
+  margin-right: 6px;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
 .item-aviso {
   font-size: 13px;
   color: var(--color-aviso);

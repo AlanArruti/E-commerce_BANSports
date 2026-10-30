@@ -1,5 +1,8 @@
 <article class="producto" [ngClass]="{ 'sin-stock': sinStock() }">
   <div class="producto-imagen">
+    @if (tieneOferta()) {
+      <span class="producto-etiqueta etiqueta-oferta">-{{ descuento() }}%</span>
+    }
     @if (sinStock()) {
       <span class="producto-etiqueta etiqueta-gris">Sin stock</span>
     }
@@ -33,7 +36,12 @@
       </span>
     }
     <div class="producto-pie">
-      <span class="producto-precio">{{ producto().precioBase | precio }}</span>
+      <span class="producto-precios">
+        @if (tieneOferta()) {
+          <span class="producto-precio-anterior">{{ producto().precioBase | precio }}</span>
+        }
+        <span class="producto-precio">{{ precioVigente() | precio }}</span>
+      </span>
       <!-- Solo decorativa: el click lo toma el link del nombre, que cubre toda la tarjeta. -->
       <span class="btn-ver" [ngClass]="{ apagado: sinStock() }" aria-hidden="true">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

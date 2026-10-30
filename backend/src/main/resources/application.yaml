@@ -92,6 +92,9 @@ app:
   cors:
     # Orígenes del front autorizados, separados por coma.
     allowed-origins: ${FRONT_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:4200}
+  ofertas-demo:
+    # Carga descuentos de ejemplo en una base existente si todavía no hay ofertas.
+    habilitadas: ${OFERTAS_DEMO:true}
   oauth2:
     # A dónde vuelve el navegador tras el login con GitHub. Vacío = devuelve JSON (Postman).
     redirect-uri: ${OAUTH2_REDIRECT_URI:}

@@ -127,6 +127,16 @@
           </div>
 
           <div class="campo">
+            <label for="prod-descuento">Descuento (%) <span class="etiqueta-opcional">Opcional</span></label>
+            <input id="prod-descuento" class="input" formControlName="descuento" inputmode="numeric" placeholder="Ej. 20" autocomplete="off"
+              [ngClass]="{ 'input-error': error(descuento, 'descuento') }" [attr.aria-invalid]="error(descuento, 'descuento') ? true : null" aria-describedby="prod-descuento-ayuda" />
+            <div class="ayuda-campo" id="prod-descuento-ayuda">
+              <span class="msj-error">{{ error(descuento, 'descuento') }}</span>
+              <span class="ayuda">Dejalo vacío si el producto no está en oferta.</span>
+            </div>
+          </div>
+
+          <div class="campo">
             <label for="prod-descripcion">Descripción</label>
             <textarea id="prod-descripcion" class="input textarea" formControlName="descripcion" rows="4"
               placeholder="Para qué sirve, cuánta proteína tiene por servicio…"
@@ -159,7 +169,13 @@
               <span class="tarjeta-categoria">{{ vistaPrevia().categoria ?? 'Categoría' }}</span>
               <span class="tarjeta-nombre">{{ vistaPrevia().nombre || 'Nombre del producto' }}</span>
               <span class="tarjeta-variante">{{ idEditado === null ? 'Sin variantes todavía' : 'Con sus variantes actuales' }}</span>
-              <span class="tarjeta-precio">{{ vistaPrevia().precio ?? 0 | precio }}</span>
+              <span class="tarjeta-precios">
+                @if (vistaPrevia().descuento) {
+                  <span class="tarjeta-descuento">-{{ vistaPrevia().descuento }}%</span>
+                  <span class="tarjeta-precio-anterior">{{ vistaPrevia().precio ?? 0 | precio }}</span>
+                }
+                <span class="tarjeta-precio">{{ vistaPrevia().precioFinal ?? 0 | precio }}</span>
+              </span>
             </div>
           </div>
           @if (idEditado === null) {

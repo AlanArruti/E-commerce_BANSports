@@ -73,7 +73,13 @@
           </a>
         }
         <h1 class="titulo-display detalle-nombre">{{ producto.nombre }}</h1>
-        <span class="detalle-precio">{{ producto.precioBase | precio }}</span>
+        <div class="detalle-precios">
+          @if (tieneOferta()) {
+            <span class="etiqueta-descuento">-{{ descuento() }}%</span>
+            <span class="detalle-precio-anterior">{{ producto.precioBase | precio }}</span>
+          }
+          <span class="detalle-precio">{{ precioVigente() | precio }}</span>
+        </div>
         @if (producto.descripcion) {
           <p class="detalle-descripcion">{{ producto.descripcion }}</p>
         }

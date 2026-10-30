@@ -79,6 +79,62 @@ export function traducirErrorLogin(
   };
 }
 
+export function traducirErrorPerfil(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+
+  if (error.status === 409) {
+    return {
+      titulo: 'No pudimos guardar los cambios',
+      detalle: 'Ese email ya está registrado por otra cuenta.'
+    };
+  }
+  if (error.status === 403) {
+    return {
+      titulo: 'No tenés permiso para editar este perfil',
+      detalle: 'Iniciá sesión de nuevo con tu cuenta.'
+    };
+  }
+  if (error.status === 400 && mensaje) {
+    return {
+      titulo: 'Revisá los datos ingresados',
+      detalle: mensaje
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar tus datos',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPassword(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+
+  if (error.status === 401) {
+    return {
+      titulo: 'La contraseña actual no es correcta',
+      detalle: 'Revisala y volvé a intentar.'
+    };
+  }
+  if (error.status === 400 && mensaje) {
+    return {
+      titulo: 'Revisá la contraseña nueva',
+      detalle: mensaje
+    };
+  }
+  return {
+    titulo: 'No pudimos cambiar la contraseña',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorRegistro(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);
   if (general) {

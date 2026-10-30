@@ -47,6 +47,22 @@ export const largoDni: ValidatorFn = (control: AbstractControl): ValidationError
 };
 
 /**
+ * Exige que el valor coincida con el de otro campo del mismo formulario.
+ * El control que lo usa tiene que refrescarse cuando cambia el otro campo
+ * (ver perfil-modal.ts).
+ */
+export const coincideCon = (campo: string): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const valor = String(control.value ?? '');
+    const original = String(control.parent?.get(campo)?.value ?? '');
+    if (valor === '' || valor === original) {
+      return null;
+    }
+    return { noCoinciden: true };
+  };
+};
+
+/**
  * Convierte un precio escrito a la argentina en número: "42.999,99" → 42999.99, "1500" → 1500.
  * Devuelve NaN si el formato no es válido.
  */
@@ -70,6 +86,19 @@ export const precioValido: ValidatorFn = (control: AbstractControl): ValidationE
     return { precioFormato: true };
   }
   return precio > 0 ? null : { precioCero: true };
+};
+
+/** Descuento opcional: vacío = sin oferta; si se carga, entero entre 1 y 99. */
+export const descuentoValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = String(control.value ?? '').trim();
+  if (valor === '') {
+    return null;
+  }
+  if (!NUMEROS.test(valor)) {
+    return { descuentoInvalido: true };
+  }
+  const numero = Number(valor);
+  return numero >= 1 && numero <= 99 ? null : { descuentoInvalido: true };
 };
 
 /** Email con formato nombre@dominio.ext (más estricto que Validators.email). */

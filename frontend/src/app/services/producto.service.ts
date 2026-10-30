@@ -17,7 +17,7 @@ export class ProductoService {
   constructor(private http: HttpClient) {}
 
   /** Catálogo paginado con búsqueda, filtros y orden (GET /producto). */
-  listar(filtros: FiltrosCatalogo): Observable<Pagina<Producto>> {
+  listar(filtros: FiltrosCatalogo, soloOfertas = false): Observable<Pagina<Producto>> {
     const orden = [...ORDENES, ORDEN_NUEVOS].find((opcion) => opcion.valor === filtros.orden) ?? ORDENES[0];
     let params = new HttpParams()
       .set('sortBy', orden.sortBy)
@@ -37,8 +37,25 @@ export class ProductoService {
     if (filtros.precioMax !== null) {
       params = params.set('precioMax', filtros.precioMax);
     }
+    if (soloOfertas) {
+      params = params.set('soloOfertas', true);
+    }
 
     return this.http.get<Pagina<Producto>>(`${this.API_URL}/producto`, { params });
+  }
+
+  /** Las mejores ofertas por porcentaje de descuento (para la sección destacada). */
+  destacadas(limite = 3): Observable<Producto[]> {
+    const filtros: FiltrosCatalogo = {
+      search: '',
+      categoriaId: null,
+      precioMin: null,
+      precioMax: null,
+      orden: 'descuento-desc',
+      pagina: 0,
+      tamanio: limite
+    };
+    return this.listar(filtros, true).pipe(map((pagina) => pagina.content));
   }
 
   /** Cuántos productos activos tiene la categoría (el back no lo informa en GET /categorias). */
@@ -59,7 +76,7 @@ export class ProductoService {
     return this.http.post<Producto>(`${this.API_URL}/producto`, producto);
   }
 
-  /** Solo ADMIN. Reemplaza nombre, descripción, precio y categoría. */
+  /** Solo ADMIN. Reemplaza nombre, descripción, precio, descuento y categoría. */
   actualizar(id: number, producto: ProductoRequest): Observable<Producto> {
     return this.http.put<Producto>(`${this.API_URL}/producto/${id}`, producto);
   }

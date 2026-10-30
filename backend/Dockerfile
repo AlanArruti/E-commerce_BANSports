@@ -15,7 +15,8 @@ COPY mvnw ./
 COPY .mvn .mvn
 COPY pom.xml ./
 
-RUN chmod +x mvnw \
+RUN sed -i 's/\r$//' mvnw \
+    && chmod +x mvnw \
     && ./mvnw -B -q dependency:go-offline
 
 # ── Stage 2: build ──────────────────────────────────────────────────────────

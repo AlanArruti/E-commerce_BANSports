@@ -103,6 +103,29 @@
   font-size: clamp(40px, 5vw, 60px);
 }
 
+.detalle-precios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+.etiqueta-descuento {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.detalle-precio-anterior {
+  color: var(--color-texto-secundario);
+  font-size: 20px;
+  text-decoration: line-through;
+}
+
 .detalle-precio {
   font-family: var(--fuente-titulos);
   font-weight: 800;

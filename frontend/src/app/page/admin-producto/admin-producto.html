@@ -1,0 +1,172 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/admin/productos">Productos</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">
+      {{ creado() ? 'Producto creado' : idEditado === null ? 'Nuevo producto' : 'Editar producto' }}
+    </span>
+  </nav>
+
+  @if (creado(); as producto) {
+    <!-- ── Producto creado: próximos pasos ──────────────── -->
+    <section class="creado" aria-labelledby="titulo-creado">
+      <div class="creado-icono" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>
+      </div>
+      <h1 class="titulo-display creado-titulo" id="titulo-creado">Producto creado</h1>
+      <p class="creado-resumen">
+        <strong>{{ producto.nombre }}</strong>
+        @if (producto.categoria; as categoria) {
+          · {{ categoria.nombre }}
+        }
+        · {{ producto.precioBase | precio }}
+      </p>
+      <p class="creado-aviso">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"/></svg>
+        Todavía no se puede comprar: le falta al menos una variante con stock.
+      </p>
+
+      <div class="pasos">
+        <!-- Variantes (SCRUM-116) e imágenes (SCRUM-115) llegan con sus historias. -->
+        <button type="button" class="paso destacado" title="Próximamente">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+          <span class="paso-titulo">Agregar variantes</span>
+          <span class="paso-detalle">Sabor, presentación y stock</span>
+        </button>
+        <button type="button" class="paso" title="Próximamente">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
+          <span class="paso-titulo">Cargar imagen</span>
+          <span class="paso-detalle">JPG, PNG o WEBP hasta 2 MB</span>
+        </button>
+        <a class="paso" [routerLink]="['/admin/productos', producto.id, 'editar']">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+          <span class="paso-titulo">Editar datos</span>
+          <span class="paso-detalle">Nombre, precio o categoría</span>
+        </a>
+      </div>
+
+      <div class="creado-links">
+        <button type="button" class="link" (click)="crearOtro()">+ Crear otro producto</button>
+        <span aria-hidden="true">·</span>
+        <a class="link" [routerLink]="['/productos', producto.id]">Ver en la tienda</a>
+        <span aria-hidden="true">·</span>
+        <a class="link" routerLink="/admin/productos">Volver al listado</a>
+      </div>
+    </section>
+  } @else {
+    <h1 class="titulo-display titulo">{{ idEditado === null ? 'Nuevo producto' : 'Editar producto' }}</h1>
+
+    @if (cargando()) {
+      <div class="esqueleto" aria-busy="true"></div>
+    } @else if (noEncontrado()) {
+      <div class="vacio">
+        <h2>Producto no encontrado</h2>
+        <p>Puede que el link esté mal escrito o que el producto se haya dado de baja.</p>
+        <a routerLink="/admin/productos" class="btn btn-primario">Volver al listado</a>
+      </div>
+    } @else if (errorCarga(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+        <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else {
+      @if (errorGuardar(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
+
+      <div class="layout">
+        <form class="panel formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+          <div class="campo">
+            <label for="prod-nombre">Nombre</label>
+            <input id="prod-nombre" class="input" formControlName="nombre" placeholder="Whey Protein Isolate" autocomplete="off"
+              [ngClass]="{ 'input-error': error(nombre, 'productoNombre') }" [attr.aria-invalid]="error(nombre, 'productoNombre') ? true : null" aria-describedby="prod-nombre-ayuda" />
+            <div class="ayuda-campo" id="prod-nombre-ayuda">
+              <span class="msj-error">{{ error(nombre, 'productoNombre') }}</span>
+              <span class="contador" [ngClass]="{ excedido: vistaPrevia().largoNombre > 100 }">{{ vistaPrevia().largoNombre }}/100</span>
+            </div>
+          </div>
+
+          <div class="fila-doble">
+            <div class="campo">
+              <label for="prod-categoria">Categoría</label>
+              <select id="prod-categoria" class="input" formControlName="categoria"
+                [ngClass]="{ 'input-error': error(categoria, 'productoCategoria') }" [attr.aria-invalid]="error(categoria, 'productoCategoria') ? true : null" aria-describedby="prod-categoria-error">
+                <option [ngValue]="null" disabled>Elegí una categoría</option>
+                @for (opcion of categorias(); track opcion.id) {
+                  <option [ngValue]="opcion.id">{{ opcion.nombre }}</option>
+                }
+              </select>
+              @if (error(categoria, 'productoCategoria'); as mensaje) {
+                <p class="msj-error" id="prod-categoria-error">{{ mensaje }}</p>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="prod-precio">Precio base</label>
+              <div class="prefijo">
+                <span aria-hidden="true">$</span>
+                <input id="prod-precio" class="input" formControlName="precio" inputmode="decimal" placeholder="42.999,99" autocomplete="off"
+                  [ngClass]="{ 'input-error': error(precio, 'precioBase') }" [attr.aria-invalid]="error(precio, 'precioBase') ? true : null" aria-describedby="prod-precio-error" />
+              </div>
+              @if (error(precio, 'precioBase'); as mensaje) {
+                <p class="msj-error" id="prod-precio-error">{{ mensaje }}</p>
+              }
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="prod-descripcion">Descripción</label>
+            <textarea id="prod-descripcion" class="input textarea" formControlName="descripcion" rows="4"
+              placeholder="Para qué sirve, cuánta proteína tiene por servicio…"
+              [ngClass]="{ 'input-error': error(descripcion, 'productoDescripcion') }" [attr.aria-invalid]="error(descripcion, 'productoDescripcion') ? true : null" aria-describedby="prod-descripcion-ayuda"></textarea>
+            <div class="ayuda-campo" id="prod-descripcion-ayuda">
+              <span class="msj-error">{{ error(descripcion, 'productoDescripcion') }}</span>
+              <span class="contador" [ngClass]="{ excedido: vistaPrevia().largoDescripcion > 250 }">{{ vistaPrevia().largoDescripcion }}/250</span>
+            </div>
+          </div>
+
+          <div class="acciones">
+            <a routerLink="/admin/productos" class="btn btn-secundario">Cancelar</a>
+            <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+              @if (guardando()) {
+                Guardando…
+              } @else {
+                {{ idEditado === null ? 'Crear producto' : 'Guardar cambios' }}
+              }
+            </button>
+          </div>
+        </form>
+
+        <aside class="vista-previa" aria-label="Vista previa en el catálogo">
+          <span class="vista-previa-titulo">Así se va a ver en el catálogo</span>
+          <div class="tarjeta" aria-hidden="true">
+            <div class="tarjeta-imagen">
+              <app-pote-producto class="tarjeta-pote" [nombre]="vistaPrevia().abreviatura" />
+            </div>
+            <div class="tarjeta-info">
+              <span class="tarjeta-categoria">{{ vistaPrevia().categoria ?? 'Categoría' }}</span>
+              <span class="tarjeta-nombre">{{ vistaPrevia().nombre || 'Nombre del producto' }}</span>
+              <span class="tarjeta-variante">{{ idEditado === null ? 'Sin variantes todavía' : 'Con sus variantes actuales' }}</span>
+              <span class="tarjeta-precio">{{ vistaPrevia().precio ?? 0 | precio }}</span>
+            </div>
+          </div>
+          @if (idEditado === null) {
+            <p class="vista-previa-nota">La imagen y las variantes (sabor, presentación y stock) se cargan después de crearlo.</p>
+          }
+        </aside>
+      </div>
+    }
+  }
+</div>

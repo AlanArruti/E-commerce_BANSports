@@ -217,6 +217,44 @@ export function traducirErrorCategoria(error: HttpErrorResponse): ErrorTraducido
   };
 }
 
+export function traducirErrorGuardarProducto(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return {
+      titulo: 'No encontramos el producto o la categoría',
+      detalle: 'Puede que los hayan dado de baja mientras editabas. Volvé al panel y probá de nuevo.'
+    };
+  }
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá los datos del producto', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar el producto',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaProducto(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese producto ya estaba dado de baja',
+      detalle: 'Puede que lo haya dado de baja otro administrador. La lista se actualizó.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja el producto',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

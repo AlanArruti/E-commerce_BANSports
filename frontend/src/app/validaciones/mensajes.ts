@@ -86,6 +86,9 @@ export const MENSAJES: Record<string, Mensajes> = {
     precioFormato: () => 'El precio solo puede tener números, puntos para los miles y coma para los centavos (por ejemplo 42.999,99).',
     precioCero: () => 'El precio tiene que ser mayor a $ 0.'
   },
+  descuento: {
+    descuentoInvalido: () => 'El descuento debe ser un número entero entre 1 y 99.'
+  },
   productoDescripcion: {
     requerido: () => 'Ingresá una descripción: es lo que lee el cliente en el detalle del producto.',
     maxlength: (d) => `La descripción puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`

@@ -2,7 +2,13 @@
   <nav class="migas" aria-label="Ubicación">
     <a routerLink="/">Inicio</a>
     <span aria-hidden="true">/</span>
-    <span aria-current="page">Catálogo</span>
+    @if (esOfertas) {
+      <a routerLink="/productos">Catálogo</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Ofertas</span>
+    } @else {
+      <span aria-current="page">Catálogo</span>
+    }
   </nav>
 
   <div class="catalogo-encabezado">
@@ -10,16 +16,33 @@
     <p class="catalogo-resultado" aria-live="polite">
       @if (resultado(); as r) {
         @if (r.total === 0) {
-          <strong>0</strong> productos
+          <strong>0</strong> {{ esOfertas ? 'ofertas' : 'productos' }}
         } @else {
           Mostrando <strong>{{ r.desde }}–{{ r.hasta }}</strong> de <strong>{{ r.total }}</strong>
-          {{ r.total === 1 ? 'producto' : 'productos' }}
+          {{ r.total === 1 ? (esOfertas ? 'oferta' : 'producto') : (esOfertas ? 'ofertas' : 'productos') }}
         }
       } @else if (estado().cargando) {
-        Buscando productos…
+        {{ esOfertas ? 'Buscando ofertas…' : 'Buscando productos…' }}
       }
     </p>
   </div>
+
+  @if (esOfertas && destacadas().length) {
+    <section class="destacadas" aria-labelledby="destacadas-titulo">
+      <div class="destacadas-cabecera">
+        <div class="destacadas-titulo-grupo">
+          <span class="destacadas-pildora">Top 3</span>
+          <h2 id="destacadas-titulo" class="titulo-display destacadas-titulo">Ofertas destacadas</h2>
+        </div>
+        <p>Los mayores descuentos disponibles hoy.</p>
+      </div>
+      <div class="grilla-destacadas">
+        @for (producto of destacadas(); track producto.id) {
+          <app-tarjeta-producto [producto]="producto" />
+        }
+      </div>
+    </section>
+  }
 
   <div class="catalogo">
     @if (filtrosAbiertos()) {
@@ -170,19 +193,25 @@
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/></svg>
             </div>
             @if (chips().length) {
-              <h2>No encontramos productos</h2>
+              <h2>{{ esOfertas ? 'No encontramos ofertas' : 'No encontramos productos' }}</h2>
               <p>
                 @if (filtros().search) {
                   No hay resultados para <strong>“{{ filtros().search }}”</strong>{{ filtros().categoriaId !== null ? ' en ' + titulo() : '' }}.
                 } @else {
-                  No hay productos que cumplan con estos filtros.
+                  {{ esOfertas ? 'No hay ofertas que cumplan con estos filtros.' : 'No hay productos que cumplan con estos filtros.' }}
                 }
                 Probá con otra palabra o sacá algún filtro.
               </p>
               <button type="button" class="btn btn-primario" (click)="limpiarFiltros()">Limpiar filtros</button>
             } @else {
-              <h2>Todavía no hay productos</h2>
-              <p>Estamos cargando el catálogo. Volvé a visitarnos pronto.</p>
+              <h2>{{ esOfertas ? 'Todavía no hay ofertas' : 'Todavía no hay productos' }}</h2>
+              <p>
+                @if (esOfertas) {
+                  Estamos preparando los próximos descuentos. Volvé a visitarnos pronto.
+                } @else {
+                  Estamos cargando el catálogo. Volvé a visitarnos pronto.
+                }
+              </p>
             }
           </div>
         }

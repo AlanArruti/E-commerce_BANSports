@@ -31,6 +31,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     List<Producto> findAllByActivoTrue();
 
+    boolean existsByDescuentoGreaterThan(Integer descuento);
+
     List<Producto> findByCategoriaId(Long idCategoria);
 
     List<Producto> findByActivoTrueAndCategoriaId(Long idCategoria);
@@ -43,13 +45,15 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     // todo lo de Proteínas). LEFT JOIN para no perder productos sin categoría.
     @Query("SELECT p FROM Producto p LEFT JOIN p.categoria c WHERE p.activo = true " +
            "AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId) " +
-           "AND (:precioMin IS NULL OR p.precio >= :precioMin) " +
-           "AND (:precioMax IS NULL OR p.precio <= :precioMax) " +
+           "AND (:soloOfertas = false OR (p.descuento IS NOT NULL AND p.descuento > 0)) " +
+           "AND (:precioMin IS NULL OR COALESCE(p.precioFinal, p.precio) >= :precioMin) " +
+           "AND (:precioMax IS NULL OR COALESCE(p.precioFinal, p.precio) <= :precioMax) " +
            "AND (" + NOMBRE_SIN_TILDES + " LIKE CONCAT('%', :search, '%') " +
            "OR " + CATEGORIA_SIN_TILDES + " LIKE CONCAT('%', :search, '%'))")
     Page<Producto> buscarConFiltros(@Param("categoriaId") Long categoriaId,
                                     @Param("precioMin") Double precioMin,
                                     @Param("precioMax") Double precioMax,
                                     @Param("search") String search,
+                                    @Param("soloOfertas") Boolean soloOfertas,
                                     Pageable pageable);
 }

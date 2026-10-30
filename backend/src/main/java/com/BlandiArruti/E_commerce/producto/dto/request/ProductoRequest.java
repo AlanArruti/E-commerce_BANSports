@@ -1,5 +1,7 @@
 package com.BlandiArruti.E_commerce.producto.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,6 +19,11 @@ public record ProductoRequest(
         @NotNull(message = "El precio base es obligatorio.")
         @Positive(message = "El precio base debe ser positivo.")
         Double precioBase,
+
+        /** Porcentaje de descuento. null o ausente = sin oferta. */
+        @Min(value = 1, message = "El descuento debe ser mayor a 0.")
+        @Max(value = 99, message = "El descuento no puede ser 100% o más.")
+        Integer descuento,
 
         @NotNull(message = "El id de categoría es obligatorio.")
         Long categoriaId

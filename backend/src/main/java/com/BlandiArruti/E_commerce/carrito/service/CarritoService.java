@@ -44,7 +44,6 @@ public class CarritoService {
     private final CarritoMapper carritoMapper;
     private final IPedidoService pedidoService;
 
-    @Transactional(readOnly = true)
     public CarritoResponse obtenerCarrito(Long idCliente) {
         return carritoMapper.toResponse(obtenerOCrearCarrito(idCliente));
     }

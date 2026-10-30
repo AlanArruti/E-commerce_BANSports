@@ -22,7 +22,12 @@
           [routerLinkActiveOptions]="opcionesActiva"
         >{{ categoria.nombre }}</a>
       }
-      <a href="#" class="acento" (click)="$event.preventDefault()">Ofertas</a>
+      <a
+        routerLink="/ofertas"
+        routerLinkActive="activa"
+        [routerLinkActiveOptions]="opcionesActiva"
+        class="acento"
+      >Ofertas</a>
     </nav>
 
     <form class="buscador" role="search" (submit)="buscar($event)">

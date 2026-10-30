@@ -79,7 +79,7 @@
             <th scope="col" class="col-imagen"><span class="solo-lectores">Imagen</span></th>
             <th scope="col">Producto</th>
             <th scope="col">Categoría</th>
-            <th scope="col" class="col-precio">Precio base</th>
+            <th scope="col" class="col-precio">Precio</th>
             <th scope="col" class="col-stock">Stock</th>
             <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
           </tr>
@@ -114,7 +114,13 @@
                     <span class="sin-dato">Sin categoría</span>
                   }
                 </td>
-                <td class="col-precio">{{ producto.precioBase | precio }}</td>
+                <td class="col-precio">
+                  @if (producto.descuento) {
+                    <span class="descuento-tabla">-{{ producto.descuento }}%</span>
+                    <span class="precio-anterior-tabla">{{ producto.precioBase | precio }}</span>
+                  }
+                  <strong>{{ producto.precioFinal | precio }}</strong>
+                </td>
                 <td class="col-stock">
                   @if (stockTotal(producto); as stock) {
                     <span class="stock">

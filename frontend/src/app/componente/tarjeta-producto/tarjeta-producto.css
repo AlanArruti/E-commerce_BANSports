@@ -52,6 +52,13 @@
   color: var(--color-texto);
 }
 
+.etiqueta-oferta {
+  left: auto;
+  right: 14px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
 .sin-stock .producto-foto,
 .sin-stock .producto-pote {
   opacity: 0.35;
@@ -121,6 +128,19 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--espacio-3);
+}
+
+.producto-precios {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.producto-precio-anterior {
+  color: var(--color-texto-secundario);
+  font-size: 13px;
+  text-decoration: line-through;
 }
 
 .producto-precio {

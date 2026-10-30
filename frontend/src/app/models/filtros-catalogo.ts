@@ -1,9 +1,16 @@
-export type Orden = 'relevantes' | 'nuevos' | 'precio-asc' | 'precio-desc' | 'nombre-asc' | 'nombre-desc';
+export type Orden =
+  | 'relevantes'
+  | 'nuevos'
+  | 'precio-asc'
+  | 'precio-desc'
+  | 'descuento-desc'
+  | 'nombre-asc'
+  | 'nombre-desc';
 
 export interface OpcionOrden {
   valor: Orden;
   etiqueta: string;
-  sortBy: 'id' | 'nombre' | 'precio';
+  sortBy: 'id' | 'nombre' | 'precio' | 'descuento';
   sortDir: 'asc' | 'desc';
 }
 
@@ -12,6 +19,7 @@ export const ORDENES: OpcionOrden[] = [
   { valor: 'relevantes', etiqueta: 'Más relevantes', sortBy: 'id', sortDir: 'asc' },
   { valor: 'precio-asc', etiqueta: 'Precio: menor a mayor', sortBy: 'precio', sortDir: 'asc' },
   { valor: 'precio-desc', etiqueta: 'Precio: mayor a menor', sortBy: 'precio', sortDir: 'desc' },
+  { valor: 'descuento-desc', etiqueta: 'Mayor descuento', sortBy: 'descuento', sortDir: 'desc' },
   { valor: 'nombre-asc', etiqueta: 'Nombre: A–Z', sortBy: 'nombre', sortDir: 'asc' },
   { valor: 'nombre-desc', etiqueta: 'Nombre: Z–A', sortBy: 'nombre', sortDir: 'desc' }
 ];

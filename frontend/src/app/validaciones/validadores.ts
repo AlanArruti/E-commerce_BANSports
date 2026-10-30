@@ -88,6 +88,19 @@ export const precioValido: ValidatorFn = (control: AbstractControl): ValidationE
   return precio > 0 ? null : { precioCero: true };
 };
 
+/** Descuento opcional: vacío = sin oferta; si se carga, entero entre 1 y 99. */
+export const descuentoValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = String(control.value ?? '').trim();
+  if (valor === '') {
+    return null;
+  }
+  if (!NUMEROS.test(valor)) {
+    return { descuentoInvalido: true };
+  }
+  const numero = Number(valor);
+  return numero >= 1 && numero <= 99 ? null : { descuentoInvalido: true };
+};
+
 /** Email con formato nombre@dominio.ext (más estricto que Validators.email). */
 export const emailValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '').trim();

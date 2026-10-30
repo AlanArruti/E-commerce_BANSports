@@ -28,6 +28,11 @@ export class TarjetaProducto {
   });
 
   protected readonly sinStock = computed(() => this.stock() === 0);
+  protected readonly tieneOferta = computed(() => (this.producto().descuento ?? 0) > 0);
+  protected readonly descuento = computed(() => Math.round(this.producto().descuento ?? 0));
+  protected readonly precioVigente = computed(
+    () => this.producto().precioFinal ?? this.producto().precioBase
+  );
   protected readonly stockBajo = computed(() => {
     const stock = this.stock();
     return stock !== null && stock > 0 && stock <= STOCK_BAJO;

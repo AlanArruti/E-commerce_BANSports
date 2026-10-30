@@ -4,6 +4,8 @@ import com.BlandiArruti.E_commerce.categoria.entity.Categoria;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,7 @@ public class Producto {
         if (this.uuid == null) {
             this.uuid = UUID.randomUUID().toString();
         }
+        recalcularPrecioFinal();
     }
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
@@ -38,9 +41,45 @@ public class Producto {
     private String descripcion;
     @Column(name = "precio", nullable = false)
     private Double precio;
+    /** Descuento porcentual (20 = 20% off). null o 0 significa sin oferta. */
+    @Column(name = "descuento", columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer descuento = 0;
+    /** Precio ya con el descuento aplicado. Lo mantiene calcularPrecioFinal(). */
+    @Column(name = "precio_final")
+    private Double precioFinal;
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+
+    /** Precio que paga el cliente: el de oferta si hay, o el base. */
+    public double getPrecioConDescuento() {
+        if (precio == null) {
+            return 0;
+        }
+        int porcentaje = descuento == null ? 0 : descuento;
+        if (porcentaje <= 0 || porcentaje >= 100) {
+            return redondear(precio);
+        }
+        return BigDecimal.valueOf(precio)
+                .multiply(BigDecimal.valueOf(100 - porcentaje))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    @PreUpdate
+    private void calcularPrecioFinal() {
+        recalcularPrecioFinal();
+    }
+
+    /** Vuelve a calcular el precio final después de cambiar precio o descuento. */
+    public void recalcularPrecioFinal() {
+        this.precioFinal = getPrecioConDescuento();
+    }
+
+    private static double redondear(Double valor) {
+        return BigDecimal.valueOf(valor).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
 
     /**
      * Bandera desnormalizada: evita consultar la tabla de imágenes por cada

@@ -39,30 +39,33 @@ public class ProductoController {
     private static final Map<String, String> CAMPOS_ORDENABLES = Map.of(
             "id", "id",
             "nombre", "nombre",
-            "precio", "precio"
+            "precio", "precioFinal",
+            "descuento", "descuento"
     );
 
     @Operation(summary = "Listar productos",
-               description = "Filtrables por categoría, precio y nombre. Ordenable por id, nombre o precio.")
+               description = "Filtrables por categoría, precio, nombre y ofertas. Ordenable por id, nombre, precio o descuento.")
     @GetMapping
     public ResponseEntity<PageResponse<ProductoResponse>> listarTodos(
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Double precioMin,
             @RequestParam(required = false) Double precioMax,
             @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean soloOfertas,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(productoService.listarTodos(
-                categoriaId, precioMin, precioMax, search, PageRequest.of(page, size, ordenar(sortBy, sortDir))));
+                categoriaId, precioMin, precioMax, search, soloOfertas,
+                PageRequest.of(page, size, ordenar(sortBy, sortDir))));
     }
 
     private Sort ordenar(String sortBy, String sortDir) {
         String campo = CAMPOS_ORDENABLES.get(sortBy == null ? "" : sortBy.toLowerCase());
         if (campo == null) {
             throw new EcommerceException(
-                    "No se puede ordenar por '" + sortBy + "'. Campos válidos: id, nombre, precio.");
+                    "No se puede ordenar por '" + sortBy + "'. Campos válidos: id, nombre, precio, descuento.");
         }
         Sort.Direction direccion = "desc".equalsIgnoreCase(sortDir)
                 ? Sort.Direction.DESC

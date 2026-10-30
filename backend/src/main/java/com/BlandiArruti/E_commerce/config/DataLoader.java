@@ -98,6 +98,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Whey Protein Concentrada")
                 .descripcion("24 g de proteína por servicio. Ideal para recuperación y ganancia de masa muscular.")
                 .precio(42999.99)
+                .descuento(30)
                 .categoria(proteinas)
                 .build());
         Producto wheyIsolate = productoRepository.save(Producto.builder()
@@ -116,6 +117,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Caseína Micelar")
                 .descripcion("Proteína de absorción lenta, pensada para tomar antes de dormir.")
                 .precio(51999.99)
+                .descuento(15)
                 .categoria(proteinas)
                 .build());
         Producto ganador = productoRepository.save(Producto.builder()
@@ -128,6 +130,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Creatina Monohidrato")
                 .descripcion("Creatina pura de 5 g por servicio para más fuerza y potencia.")
                 .precio(27999.99)
+                .descuento(25)
                 .categoria(creatinas)
                 .build());
         Producto creatinaMicro = productoRepository.save(Producto.builder()
@@ -146,6 +149,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Pre-entreno Explosive")
                 .descripcion("Cafeína, beta-alanina y citrulina para entrenar con energía y enfoque.")
                 .precio(32999.99)
+                .descuento(20)
                 .categoria(preEntrenos)
                 .build());
         Producto preSinCafeina = productoRepository.save(Producto.builder()
@@ -170,6 +174,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Glutamina")
                 .descripcion("L-glutamina pura para la recuperación muscular y el sistema inmune.")
                 .precio(19999.99)
+                .descuento(10)
                 .categoria(aminoacidos)
                 .build());
         Producto eaa = productoRepository.save(Producto.builder()
@@ -188,6 +193,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombre("Omega 3")
                 .descripcion("Aceite de pescado con EPA y DHA para la salud cardiovascular.")
                 .precio(17999.99)
+                .descuento(12)
                 .categoria(vitaminas)
                 .build());
         Producto magnesio = productoRepository.save(Producto.builder()

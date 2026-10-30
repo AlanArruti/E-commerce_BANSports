@@ -35,6 +35,81 @@
   color: var(--color-texto);
 }
 
+/* ── Ofertas destacadas ─────────────────────────────────── */
+.destacadas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  margin-bottom: var(--espacio-6);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-verde);
+  border-radius: var(--radio-grande);
+}
+
+.destacadas-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.destacadas-titulo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.destacadas-pildora {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.destacadas-titulo {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.destacadas-cabecera p {
+  margin: 0;
+  color: var(--color-texto-secundario);
+  font-size: 14px;
+}
+
+.grilla-destacadas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espacio-4);
+}
+
+@media (max-width: 900px) {
+  .destacadas {
+    padding: var(--espacio-4);
+  }
+
+  .grilla-destacadas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .destacadas-titulo {
+    font-size: 26px;
+  }
+
+  .grilla-destacadas {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Layout: filtros a la izquierda, productos a la derecha ── */
 .catalogo {
   display: grid;

@@ -10,6 +10,8 @@ public record ProductoResponse(
         String nombre,
         String descripcion,
         Double precioBase,
+        Integer descuento,
+        Double precioFinal,
         boolean activo,
         /** URL de la imagen, o null si el producto no tiene una cargada. */
         String imagenUrl,

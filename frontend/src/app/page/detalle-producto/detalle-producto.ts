@@ -78,6 +78,12 @@ export class DetalleProducto {
   protected readonly grupos;
   protected readonly productoAgotado;
   protected readonly stockBajo;
+  protected readonly tieneOferta = computed(() => (this.estado().producto?.descuento ?? 0) > 0);
+  protected readonly descuento = computed(() => Math.round(this.estado().producto?.descuento ?? 0));
+  protected readonly precioVigente = computed(() => {
+    const producto = this.estado().producto;
+    return producto ? (producto.precioFinal ?? producto.precioBase) : 0;
+  });
   /** La imagen del back no cargó: se muestra el dibujo del pote. */
   protected readonly imagenFallo;
 

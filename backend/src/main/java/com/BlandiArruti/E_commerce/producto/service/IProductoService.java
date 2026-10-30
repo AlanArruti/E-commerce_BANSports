@@ -14,7 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface IProductoService {
-    PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax, String search, Pageable pageable);
+    PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax,
+                                               String search, Boolean soloOfertas, Pageable pageable);
     ProductoResponse buscarPorId(Long id);
     ProductoResponse crear(ProductoRequest request);
     ProductoResponse actualizar(Long id, ProductoRequest request);

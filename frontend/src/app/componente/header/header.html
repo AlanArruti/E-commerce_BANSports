@@ -33,14 +33,25 @@
 
     <div class="acciones">
       @if (authService.estaLogueado()) {
-        <a
-          [routerLink]="authService.esAdmin() ? '/admin' : '/perfil'"
-          class="link-ingresar"
-          [attr.aria-label]="authService.esAdmin() ? 'Ir al panel de administración' : 'Ir a mi perfil'"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          <span>Hola, {{ nombreUsuario() }}</span>
-        </a>
+        @if (authService.esAdmin()) {
+          <a routerLink="/admin" class="link-ingresar" aria-label="Ir al panel de administración">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span>Hola, {{ nombreUsuario() }}</span>
+          </a>
+        } @else {
+          <button
+            type="button"
+            class="link-ingresar btn-perfil"
+            (click)="abrirPerfil()"
+            aria-haspopup="dialog"
+            [attr.aria-expanded]="perfilAbierto()"
+            aria-label="Abrir mi perfil"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span>Hola, {{ nombreUsuario() }}</span>
+            <svg class="saludo-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        }
         <button type="button" class="btn-texto btn-salir" aria-label="Cerrar sesión" (click)="cerrarSesion()">
           <svg class="icono-salir" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
           <span>Cerrar sesión</span>
@@ -65,3 +76,7 @@
     </div>
   </div>
 </header>
+
+@if (perfilAbierto()) {
+  <app-perfil-modal (cerrar)="cerrarPerfil()" />
+}

@@ -1,3 +1,5 @@
+import { Direccion } from './direccion';
+
 export interface Cliente {
   id: number;
   uuidCliente: string;
@@ -5,4 +7,5 @@ export interface Cliente {
   apellido: string;
   dni: string;
   email: string;
+  direcciones: Direccion[];
 }

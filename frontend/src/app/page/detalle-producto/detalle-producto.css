@@ -72,6 +72,25 @@
   gap: var(--espacio-4);
 }
 
+/* Solo lo ve el admin: atajo al formulario de edición del panel. */
+.link-editar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-height: 36px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.link-editar:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
 .detalle-categoria {
   font-size: 13px;
   font-weight: 600;

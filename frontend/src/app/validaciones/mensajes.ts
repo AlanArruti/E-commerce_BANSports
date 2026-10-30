@@ -54,6 +54,27 @@ export const MENSAJES: Record<string, Mensajes> = {
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
   },
+  categoriaNombre: {
+    requerido: () => 'Ingresá el nombre de la categoría.',
+    maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`,
+    repetido: (_d, valor) => `Ya existe una categoría llamada "${valor.trim()}".`
+  },
+  productoNombre: {
+    requerido: () => 'Ingresá el nombre del producto.',
+    maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  productoCategoria: {
+    required: () => 'Elegí la categoría del producto.'
+  },
+  precioBase: {
+    requerido: () => 'Ingresá el precio base.',
+    precioFormato: () => 'El precio solo puede tener números, puntos para los miles y coma para los centavos (por ejemplo 42.999,99).',
+    precioCero: () => 'El precio tiene que ser mayor a $ 0.'
+  },
+  productoDescripcion: {
+    requerido: () => 'Ingresá una descripción: es lo que lee el cliente en el detalle del producto.',
+    maxlength: (d) => `La descripción puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
   pais: {
     required: () => 'Elegí el país.'
   },

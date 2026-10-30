@@ -46,6 +46,32 @@ export const largoDni: ValidatorFn = (control: AbstractControl): ValidationError
   return null;
 };
 
+/**
+ * Convierte un precio escrito a la argentina en número: "42.999,99" → 42999.99, "1500" → 1500.
+ * Devuelve NaN si el formato no es válido.
+ */
+export function leerPrecio(texto: string): number {
+  const limpio = texto.trim();
+  // Miles con punto (opcional) y hasta dos decimales con coma.
+  if (!/^(\d{1,3}(\.\d{3})+|\d+)(,\d{1,2})?$/.test(limpio)) {
+    return NaN;
+  }
+  return Number(limpio.replace(/\./g, '').replace(',', '.'));
+}
+
+/** Precio en formato argentino y mayor a cero. Dos claves de error distintas para dos mensajes. */
+export const precioValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = String(control.value ?? '').trim();
+  if (valor === '') {
+    return null;
+  }
+  const precio = leerPrecio(valor);
+  if (Number.isNaN(precio)) {
+    return { precioFormato: true };
+  }
+  return precio > 0 ? null : { precioCero: true };
+};
+
 /** Email con formato nombre@dominio.ext (más estricto que Validators.email). */
 export const emailValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '').trim();

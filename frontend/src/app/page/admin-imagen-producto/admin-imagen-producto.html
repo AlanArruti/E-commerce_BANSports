@@ -2,8 +2,10 @@
   <nav class="migas" aria-label="Ubicación">
     <a routerLink="/admin">Panel</a>
     <span aria-hidden="true">/</span>
+    <a routerLink="/admin/productos">Productos</a>
+    <span aria-hidden="true">/</span>
     @if (producto(); as actual) {
-      <span>{{ actual.nombre }}</span>
+      <a [routerLink]="['/admin/productos', actual.id, 'editar']">{{ actual.nombre }}</a>
       <span aria-hidden="true">/</span>
     }
     <span aria-current="page">Imagen</span>

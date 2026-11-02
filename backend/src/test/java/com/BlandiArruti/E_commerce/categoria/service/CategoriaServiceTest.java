@@ -168,6 +168,22 @@ class CategoriaServiceTest {
     }
 
     @Test
+    void eliminar_productosDadosDeBaja_noAparecenEnElAvisoPeroSeDesvinculan() {
+        Categoria c = categoriaConId(1L, "Accesorios");
+        Producto activo = Producto.builder().id(10L).nombre("Shaker").categoria(c).build();
+        Producto deBaja = Producto.builder().id(11L).nombre("Botella vieja").categoria(c).activo(false).build();
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(c));
+        when(productoRepository.findByCategoriaId(1L)).thenReturn(List.of(activo, deBaja));
+
+        EliminacionResponse aviso = categoriaService.eliminar(1L, false);
+        assertThat(aviso.aviso()).singleElement().asString().contains("Shaker");
+
+        categoriaService.eliminar(1L, true);
+        assertThat(deBaja.getCategoria()).isNull();
+        verify(categoriaRepository).delete(c);
+    }
+
+    @Test
     void eliminar_sinConfirmar_sinProductos_devuelveMensajeSinAviso() {
         Categoria c = categoriaConId(1L, "Vacía");
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(c));

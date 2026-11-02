@@ -29,12 +29,11 @@
       </p>
 
       <div class="pasos">
-        <!-- Variantes llegan con SCRUM-116. -->
-        <button type="button" class="paso destacado" title="Próximamente">
+        <a class="paso destacado" [routerLink]="['/admin/productos', producto.id, 'variantes']">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
           <span class="paso-titulo">Agregar variantes</span>
           <span class="paso-detalle">Sabor, presentación y stock</span>
-        </button>
+        </a>
         <a class="paso" [routerLink]="['/admin/productos', producto.id, 'imagen']">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
           <span class="paso-titulo">Cargar imagen</span>

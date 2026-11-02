@@ -91,6 +91,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./page/admin-imagen-producto/admin-imagen-producto').then((m) => m.AdminImagenProducto),
         title: 'Imagen del producto | Panel BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el nombre del producto.
+        path: 'productos/:id/variantes',
+        loadComponent: () => import('./page/admin-variantes/admin-variantes').then((m) => m.AdminVariantes),
+        title: 'Variantes y stock | Panel BAN Sports'
       }
     ]
   },

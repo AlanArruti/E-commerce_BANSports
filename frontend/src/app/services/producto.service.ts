@@ -7,6 +7,7 @@ import { Pagina } from '../models/pagina';
 import { Producto } from '../models/producto';
 import { ProductoRequest } from '../models/producto-request';
 import { Variante } from '../models/variante';
+import { StockRequest, VarianteRequest } from '../models/variante-request';
 
 @Injectable({
   providedIn: 'root'
@@ -89,5 +90,25 @@ export class ProductoService {
   /** Variantes activas del producto (GET /producto/{id}/variante). */
   listarVariantes(id: number): Observable<Variante[]> {
     return this.http.get<Variante[]>(`${this.API_URL}/producto/${id}/variante`);
+  }
+
+  /** Solo ADMIN. Alta de una variante con sus atributos y stock inicial. */
+  crearVariante(idProducto: number, variante: VarianteRequest): Observable<Variante> {
+    return this.http.post<Variante>(`${this.API_URL}/producto/${idProducto}/variante`, variante);
+  }
+
+  /** Solo ADMIN. Reemplaza los atributos y el stock de la variante. */
+  actualizarVariante(idProducto: number, idVariante: number, variante: VarianteRequest): Observable<Variante> {
+    return this.http.put<Variante>(`${this.API_URL}/producto/${idProducto}/variante/${idVariante}`, variante);
+  }
+
+  /** Solo ADMIN. Baja lógica: deja de ofrecerse, los pedidos que la incluyen no cambian. */
+  eliminarVariante(idProducto: number, idVariante: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/producto/${idProducto}/variante/${idVariante}`);
+  }
+
+  /** Solo ADMIN. Suma o resta stock. Si la resta lo deja negativo, el back responde 400 "Stock insuficiente…". */
+  ajustarStock(idProducto: number, idVariante: number, ajuste: StockRequest): Observable<Variante> {
+    return this.http.patch<Variante>(`${this.API_URL}/producto/${idProducto}/variante/${idVariante}/stock`, ajuste);
   }
 }

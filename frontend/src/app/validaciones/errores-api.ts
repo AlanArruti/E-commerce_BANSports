@@ -177,6 +177,37 @@ export function traducirErrorProducto(error: HttpErrorResponse): ErrorTraducido 
   );
 }
 
+/** Errores al crear, editar, dar de baja o ajustar el stock de una variante (panel). */
+export function traducirErrorVariante(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+
+  // El back responde "Stock insuficiente para la variante id 3. Disponible: 4, solicitado: 10."
+  const disponible = /Disponible:\s*(\d+)/.exec(mensaje)?.[1];
+  if (error.status === 400 && disponible !== undefined) {
+    return {
+      titulo: 'Stock insuficiente',
+      detalle: `Esta variante tiene ${disponible} unidades: no podés restar más que eso.`
+    };
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Esa variante ya no existe',
+      detalle: 'Puede que la hayan dado de baja. Recargá la página para ver la lista al día.'
+    };
+  }
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá los datos de la variante', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar la variante',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);
   if (general) {

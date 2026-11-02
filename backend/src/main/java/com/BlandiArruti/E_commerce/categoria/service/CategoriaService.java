@@ -69,7 +69,12 @@ public class CategoriaService implements ICategoriaService {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.categoria(id));
 
-        List<Producto> productosAfectados = productoRepository.findByCategoriaId(id);
+        // Se desvinculan todos (la FK no deja borrar la categoría si alguno la sigue usando),
+        // pero el aviso solo nombra los activos: los dados de baja ya no se ven en ningún lado.
+        List<Producto> productosVinculados = productoRepository.findByCategoriaId(id);
+        List<Producto> productosAfectados = productosVinculados.stream()
+                .filter(Producto::isActivo)
+                .toList();
 
         List<String> nombresAfectados = productosAfectados.stream()
                 .map(p -> "id " + p.getId() + " — " + p.getNombre())
@@ -91,7 +96,7 @@ public class CategoriaService implements ICategoriaService {
             );
         }
 
-        for (Producto producto : productosAfectados) {
+        for (Producto producto : productosVinculados) {
             producto.setCategoria(null);
             productoRepository.save(producto);
         }

@@ -51,6 +51,37 @@ function errorGeneral(error: HttpErrorResponse): ErrorTraducido | null {
   return null;
 }
 
+/** Errores del login con GitHub o Google. El back vuelve al login con ?errorSocial=código. */
+export function traducirErrorSocial(codigo: string): ErrorTraducido {
+  switch (codigo) {
+    case 'access_denied':
+      return {
+        titulo: 'Cancelaste el ingreso',
+        detalle: 'No se compartió tu cuenta. Podés intentarlo de nuevo o entrar con tu email.'
+      };
+    case 'sin_email':
+      return {
+        titulo: 'No recibimos tu email',
+        detalle: 'Tu cuenta tiene que tener un email principal verificado. Revisalo o entrá con tu email y contraseña.'
+      };
+    case 'email_no_verificado':
+      return {
+        titulo: 'Tu email no está verificado',
+        detalle: 'Verificalo en tu cuenta de Google y volvé a intentar, o entrá con tu email y contraseña.'
+      };
+    case 'cuenta_desactivada':
+      return {
+        titulo: 'Tu cuenta está desactivada',
+        detalle: 'Escribinos para reactivarla.'
+      };
+    default:
+      return {
+        titulo: 'No pudimos iniciar sesión',
+        detalle: 'Algo falló al conectar con GitHub o Google. Intentá de nuevo o entrá con tu email.'
+      };
+  }
+}
+
 /** Errores de "¿Olvidaste tu contraseña?" (pedir el enlace o guardar la contraseña nueva). */
 export function traducirErrorRecuperacion(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);

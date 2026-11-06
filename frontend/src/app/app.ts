@@ -10,6 +10,7 @@ import { Footer } from './componente/footer/footer';
 const RUTAS_SIN_LAYOUT = [
   '/login',
   '/registro',
+  '/ingreso-social',
   '/recuperar-contrasena',
   '/restablecer-contrasena',
   '/admin/login'

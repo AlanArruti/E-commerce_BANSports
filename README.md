@@ -109,6 +109,8 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/auth/login` | Autenticación — devuelve JWT | Público |
 | `POST` | `/auth/register` | Registro de cliente | Público |
 | `GET` | `/auth/me` | Usuario detrás del token (id, username, rol) | Autenticado |
+| `GET` | `/auth/proveedores` | Proveedores de login social con credenciales cargadas (`github`, `google`) | Público |
+| `GET` | `/oauth2/authorization/{github\|google}` | Inicia el login con GitHub o Google (lo abre el navegador) | Público |
 | `POST` | `/auth/recuperar` | Manda por mail un enlace para elegir contraseña nueva (responde igual exista o no la cuenta) | Público |
 | `POST` | `/auth/restablecer` | Guarda la contraseña nueva con el token del enlace (un solo uso, vence a los 30 min) | Público |
 | `GET` | `/producto` | Listar productos (filtros: categoría, precio, búsqueda; orden por `sortBy`/`sortDir`) | Público |
@@ -269,6 +271,50 @@ aplicación, no la de la cuenta.
 en los mails, como el de recuperar la contraseña. En un deploy tiene que ser la
 URL pública del front.
 
+### Login con GitHub y Google
+
+Los botones "Continuar con GitHub / Google" aparecen solo si el `.env` tiene las
+credenciales de ese proveedor. Las dos son gratis.
+
+**GitHub** — https://github.com/settings/developers → OAuth Apps → New OAuth App:
+
+| Campo | Valor |
+|---|---|
+| Homepage URL | `http://localhost:4200` |
+| Authorization callback URL | `http://localhost:4200/login/oauth2/code/github` |
+
+**Google** — https://console.cloud.google.com → Google Auth Platform (no pide tarjeta):
+
+1. **Información de la marca:** nombre `BAN Sports` y tu mail.
+2. **Público:** Externo, **en prueba**. Agregá como usuarios de prueba los Gmail que
+   van a entrar (solo esos pueden mientras la app no se publique).
+3. **Clientes → Crear cliente**, aplicación web:
+   - Orígenes autorizados: `http://localhost:4200`
+   - URI de redireccionamiento: `http://localhost:4200/login/oauth2/code/google`
+
+Después, en el `.env` (nunca en el repo):
+
+```bash
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+```
+
+```bash
+docker compose up -d app
+```
+
+Cómo funciona: el botón lleva a `/oauth2/authorization/{proveedor}` (nginx lo pasa
+al back), el proveedor vuelve a `/login/oauth2/code/{proveedor}` y el back redirige
+a `/ingreso-social?token=...` del front, que guarda la sesión. La cuenta se busca por
+email: si existe se usa esa, si no se crea. Si el usuario cancela o algo falla, vuelve
+al login con un mensaje.
+
+> Las URLs de vuelta tienen que coincidir **exactamente** con las registradas
+> (`http`, puerto `4200`, sin `/` final). En un deploy hay que agregar las de la URL
+> pública y poner `FRONT_URL` con esa dirección.
+
 ### Comandos del día a día
 
 ```bash
@@ -342,8 +388,10 @@ Hibernate genera el esquema correcto de cero.
 | `CORREO_ARGENTINO_USER_TOKEN` | Token API Correo Argentino | `...` |
 | `GITHUB_CLIENT_ID` | Client ID de GitHub OAuth2 | `Ov23li...` |
 | `GITHUB_CLIENT_SECRET` | Client Secret de GitHub OAuth2 | `...` |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google | `...apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Secreto del cliente OAuth de Google | `GOCSPX-...` |
 | `FRONT_ORIGINS` | Orígenes del front habilitados por CORS (separados por coma) | `http://localhost:5173` |
-| `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub (vacío = responde JSON) | `http://localhost:5173/oauth2/callback` |
+| `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub/Google. En Docker por defecto `${FRONT_URL}/ingreso-social`; fuera de Docker vacío = responde JSON (Postman) | `http://localhost:4200/ingreso-social` |
 
 Copiar `.env.example` como `.env` y completar con los valores reales.
 
@@ -368,6 +416,7 @@ cd backend
 
 Cobertura de tests unitarios:
 - `AuthServiceTest` — 5 tests (login OK, credenciales inválidas, cuenta bloqueada, cuenta desactivada, registro)
+- `OAuth2ClienteServiceTest` — 10 tests (GitHub y Google: alta, vinculación por email, email privado de GitHub, email sin verificar, cuenta desactivada)
 - `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
 - `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)

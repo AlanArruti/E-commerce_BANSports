@@ -23,6 +23,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Tag(name = "Autenticación", description = "Login y registro de usuarios")
 @RestController
@@ -32,6 +38,10 @@ public class AuthController {
 
     private final AuthService authService;
     private final RecuperacionPasswordService recuperacionPasswordService;
+    private final ClientRegistrationRepository clientRegistrations;
+
+    /** Valor por defecto de GITHUB_CLIENT_ID / GOOGLE_CLIENT_ID cuando no están en el .env. */
+    private static final String OAUTH_DESHABILITADO = "OAUTH_DISABLED";
 
     @Operation(summary = "Iniciar sesión", description = "Devuelve un JWT Bearer token válido por 24 horas.")
     @PostMapping("/login")
@@ -61,6 +71,24 @@ public class AuthController {
     public ResponseEntity<MensajeResponse> restablecer(@Valid @RequestBody RestablecerPasswordRequest request) {
         recuperacionPasswordService.restablecer(request);
         return ResponseEntity.ok(new MensajeResponse("Tu contraseña se actualizó. Ya podés iniciar sesión."));
+    }
+
+    @Operation(summary = "Proveedores de login social disponibles",
+               description = "Lista los proveedores (github, google) que tienen credenciales cargadas. "
+                           + "El front muestra solo esos botones. Para iniciar el login, el navegador "
+                           + "va a /oauth2/authorization/{proveedor}.")
+    @GetMapping("/proveedores")
+    public ResponseEntity<List<String>> proveedores() {
+        List<String> habilitados = new ArrayList<>();
+        if (clientRegistrations instanceof Iterable<?> registros) {
+            for (Object registro : registros) {
+                if (registro instanceof ClientRegistration cr && !OAUTH_DESHABILITADO.equals(cr.getClientId())) {
+                    habilitados.add(cr.getRegistrationId());
+                }
+            }
+        }
+        Collections.sort(habilitados);
+        return ResponseEntity.ok(habilitados);
     }
 
     @Operation(summary = "Usuario autenticado",

@@ -11,6 +11,8 @@ import { TokenResponse } from '../models/token-response';
 import { UsuarioActual } from '../models/usuario-actual';
 import { MSJ_SESION_INVALIDA } from '../validaciones/errores-api';
 
+export type ProveedorSocial = 'github' | 'google';
+
 /** Error que se lanza cuando alguien que no es cliente usa el login de clientes. */
 export class SoloClientesError extends Error {
   constructor() {
@@ -79,6 +81,32 @@ export class AuthService {
   /** Crea la cuenta del cliente. No inicia sesión: eso lo hace la página con login(). */
   registrar(datos: RegistroRequest): Observable<Cliente> {
     return this.http.post<Cliente>(`${this.API_URL}/auth/register`, datos);
+  }
+
+  /** Proveedores de login social con credenciales cargadas en el back (ej. ['github', 'google']). */
+  proveedoresSociales(): Observable<ProveedorSocial[]> {
+    return this.http.get<string[]>(`${this.API_URL}/auth/proveedores`).pipe(
+      map((lista) => lista.filter((p): p is ProveedorSocial => p === 'github' || p === 'google')),
+      // Si el back no responde, no se muestran los botones: el login con email sigue andando.
+      catchError(() => of([]))
+    );
+  }
+
+  /** Dirección a la que va el navegador para empezar el login con GitHub o Google (la atiende el back). */
+  urlLoginSocial(proveedor: ProveedorSocial): string {
+    return `/oauth2/authorization/${proveedor}`;
+  }
+
+  /**
+   * Guarda el token que devolvió el back al terminar el login con GitHub o Google y lo confirma.
+   * Solo acepta tokens de cliente.
+   */
+  iniciarSesionSocial(token: string): Observable<boolean> {
+    if (this.decodificar(token)?.rol !== 'CLIENTE') {
+      return of(false);
+    }
+    this.guardarSesion(token, true);
+    return this.validarSesion();
   }
 
   /** Pide el mail con el enlace para elegir una contraseña nueva. El back responde igual exista o no la cuenta. */

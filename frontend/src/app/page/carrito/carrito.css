@@ -75,6 +75,63 @@
   opacity: 0.6;
 }
 
+/* Producto del carrito sin sesión que se dio de baja: solo nombre y botón para quitarlo. */
+.item.item-no-disponible {
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-areas: none;
+  border-color: var(--color-error);
+}
+
+.item-no-disponible-texto {
+  font-size: 13px;
+  color: var(--color-error-texto);
+}
+
+/* ── Sin sesión ─────────────────────────────────────────── */
+.aviso-invitado {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-5);
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  color: var(--color-texto-suave);
+  font-size: 14px;
+}
+
+.aviso-invitado svg {
+  flex-shrink: 0;
+  color: var(--color-verde);
+}
+
+.pedir-cuenta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--color-borde);
+}
+
+.pedir-cuenta p:first-child {
+  display: flex;
+  gap: var(--espacio-2);
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-texto-suave);
+}
+
+.pedir-cuenta p:first-child svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-verde);
+}
+
+.nota-error {
+  color: var(--color-error-texto);
+}
+
 .item-imagen {
   width: 88px;
   height: 96px;
@@ -418,5 +475,17 @@
 
   .resumen {
     position: static;
+  }
+}
+
+/* El ítem no disponible no usa las áreas de la grilla de dos filas. */
+@media (max-width: 1100px) {
+  .item.item-no-disponible {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-areas: none;
+  }
+
+  .item-no-disponible > * {
+    grid-area: auto;
   }
 }

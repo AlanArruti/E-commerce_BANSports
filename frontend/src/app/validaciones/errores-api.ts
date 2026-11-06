@@ -8,6 +8,11 @@ export interface ErrorTraducido {
   detalle: string;
   /** Si el error corresponde a un campo puntual del formulario. */
   campo?: 'email' | 'dni';
+  /**
+   * Sin conexión o error del servidor (5xx). Ya lo avisa la franja general (AvisoConexion),
+   * así que las pantallas no lo repiten al cargar.
+   */
+  general?: boolean;
 }
 
 export const MSJ_SOLO_CLIENTES: ErrorTraducido = {
@@ -32,13 +37,15 @@ function errorGeneral(error: HttpErrorResponse): ErrorTraducido | null {
   if (error.status === 0) {
     return {
       titulo: 'No pudimos conectarnos con el servidor',
-      detalle: 'Revisá tu conexión a internet e intentá de nuevo.'
+      detalle: 'Revisá tu conexión a internet e intentá de nuevo.',
+      general: true
     };
   }
   if (error.status >= 500) {
     return {
       titulo: 'Ocurrió un error en el servidor',
-      detalle: 'No es un problema de tus datos. Intentá de nuevo en unos minutos.'
+      detalle: 'No es un problema de tus datos. Intentá de nuevo en unos minutos.',
+      general: true
     };
   }
   return null;
@@ -370,6 +377,23 @@ export function traducirErrorBajaProducto(error: HttpErrorResponse): ErrorTraduc
   }
   return {
     titulo: 'No pudimos dar de baja el producto',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorFavoritos(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese producto ya no está disponible',
+      detalle: 'Puede que lo hayan dado de baja, así que no se puede guardar en favoritos.'
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar tus favoritos',
     detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
   };
 }

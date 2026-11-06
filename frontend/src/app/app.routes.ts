@@ -6,7 +6,7 @@ import { Perfil } from './page/perfil/perfil';
 import { AdminLogin } from './page/admin-login/admin-login';
 import { AdminInicio } from './page/admin-inicio/admin-inicio';
 import { guestGuard } from './guards/guest.guard';
-import { rolGuard } from './guards/rol.guard';
+import { rolGuard, sinAdminGuard } from './guards/rol.guard';
 
 export const routes: Routes = [
   // ── Públicas ───────────────────────────────────────────
@@ -33,7 +33,8 @@ export const routes: Routes = [
   {
     path: 'carrito',
     loadComponent: () => import('./page/carrito/carrito').then((m) => m.Carrito),
-    canActivate: [rolGuard('CLIENTE')],
+    // Funciona sin sesión: el carrito se guarda en el navegador hasta que el cliente ingresa.
+    canActivate: [sinAdminGuard],
     title: 'Carrito | BAN Sports'
   },
 
@@ -68,8 +69,17 @@ export const routes: Routes = [
   // Las próximas pantallas (direcciones, mis pedidos) se agregan como children.
   {
     path: 'perfil',
+    // canActivateChild vuelve a validar al pasar de una pantalla hija a otra (canActivate solo corre al entrar).
     canActivate: [rolGuard('CLIENTE')],
-    children: [{ path: '', component: Perfil, title: 'Mi perfil | BAN Sports' }]
+    canActivateChild: [rolGuard('CLIENTE')],
+    children: [
+      { path: '', component: Perfil, title: 'Mi perfil | BAN Sports' },
+      {
+        path: 'favoritos',
+        loadComponent: () => import('./page/favoritos/favoritos').then((m) => m.Favoritos),
+        title: 'Mis favoritos | BAN Sports'
+      }
+    ]
   },
 
   // ── Admin: todo lo que cuelga de /admin exige rol ADMIN ──
@@ -77,6 +87,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [rolGuard('ADMIN')],
+    canActivateChild: [rolGuard('ADMIN')],
     children: [
       { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
       {
@@ -116,5 +127,10 @@ export const routes: Routes = [
     ]
   },
 
-  { path: '**', redirectTo: '' }
+  // Cualquier otra ruta: página 404 (antes volvía al inicio sin avisar).
+  {
+    path: '**',
+    loadComponent: () => import('./page/no-encontrada/no-encontrada').then((m) => m.NoEncontrada),
+    title: 'Página no encontrada | BAN Sports'
+  }
 ];

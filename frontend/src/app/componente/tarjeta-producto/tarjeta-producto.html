@@ -11,6 +11,19 @@
     } @else {
       <app-pote-producto class="producto-pote" [nombre]="abreviatura()" />
     }
+    <!-- Los admins no tienen favoritos. Queda por encima del link que cubre la tarjeta. -->
+    @if (!authService.esAdmin()) {
+      <button
+        type="button"
+        class="btn-favorito"
+        [ngClass]="{ activo: esFavorito() }"
+        [attr.aria-pressed]="esFavorito()"
+        [attr.aria-label]="(esFavorito() ? 'Quitar de favoritos: ' : 'Guardar en favoritos: ') + producto().nombre"
+        (click)="alternarFavorito()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" [attr.fill]="esFavorito() ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6z"/></svg>
+      </button>
+    }
   </div>
   <div class="producto-info">
     @if (producto().categoria; as categoria) {

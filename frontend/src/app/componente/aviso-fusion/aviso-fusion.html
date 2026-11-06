@@ -1,0 +1,50 @@
+@if (carritoService.avisoFusion(); as fusion) {
+  <div class="avisos">
+    @if (fusion.unidades) {
+      <div class="alerta-ok" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-ok-titulo">Sumamos tu carrito a tu cuenta</div>
+          <div class="alerta-error-texto">
+            @if (fusion.unidades === 1) {
+              El producto que agregaste sin sesión quedó junto a los que ya tenías guardados.
+            } @else {
+              Los {{ fusion.unidades }} productos que agregaste sin sesión quedaron junto a los que ya tenías guardados.
+            }
+          </div>
+        </div>
+        <button type="button" class="btn-cerrar" aria-label="Cerrar aviso" (click)="cerrar()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    }
+
+    @if (fusion.ajustes.length) {
+      <div class="alerta-aviso" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-aviso-titulo">
+            {{ fusion.ajustes.length === 1 ? 'Ajustamos una cantidad por el stock' : 'Ajustamos algunas cantidades por el stock' }}
+          </div>
+          @for (ajuste of fusion.ajustes; track ajuste.nombre) {
+            <div class="alerta-error-texto">
+              {{ ajuste.nombre }}: querías {{ ajuste.querias }} en total y quedan {{ ajuste.quedan }}, así que tenés {{ ajuste.quedan }}.
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (fusion.descartados.length) {
+      <div class="alerta-aviso" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-aviso-titulo">
+            {{ fusion.descartados.length === 1 ? 'Un producto ya no está disponible' : 'Algunos productos ya no están disponibles' }}
+          </div>
+          <div class="alerta-error-texto">No los sumamos: {{ fusion.descartados.join(', ') }}.</div>
+        </div>
+      </div>
+    }
+  </div>
+}

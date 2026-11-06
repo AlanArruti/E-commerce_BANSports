@@ -8,10 +8,12 @@ import {
 } from '@angular/core';
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Direccion } from '../../models/direccion';
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { AuthService } from '../../services/auth.service';
 import { ClienteService } from '../../services/cliente.service';
+import { FavoritoService } from '../../services/favorito.service';
 import {
   ErrorTraducido,
   traducirErrorPassword,
@@ -24,7 +26,7 @@ type Modo = 'ver' | 'editar' | 'password';
 
 @Component({
   selector: 'app-perfil-modal',
-  imports: [ReactiveFormsModule, NgClass, DatePipe, DecimalPipe],
+  imports: [ReactiveFormsModule, NgClass, DatePipe, DecimalPipe, RouterLink],
   templateUrl: './perfil-modal.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './perfil-modal.css'
@@ -71,7 +73,8 @@ export class PerfilModal {
 
   constructor(
     private authService: AuthService,
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    protected favoritoService: FavoritoService
   ) {
     const cliente = this.authService.cliente();
 

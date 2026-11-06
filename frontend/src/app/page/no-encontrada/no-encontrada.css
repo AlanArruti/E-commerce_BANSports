@@ -1,0 +1,19 @@
+.pagina {
+  padding-bottom: var(--espacio-8);
+}
+
+.migas {
+  display: flex;
+  gap: var(--espacio-2);
+  padding: var(--espacio-5) 0;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.migas a:hover {
+  color: var(--color-verde);
+}
+
+.migas [aria-current] {
+  color: var(--color-texto);
+}

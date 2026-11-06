@@ -5,6 +5,8 @@ import { PoteProducto, abreviarNombre } from '../pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
 import { STOCK_BAJO, atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
+import { AuthService } from '../../services/auth.service';
+import { FavoritoService } from '../../services/favorito.service';
 
 /** Tarjeta de un producto del catálogo: imagen, categoría, variantes, stock y precio. Toda la tarjeta lleva al detalle. */
 @Component({
@@ -16,6 +18,17 @@ import { PrecioPipe } from '../../pipes/precio.pipe';
 })
 export class TarjetaProducto {
   readonly producto = input.required<Producto>();
+
+  constructor(
+    protected authService: AuthService,
+    private favoritoService: FavoritoService
+  ) {}
+
+  protected readonly esFavorito = computed(() => this.favoritoService.ids().has(this.producto().id));
+
+  protected alternarFavorito(): void {
+    this.favoritoService.alternar(this.producto());
+  }
 
   private readonly variantesActivas = computed(() =>
     this.producto().variantes.filter((variante) => variante.activo)

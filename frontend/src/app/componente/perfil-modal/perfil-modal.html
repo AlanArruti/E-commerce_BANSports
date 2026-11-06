@@ -254,6 +254,20 @@
     </section>
 
     <section class="perfil-seccion">
+      <div class="seccion-cabecera">
+        <h3 class="titulo-display seccion-titulo">Mis favoritos</h3>
+        <a routerLink="/perfil/favoritos" class="btn btn-secundario btn-chico" (click)="cerrar.emit()">Ver favoritos</a>
+      </div>
+      <p class="perfil-vacio">
+        @if (favoritoService.cantidad()) {
+          Tenés {{ favoritoService.cantidad() }} {{ favoritoService.cantidad() === 1 ? 'producto guardado' : 'productos guardados' }}.
+        } @else {
+          Todavía no guardaste productos. Tocá el corazón en cualquier producto para guardarlo.
+        }
+      </p>
+    </section>
+
+    <section class="perfil-seccion">
       <h3 class="titulo-display seccion-titulo">Mis pedidos</h3>
 
       @if (cargandoPedidos()) {

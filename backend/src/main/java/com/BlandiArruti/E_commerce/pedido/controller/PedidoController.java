@@ -72,7 +72,10 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.iniciarPagoMercadoPago(id, request));
     }
 
-    @Operation(summary = "Pagar pedido directamente (sin MercadoPago)")
+    // Solo ADMIN: marca el pedido como pagado sin cobrar. Si lo pudiera llamar el cliente,
+    // se saltearía MercadoPago y se llevaría la compra gratis. El cliente paga con iniciar-pago.
+    @Operation(summary = "Marcar pedido como pagado sin MercadoPago (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/pagar")
     public ResponseEntity<PedidoResponse> pagar(@PathVariable Long id,
                                                 @Valid @RequestBody PagoRequest request) {

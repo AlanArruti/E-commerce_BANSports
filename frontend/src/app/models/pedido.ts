@@ -29,6 +29,7 @@ export interface Pedido {
   uuidPedido: string;
   fechaCreacion: string;
   items: ItemPedido[];
+  costoEnvio: number;
   total: number;
   estado: EstadoPedido;
 }

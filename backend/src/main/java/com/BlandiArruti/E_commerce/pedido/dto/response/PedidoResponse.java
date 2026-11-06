@@ -14,7 +14,9 @@ public record PedidoResponse(
         LocalDateTime fechaCreacion,
         ClienteResponse cliente,
         List<ItemPedidoResponse> items,
-        /** Suma de los ítems. Se calcula al mapear, no está persistido. */
+        /** Costo de envío persistido al confirmar el checkout. */
+        Double costoEnvio,
+        /** Suma de los ítems más el costo de envío. Se calcula al mapear, no está persistido. */
         Double total,
         EstadoPedido estado,
         EnvioResponse envio,

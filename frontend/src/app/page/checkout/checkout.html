@@ -144,9 +144,42 @@
             }
           </ul>
           <a routerLink="/carrito" class="link link-chico">Editar carrito</a>
+
+          @if (direccionElegida()) {
+            <div class="resumen-envio-bloque">
+              <span class="resumen-envio-titulo">Envío</span>
+              @if (cargandoEnvio()) {
+                <p class="resumen-envio-mensaje">Calculando envío…</p>
+              } @else if (errorEnvio(); as error) {
+                <p class="resumen-envio-mensaje resumen-envio-error">{{ error.detalle }}</p>
+                <button type="button" class="link link-chico" (click)="cargarCotizacion(idDireccionElegida())">Reintentar</button>
+              } @else if (cotizaciones().length) {
+                <div class="envio-opciones" role="radiogroup" aria-label="Opciones de envío">
+                  @for (opcion of cotizaciones(); track $index) {
+                    <label class="envio-opcion" [ngClass]="{ elegida: $index === idOpcionElegida() }">
+                      <input
+                        type="radio"
+                        name="envio"
+                        [checked]="$index === idOpcionElegida()"
+                        (change)="elegirOpcion($index)"
+                      />
+                      <span class="envio-opcion-texto">
+                        <span class="envio-opcion-nombre">{{ opcion.servicio }}</span>
+                        <span class="envio-opcion-plazo">{{ plazoDeEnvio(opcion) }}</span>
+                      </span>
+                      <span class="envio-opcion-precio">{{ opcion.precio | precio }}</span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <p class="resumen-envio-mensaje">No hay opciones de envío para esta dirección.</p>
+              }
+            </div>
+          }
+
           <div class="resumen-total">
             <span>Total</span>
-            <strong>{{ carritoService.carrito()?.total | precio }}</strong>
+            <strong>{{ totalConEnvio() | precio }}</strong>
           </div>
           @if (direccionElegida(); as direccion) {
             <p class="resumen-envio">Se envía a <strong>{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</strong></p>

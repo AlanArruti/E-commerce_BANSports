@@ -15,15 +15,17 @@ public interface PedidoMapper {
     @Mapping(source = "uuid", target = "uuidPedido")
     @Mapping(source = "estadoPedido", target = "estado")
     @Mapping(source = "items", target = "items")
+    @Mapping(source = "costoEnvio", target = "costoEnvio")
     @Mapping(target = "total", expression = "java(calcularTotal(pedido))")
     PedidoResponse toResponse(Pedido pedido);
 
     default Double calcularTotal(Pedido pedido) {
+        double costoEnvio = pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0;
         if (pedido.getItems() == null) {
-            return 0.0;
+            return costoEnvio;
         }
         return pedido.getItems().stream()
                 .mapToDouble(item -> item.getPrecioProducto() != null ? item.getPrecioProducto() : 0.0)
-                .sum();
+                .sum() + costoEnvio;
     }
 }

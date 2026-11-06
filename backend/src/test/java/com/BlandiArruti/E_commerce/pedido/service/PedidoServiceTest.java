@@ -15,6 +15,7 @@ import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
+import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.mercadopago.service.MercadoPagoService;
@@ -32,6 +33,7 @@ import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -266,6 +268,26 @@ class PedidoServiceTest {
         assertThatThrownBy(() -> pedidoService.pagar(1L, new PagoRequest(TipoFactura.B)))
                 .isInstanceOf(PedidoNoModificableException.class);
         verify(facturaRepository, never()).save(any());
+    }
+
+    @Test
+    void pagar_conCostoEnvio_facturaIncluyeEnvio() {
+        Variante variante = Variante.builder().id(1L).stock(10).build();
+        ItemPedido item = ItemPedido.builder()
+                .variante(variante).cantidad(2).precioProducto(500.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.EN_PREPARACION, item);
+        pedido.setCostoEnvio(1200.0);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        when(pedidoMapper.toResponse(any())).thenReturn(null);
+
+        pedidoService.pagar(1L, new PagoRequest(TipoFactura.B));
+
+        ArgumentCaptor<Factura> captor = ArgumentCaptor.forClass(Factura.class);
+        verify(facturaRepository).save(captor.capture());
+        assertThat(captor.getValue().getPrecioTotal()).isEqualTo(1700.0);
     }
 
     // ─── crearEnvio() ────────────────────────────────────────────────────────

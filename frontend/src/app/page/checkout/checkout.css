@@ -254,6 +254,87 @@
   color: var(--color-aviso);
 }
 
+/* ── Opciones de envío en el resumen ───────────────────── */
+.resumen-envio-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.resumen-envio-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.resumen-envio-mensaje {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.resumen-envio-error {
+  color: var(--color-error);
+}
+
+.envio-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.envio-opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-height: 56px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+
+.envio-opcion:hover {
+  border-color: var(--color-texto-secundario);
+}
+
+.envio-opcion.elegida {
+  border-color: var(--color-verde);
+  background: var(--color-superficie-2);
+}
+
+.envio-opcion input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--color-verde);
+}
+
+.envio-opcion-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.envio-opcion-nombre {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.envio-opcion-plazo {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.envio-opcion-precio {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ── Pedido confirmado ─────────────────────────────────── */
 .confirmado {
   max-width: 720px;

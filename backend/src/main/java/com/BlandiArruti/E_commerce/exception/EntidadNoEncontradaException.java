@@ -68,4 +68,9 @@ public class EntidadNoEncontradaException extends EcommerceException {
     public static EntidadNoEncontradaException itemCarrito(Long id) {
         return new EntidadNoEncontradaException("Ítem de carrito con id " + id + " no encontrado.");
     }
+
+    // -- Tarifas de envío --
+    public static EntidadNoEncontradaException tarifaEnvio(Long id) {
+        return new EntidadNoEncontradaException("Tarifa de envío con id " + id + " no encontrada.");
+    }
 }

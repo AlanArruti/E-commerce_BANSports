@@ -107,6 +107,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/categorias/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/categorias/**").hasRole("ADMIN")
 
+                .requestMatchers("/api/v1/cotizacion/tarifas/**").hasRole("ADMIN")
+
                 // ── ADMIN o CLIENTE ──────────────────────────────────────────
                 .requestMatchers("/api/v1/pedido/**").hasAnyRole("ADMIN", "CLIENTE")
                 .requestMatchers("/api/v1/cliente/**").hasAnyRole("ADMIN", "CLIENTE")

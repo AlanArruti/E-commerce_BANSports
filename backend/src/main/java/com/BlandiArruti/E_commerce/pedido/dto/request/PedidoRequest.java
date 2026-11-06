@@ -11,6 +11,8 @@ public record PedidoRequest(
 
         Long idDireccion,
 
+        Double costoEnvio,
+
         @NotEmpty(message = "El pedido debe tener al menos un ítem.")
         @Valid
         List<ItemPedidoRequest> items

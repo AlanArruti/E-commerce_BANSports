@@ -183,9 +183,9 @@ export class CarritoService {
    * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock
    * y que la dirección sea del cliente, y vacía el carrito. Solo con sesión.
    */
-  checkout(idDireccion: number): Observable<Pedido> {
+  checkout(idDireccion: number, costoEnvio: number): Observable<Pedido> {
     return this.http
-      .post<Pedido>(`${this.url()}/checkout`, { idDireccion })
+      .post<Pedido>(`${this.url()}/checkout`, { idDireccion, costoEnvio })
       .pipe(tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito))));
   }
 

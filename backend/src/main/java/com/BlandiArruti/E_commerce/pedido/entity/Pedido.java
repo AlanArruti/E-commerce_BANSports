@@ -46,6 +46,14 @@ public class Pedido {
     @JoinColumn(name = "id_direccion_envio")
     private Direccion direccionEnvio;
 
+    // Costo de envío elegido en el checkout. Se persiste para cobrarlo bien
+    // (MercadoPago y la factura) aunque la cotización cambie después.
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre pedidos existentes.
+    @Column(name = "costo_envio", nullable = false,
+            columnDefinition = "double precision default 0 not null")
+    @Builder.Default
+    private Double costoEnvio = 0.0;
+
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ItemPedido> items = new ArrayList<>();

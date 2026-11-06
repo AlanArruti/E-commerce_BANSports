@@ -32,9 +32,21 @@ public class MercadoPagoService {
 
     public PreferenciaResponse crearPreferencia(Pedido pedido, TipoFactura tipoFactura) {
         try {
-            List<PreferenceItemRequest> items = pedido.getItems().stream()
+            List<PreferenceItemRequest> items = new java.util.ArrayList<>(pedido.getItems().stream()
                     .map(this::mapItem)
-                    .toList();
+                    .toList());
+
+            // El envío viaja como un ítem más para que MercadoPago cobre el total real.
+            double costoEnvio = pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0;
+            if (costoEnvio > 0) {
+                items.add(PreferenceItemRequest.builder()
+                        .title("Envío")
+                        .description("Costo de envío")
+                        .quantity(1)
+                        .currencyId("ARS")
+                        .unitPrice(BigDecimal.valueOf(costoEnvio))
+                        .build());
+            }
 
             String externalReference = pedido.getId() + "|" + tipoFactura.name();
 

@@ -292,6 +292,17 @@ export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
+export function traducirErrorCotizacion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos calcular el costo de envío',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);
   if (general) {

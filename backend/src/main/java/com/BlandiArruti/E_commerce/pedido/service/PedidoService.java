@@ -144,6 +144,7 @@ public class PedidoService implements IPedidoService {
                 .cliente(cliente)
                 .estadoPedido(EstadoPedido.PENDIENTE_PAGO)
                 .direccionEnvio(direccionEnvio)
+                .costoEnvio(request.costoEnvio() != null ? request.costoEnvio() : 0.0)
                 .build();
 
         for (int i = 0; i < request.items().size(); i++) {
@@ -247,7 +248,8 @@ public class PedidoService implements IPedidoService {
 
         double total = pedido.getItems().stream()
                 .mapToDouble(ItemPedido::getPrecioProducto)
-                .sum();
+                .sum()
+                + (pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0);
 
         Factura factura = Factura.builder()
                 .pedido(pedido)

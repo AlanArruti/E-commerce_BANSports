@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
 import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../../models/variante';
@@ -14,6 +15,7 @@ import { CarritoService } from '../../services/carrito.service';
 import { FavoritoService } from '../../services/favorito.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorProducto } from '../../validaciones/errores-api';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 interface EstadoDetalle {
   cargando: boolean;
@@ -66,7 +68,7 @@ function varianteInicial(variantes: Variante[], idDeLaUrl: string | null): Varia
 
 @Component({
   selector: 'app-detalle-producto',
-  imports: [NgClass, RouterLink, PoteProducto, PrecioPipe],
+  imports: [ErrorCarga, NgClass, RouterLink, NoEncontrado, PoteProducto, PrecioPipe],
   templateUrl: './detalle-producto.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-producto.css'

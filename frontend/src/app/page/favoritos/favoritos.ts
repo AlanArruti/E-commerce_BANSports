@@ -7,6 +7,7 @@ import { Variante } from '../../models/variante';
 import { CarritoService } from '../../services/carrito.service';
 import { FavoritoService } from '../../services/favorito.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorFavoritos } from '../../validaciones/errores-api';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 const ERROR_INESPERADO: ErrorTraducido = {
   titulo: 'No pudimos cargar tus favoritos',
@@ -26,7 +27,7 @@ type Accion =
 
 @Component({
   selector: 'app-favoritos',
-  imports: [RouterLink, TarjetaProducto],
+  imports: [ErrorCarga, RouterLink, TarjetaProducto],
   templateUrl: './favoritos.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './favoritos.css'

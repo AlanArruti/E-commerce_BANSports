@@ -9,6 +9,7 @@ import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { CarritoService, ItemNoDisponible } from '../../services/carrito.service';
 import { ErrorTraducido, traducirErrorCarrito } from '../../validaciones/errores-api';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 const ERROR_INESPERADO: ErrorTraducido = {
   titulo: 'No pudimos actualizar el carrito',
@@ -17,7 +18,7 @@ const ERROR_INESPERADO: ErrorTraducido = {
 
 @Component({
   selector: 'app-carrito',
-  imports: [RouterLink, AvisoFusion, PoteProducto, PrecioPipe],
+  imports: [ErrorCarga, RouterLink, AvisoFusion, PoteProducto, PrecioPipe],
   templateUrl: './carrito.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './carrito.css'

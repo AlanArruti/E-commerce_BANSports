@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { conexionInterceptor } from './interceptors/conexion.interceptor';
 import { AuthService } from './services/auth.service';
 
 export const appConfig: ApplicationConfig = {
@@ -18,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([authInterceptor, conexionInterceptor])),
     // Al abrir la app, si hay un token guardado se confirma con el back.
     provideAppInitializer(() => firstValueFrom(inject(AuthService).validarSesion()))
   ]

@@ -14,11 +14,12 @@ import { PrecioPipe } from '../../pipes/precio.pipe';
 import { CarritoService } from '../../services/carrito.service';
 import { DireccionService } from '../../services/direccion.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout } from '../../validaciones/errores-api';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 /** Checkout: elegir (o cargar) la dirección de entrega y convertir el carrito en un pedido. */
 @Component({
   selector: 'app-checkout',
-  imports: [NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion, AvisoFusion],
+  imports: [ErrorCarga, NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion, AvisoFusion],
   templateUrl: './checkout.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './checkout.css'

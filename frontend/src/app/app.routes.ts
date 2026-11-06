@@ -54,7 +54,9 @@ export const routes: Routes = [
   // Las próximas pantallas (direcciones, mis pedidos) se agregan como children.
   {
     path: 'perfil',
+    // canActivateChild vuelve a validar al pasar de una pantalla hija a otra (canActivate solo corre al entrar).
     canActivate: [rolGuard('CLIENTE')],
+    canActivateChild: [rolGuard('CLIENTE')],
     children: [
       { path: '', component: Perfil, title: 'Mi perfil | BAN Sports' },
       {
@@ -70,6 +72,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [rolGuard('ADMIN')],
+    canActivateChild: [rolGuard('ADMIN')],
     children: [
       { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
       {
@@ -109,5 +112,10 @@ export const routes: Routes = [
     ]
   },
 
-  { path: '**', redirectTo: '' }
+  // Cualquier otra ruta: página 404 (antes volvía al inicio sin avisar).
+  {
+    path: '**',
+    loadComponent: () => import('./page/no-encontrada/no-encontrada').then((m) => m.NoEncontrada),
+    title: 'Página no encontrada | BAN Sports'
+  }
 ];

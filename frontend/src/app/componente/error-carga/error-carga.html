@@ -1,0 +1,12 @@
+@if (error().general && conexion.problema()) {
+  <p class="esperando" role="status">Esto se carga cuando vuelva la conexión.</p>
+} @else {
+  <div class="alerta-error" role="alert">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+    <div class="alerta-cuerpo">
+      <div class="alerta-error-titulo">{{ error().titulo }}</div>
+      <div class="alerta-error-texto">{{ error().detalle }}</div>
+    </div>
+    <button type="button" class="btn-texto" (click)="reintentar.emit()">Reintentar</button>
+  </div>
+}

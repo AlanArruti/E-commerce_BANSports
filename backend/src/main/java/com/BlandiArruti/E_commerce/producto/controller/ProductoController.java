@@ -35,6 +35,9 @@ public class ProductoController {
 
     private final IProductoService productoService;
 
+    /** Tope de productos por página del listado público. */
+    private static final int TAMANIO_MAXIMO_PAGINA = 100;
+
     /** Campos por los que se puede ordenar el catálogo (whitelist). */
     private static final Map<String, String> CAMPOS_ORDENABLES = Map.of(
             "id", "id",
@@ -56,9 +59,13 @@ public class ProductoController {
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        // Es público: sin tope, un size enorme haría que el back cargue todo el catálogo de una vez.
+        // Una página negativa o un size menor a 1 harían fallar a PageRequest con un 500.
+        int pagina = Math.max(page, 0);
+        int tamanio = Math.min(Math.max(size, 1), TAMANIO_MAXIMO_PAGINA);
         return ResponseEntity.ok(productoService.listarTodos(
                 categoriaId, precioMin, precioMax, search, soloOfertas,
-                PageRequest.of(page, size, ordenar(sortBy, sortDir))));
+                PageRequest.of(pagina, tamanio, ordenar(sortBy, sortDir))));
     }
 
     private Sort ordenar(String sortBy, String sortDir) {

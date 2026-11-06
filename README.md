@@ -109,6 +109,8 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/auth/login` | Autenticación — devuelve JWT | Público |
 | `POST` | `/auth/register` | Registro de cliente | Público |
 | `GET` | `/auth/me` | Usuario detrás del token (id, username, rol) | Autenticado |
+| `POST` | `/auth/recuperar` | Manda por mail un enlace para elegir contraseña nueva (responde igual exista o no la cuenta) | Público |
+| `POST` | `/auth/restablecer` | Guarda la contraseña nueva con el token del enlace (un solo uso, vence a los 30 min) | Público |
 | `GET` | `/producto` | Listar productos (filtros: categoría, precio, búsqueda; orden por `sortBy`/`sortDir`) | Público |
 | `GET` | `/producto/{id}` | Detalle de producto | Público |
 | `POST` | `/producto` | Crear producto | ADMIN |
@@ -228,6 +230,45 @@ Para ver si MP está llamando al webhook, abrí el inspector de ngrok en
 **http://localhost:4040**: muestra cada request que entra por el túnel con su
 body y su respuesta.
 
+### Mails reales con Gmail
+
+Por defecto todos los mails caen en Mailpit y no salen a internet. Para que
+lleguen a casillas reales se usa el SMTP de Gmail, que es gratis (unos 500
+destinatarios por día).
+
+1. En la cuenta de Gmail del proyecto, activá la
+   [verificación en 2 pasos](https://myaccount.google.com/signinoptions/twosv).
+2. Creá una [contraseña de aplicación](https://myaccount.google.com/apppasswords)
+   (nombre: "BAN Sports"). Google muestra 16 letras **una sola vez**.
+3. Agregá esto a tu `.env` (nunca al repo: es público):
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=la-casilla@gmail.com
+SMTP_PASSWORD=las16letrassinespacios
+```
+
+```bash
+docker compose up -d app
+```
+
+Con `SMTP_HOST` definido se activan solos la autenticación y STARTTLS, y el
+remitente pasa a ser `SMTP_USERNAME` (Gmail reescribe cualquier otro). Para
+volver a Mailpit, borrá esas líneas y repetí el `up`.
+
+> Dentro de Docker se usan `SMTP_*` y no `MAIL_*` a propósito: las `MAIL_*` del
+> `.env` son para correr fuera de Docker (Mailtrap), y si se colaran al
+> contenedor los mails se perderían en silencio.
+
+Si Gmail rechaza el login (`535 Username and Password not accepted`), revisá
+que la verificación en 2 pasos esté activa y que la contraseña sea la de
+aplicación, no la de la cuenta.
+
+`FRONT_URL` (default `http://localhost:4200`) es la base de los enlaces que van
+en los mails, como el de recuperar la contraseña. En un deploy tiene que ser la
+URL pública del front.
+
 ### Comandos del día a día
 
 ```bash
@@ -295,6 +336,9 @@ Hibernate genera el esquema correcto de cero.
 | `MAIL_PORT` | Puerto SMTP | `587` |
 | `MAIL_USERNAME` | Cuenta de correo | `tu@gmail.com` |
 | `MAIL_PASSWORD` | Contraseña / app password | `xxxx xxxx xxxx xxxx` |
+| `MAIL_FROM` | Remitente de los mails (con Gmail, la misma casilla) | `tu@gmail.com` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Solo Docker: SMTP real. Sin `SMTP_HOST` los mails van a Mailpit (ver "Mails reales con Gmail") | `smtp.gmail.com` |
+| `FRONT_URL` | URL del front, para armar los enlaces de los mails | `http://localhost:4200` |
 | `CORREO_ARGENTINO_USER_TOKEN` | Token API Correo Argentino | `...` |
 | `GITHUB_CLIENT_ID` | Client ID de GitHub OAuth2 | `Ov23li...` |
 | `GITHUB_CLIENT_SECRET` | Client Secret de GitHub OAuth2 | `...` |
@@ -324,6 +368,7 @@ cd backend
 
 Cobertura de tests unitarios:
 - `AuthServiceTest` — 5 tests (login OK, credenciales inválidas, cuenta bloqueada, cuenta desactivada, registro)
+- `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
 - `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
 - `CategoriaServiceTest` — 12 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)

@@ -89,6 +89,8 @@ notificaciones:
   remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
 
 app:
+  # Base de los enlaces que van en los mails (ej. recuperar la contraseña).
+  front-url: ${FRONT_URL:http://localhost:4200}
   cors:
     # Orígenes del front autorizados, separados por coma.
     allowed-origins: ${FRONT_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:4200}

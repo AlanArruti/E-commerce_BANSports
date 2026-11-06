@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { AvisoConexion } from './componente/aviso-conexion/aviso-conexion';
 import { Header } from './componente/header/header';
 import { Footer } from './componente/footer/footer';
 
@@ -17,7 +18,7 @@ const RUTAS_SIN_LAYOUT = [
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, Footer],
+  imports: [RouterOutlet, AvisoConexion, Header, Footer],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css'

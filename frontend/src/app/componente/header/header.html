@@ -68,6 +68,18 @@
         </a>
         <a routerLink="/registro" class="btn-texto link-registro">Registrarse</a>
       }
+      @if (!authService.esAdmin()) {
+        <a
+          routerLink="/perfil/favoritos"
+          class="btn-icono favoritos"
+          [attr.aria-label]="'Mis favoritos, ' + favoritoService.cantidad() + (favoritoService.cantidad() === 1 ? ' producto' : ' productos')"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.6z"/></svg>
+          @if (favoritoService.cantidad()) {
+            <span class="contador" aria-hidden="true">{{ favoritoService.cantidad() }}</span>
+          }
+        </a>
+      }
       <a
         routerLink="/carrito"
         class="btn-icono carrito"

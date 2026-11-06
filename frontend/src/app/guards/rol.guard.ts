@@ -42,3 +42,16 @@ export function rolGuard(rolPermitido: Rol): CanActivateFn {
     );
   };
 }
+
+/**
+ * Deja entrar sin sesión o como cliente, pero no al admin (que no tiene carrito).
+ * Uso: el carrito, que funciona sin cuenta guardándose en el navegador.
+ */
+export const sinAdminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  return authService
+    .validarSesion()
+    .pipe(map((sesionValida) => (sesionValida && authService.esAdmin() ? router.createUrlTree([INICIO_POR_ROL.ADMIN]) : true)));
+};

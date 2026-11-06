@@ -6,6 +6,7 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
 import { CategoriaService } from '../../services/categoria.service';
+import { FavoritoService } from '../../services/favorito.service';
 import { PerfilModal } from '../perfil-modal/perfil-modal';
 
 /** Cuántas categorías entran en la barra del header. El resto se ve en el catálogo. */
@@ -39,6 +40,7 @@ export class Header {
   constructor(
     protected authService: AuthService,
     protected carritoService: CarritoService,
+    protected favoritoService: FavoritoService,
     private categoriaService: CategoriaService,
     private router: Router
   ) {

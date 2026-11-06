@@ -1,0 +1,37 @@
+:host {
+  display: block;
+}
+
+.alerta-error {
+  align-items: center;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.esperando {
+  margin: 0;
+  padding: var(--espacio-7) var(--espacio-4);
+  text-align: center;
+  color: var(--color-texto-secundario);
+  border: 1px dashed var(--color-borde-input);
+  border-radius: var(--radio-grande);
+}

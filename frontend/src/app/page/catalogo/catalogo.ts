@@ -14,6 +14,7 @@ import { CategoriaService } from '../../services/categoria.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorCatalogo } from '../../validaciones/errores-api';
 import { MSJ_PRECIO_RANGO } from '../../validaciones/mensajes';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 const TAMANIO_PAGINA = 12;
 /** Espera después de la última tecla antes de aplicar el filtro de precio. */
@@ -62,7 +63,7 @@ function aNumero(texto: string): number | null {
 
 @Component({
   selector: 'app-catalogo',
-  imports: [NgClass, ReactiveFormsModule, RouterLink, TarjetaProducto],
+  imports: [ErrorCarga, NgClass, ReactiveFormsModule, RouterLink, TarjetaProducto],
   templateUrl: './catalogo.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './catalogo.css',

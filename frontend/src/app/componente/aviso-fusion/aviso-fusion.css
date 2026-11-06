@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.avisos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-5);
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+/* Mismo formato que .alerta-ok, en amarillo: algo se ajustó, pero no es un error. */
+.alerta-aviso {
+  display: flex;
+  gap: var(--espacio-3);
+  padding: 14px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-aviso);
+  border-radius: var(--radio);
+  color: var(--color-aviso);
+}
+
+.alerta-aviso-titulo {
+  font-weight: 700;
+}
+
+.alerta-aviso .alerta-error-texto {
+  color: var(--color-texto-suave);
+}
+
+.btn-cerrar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -10px -10px -10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.btn-cerrar:hover {
+  color: var(--color-texto);
+}
+
+.btn-cerrar:focus-visible {
+  outline: 2px solid var(--color-verde);
+}

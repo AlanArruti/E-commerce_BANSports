@@ -2,12 +2,14 @@ import { Component, OnInit, computed, signal, ChangeDetectionStrategy } from '@a
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
+import { AvisoFusion } from '../../componente/aviso-fusion/aviso-fusion';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { ItemCarrito } from '../../models/item-carrito';
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
-import { CarritoService } from '../../services/carrito.service';
+import { CarritoService, ItemNoDisponible } from '../../services/carrito.service';
 import { ErrorTraducido, traducirErrorCarrito } from '../../validaciones/errores-api';
+import { ErrorCarga } from '../../componente/error-carga/error-carga';
 
 const ERROR_INESPERADO: ErrorTraducido = {
   titulo: 'No pudimos actualizar el carrito',
@@ -16,7 +18,7 @@ const ERROR_INESPERADO: ErrorTraducido = {
 
 @Component({
   selector: 'app-carrito',
-  imports: [RouterLink, PoteProducto, PrecioPipe],
+  imports: [ErrorCarga, RouterLink, AvisoFusion, PoteProducto, PrecioPipe],
   templateUrl: './carrito.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './carrito.css'
@@ -32,12 +34,21 @@ export class Carrito implements OnInit {
   protected readonly confirmandoVaciar = signal(false);
   protected readonly vaciando = signal(false);
 
+  /** Sin sesión, "Continuar compra" muestra las opciones para ingresar o crear la cuenta. */
+  protected readonly pidiendoCuenta = signal(false);
+
+  /** Al ingresar o registrarse desde el carrito se vuelve al checkout (o al carrito). */
+  protected readonly paraCheckout = { redirect: '/checkout', motivo: 'checkout' };
+  protected readonly paraVolver = { redirect: '/carrito' };
+
   protected readonly items;
   protected readonly cantidadTotal;
+  protected readonly noDisponibles;
 
   constructor(protected carritoService: CarritoService) {
     this.items = computed(() => this.carritoService.carrito()?.items ?? []);
     this.cantidadTotal = this.carritoService.cantidadTotal;
+    this.noDisponibles = this.carritoService.noDisponibles;
   }
 
   ngOnInit(): void {
@@ -67,6 +78,19 @@ export class Carrito implements OnInit {
 
   eliminar(item: ItemCarrito): void {
     this.ejecutar(item, this.carritoService.eliminar(item.idItemCarrito));
+  }
+
+  /** Quita un producto que se dio de baja mientras estaba en el carrito sin sesión. */
+  quitarNoDisponible(item: ItemNoDisponible): void {
+    this.itemPendiente.set(-1);
+    this.errorAccion.set(null);
+    this.carritoService.quitarNoDisponible(item).subscribe({
+      next: () => this.itemPendiente.set(null),
+      error: (e: unknown) => {
+        this.itemPendiente.set(null);
+        this.errorAccion.set(e instanceof HttpErrorResponse ? traducirErrorCarrito(e) : ERROR_INESPERADO);
+      }
+    });
   }
 
   vaciar(): void {

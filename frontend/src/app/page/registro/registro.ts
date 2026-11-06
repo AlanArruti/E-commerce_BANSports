@@ -3,7 +3,7 @@ import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PanelAuth } from '../../componente/panel-auth/panel-auth';
 import { BotonesSociales } from '../../componente/botones-sociales/botones-sociales';
 import { RegistroRequest } from '../../models/registro-request';
@@ -39,6 +39,11 @@ export class Registro {
   protected readonly intentoEnviar = signal(false);
   protected readonly errorServidor = signal<ErrorTraducido | null>(null);
 
+  /** "Iniciá sesión" lleva el mismo destino (por ejemplo, volver al checkout). */
+  protected get paramsLogin(): Record<string, string> {
+    return this.route.snapshot.queryParams;
+  }
+
   /** Valor de la contraseña como signal, para calcular los requisitos en vivo. */
   private readonly valorContrasenia;
   protected readonly requisitos;
@@ -47,7 +52,8 @@ export class Registro {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     // Mismas reglas que valida el back (ClienteRequest), con mensajes propios para cada una.
     this.nombre = new FormControl('', {
@@ -174,14 +180,20 @@ export class Registro {
     this.authService.login({ username: datos.email, password: datos.contrasenia }).subscribe({
       next: () => {
         this.cargando.set(false);
-        this.router.navigate(['/']);
+        this.router.navigateByUrl(this.destinoSeguro());
       },
       error: () => {
         // La cuenta existe, pero no se pudo entrar automáticamente: que lo haga desde el login.
         this.cargando.set(false);
         this.authService.avisoSesion.set(null);
-        this.router.navigate(['/login'], { queryParams: { cuentaCreada: 1 } });
+        this.router.navigate(['/login'], { queryParams: { cuentaCreada: 1, ...this.route.snapshot.queryParams } });
       }
     });
+  }
+
+  /** A dónde volver después de crear la cuenta (por ejemplo, al checkout). Solo rutas internas. */
+  private destinoSeguro(): string {
+    const redirect = this.route.snapshot.queryParamMap.get('redirect');
+    return redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
   }
 }

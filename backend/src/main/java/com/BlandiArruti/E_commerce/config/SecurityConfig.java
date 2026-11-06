@@ -1,8 +1,9 @@
 package com.BlandiArruti.E_commerce.config;
 
 import com.BlandiArruti.E_commerce.auth.filter.JwtAuthFilter;
+import com.BlandiArruti.E_commerce.auth.handler.OAuth2FailureHandler;
 import com.BlandiArruti.E_commerce.auth.handler.OAuth2SuccessHandler;
-import com.BlandiArruti.E_commerce.auth.service.GitHubOAuth2UserService;
+import com.BlandiArruti.E_commerce.auth.service.OAuth2ClienteService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +33,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final GitHubOAuth2UserService gitHubOAuth2UserService;
+    private final OAuth2ClienteService oAuth2ClienteService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     /** Orígenes del front autorizados a consumir la API (separados por coma). */
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://localhost:4200}")
@@ -116,15 +118,9 @@ public class SecurityConfig {
             )
 
             .oauth2Login(oauth2 -> oauth2
-                .userInfoEndpoint(info -> info.userService(gitHubOAuth2UserService))
+                .userInfoEndpoint(info -> info.userService(oAuth2ClienteService))
                 .successHandler(oAuth2SuccessHandler)
-                .failureHandler((req, res, ex) -> {
-                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    res.setContentType("application/json;charset=UTF-8");
-                    res.getWriter().write(
-                        "{\"status\":401,\"error\":\"OAuth2 fallido\",\"message\":\"" + escaparJson(ex.getMessage()) + "\"}"
-                    );
-                })
+                .failureHandler(oAuth2FailureHandler)
             )
 
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

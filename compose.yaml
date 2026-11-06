@@ -76,9 +76,13 @@ services:
 
       # ── CORS y OAuth2: acá se conecta el front de Progra 4 ──
       FRONT_ORIGINS: ${FRONT_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:4200}
-      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-}
+      # Login con GitHub y Google: sin client id el botón no aparece en el front.
+      # La vuelta va a la pantalla /ingreso-social del front, que guarda el token.
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-${FRONT_URL:-http://localhost:4200}/ingreso-social}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-OAUTH_DISABLED}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-OAUTH_DISABLED}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-OAUTH_DISABLED}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-OAUTH_DISABLED}
 
       # ── Mail: Mailpit salvo que el .env defina SMTP_HOST ──
       # Para Docker se usan variables SMTP_* y no MAIL_*: el .env suele tener

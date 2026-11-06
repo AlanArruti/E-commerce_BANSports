@@ -12,6 +12,14 @@ spring:
             scope:
               - user:email
               - read:user
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:OAUTH_DISABLED}
+            client-secret: ${GOOGLE_CLIENT_SECRET:OAUTH_DISABLED}
+            # Sin "openid" a propósito: así Google pasa por el mismo OAuth2ClienteService que
+            # GitHub (con openid Spring usaría el flujo OIDC, que necesita otro servicio).
+            scope:
+              - email
+              - profile
 
   datasource:
     url: ${DB_URL}
@@ -52,6 +60,10 @@ spring:
 server:
   port: 8080
   shutdown: graceful
+  # Detrás de nginx (Docker) o del proxy de ng serve: arma las URLs con el host y el
+  # puerto del navegador (localhost:4200), no con los del contenedor. Lo necesita el
+  # redirect_uri que se le manda a GitHub y Google.
+  forward-headers-strategy: framework
 
 # Solo el health endpoint, y sin detalles internos hacia afuera.
 management:

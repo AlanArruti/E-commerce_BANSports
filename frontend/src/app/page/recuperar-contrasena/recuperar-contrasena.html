@@ -1,0 +1,83 @@
+<div class="pantalla-auth">
+  <app-panel-auth variante="oscuro">
+    <h1 class="titulo-display panel-titulo"><span class="acento cursiva">Recuperá</span> tu cuenta en un minuto</h1>
+    <ul class="auth-lista panel-lista">
+      @for (paso of pasos; track paso) {
+        <li>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+          {{ paso }}
+        </li>
+      }
+    </ul>
+  </app-panel-auth>
+
+  <div class="auth-lado-formulario">
+    <a routerLink="/login" class="auth-volver">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver a iniciar sesión
+    </a>
+
+    <div class="auth-centro">
+      <div class="auth-caja">
+        <div class="auth-encabezado">
+          <h2 class="titulo-display auth-titulo">Recuperar contraseña</h2>
+          <p class="auth-bajada">Ingresá el email de tu cuenta y te mandamos un enlace para elegir una contraseña nueva.</p>
+        </div>
+
+        @if (enviadoA(); as destino) {
+          <div class="alerta-ok" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+            <div>
+              <div class="alerta-ok-titulo">Revisá tu email</div>
+              <div class="alerta-error-texto">
+                Si <strong>{{ destino }}</strong> corresponde a una cuenta, en unos minutos te llega el enlace.
+                Fijate también en la carpeta de spam.
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secundario btn-bloque" (click)="otroEmail()">Usar otro email</button>
+        } @else {
+          @if (errorServidor(); as errorActual) {
+            <div class="alerta-error" role="alert">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+              <div>
+                <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+                <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+              </div>
+            </div>
+          }
+
+          <form class="auth-formulario" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+            <div class="campo">
+              <label for="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                class="input"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="tu@email.com"
+                [ngClass]="{ 'input-error': error() }"
+                [attr.aria-invalid]="error() ? true : null"
+                aria-describedby="email-error"
+              />
+              @if (error(); as mensaje) {
+                <p class="msj-error" id="email-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                  {{ mensaje }}
+                </p>
+              }
+            </div>
+
+            <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+              {{ cargando() ? 'Enviando…' : 'Enviarme el enlace' }}
+            </button>
+          </form>
+        }
+
+        <p class="auth-pie">¿Te acordaste? <a routerLink="/login" class="link">Iniciá sesión</a></p>
+      </div>
+    </div>
+  </div>
+</div>

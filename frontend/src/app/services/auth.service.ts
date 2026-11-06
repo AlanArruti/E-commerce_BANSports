@@ -81,6 +81,16 @@ export class AuthService {
     return this.http.post<Cliente>(`${this.API_URL}/auth/register`, datos);
   }
 
+  /** Pide el mail con el enlace para elegir una contraseña nueva. El back responde igual exista o no la cuenta. */
+  solicitarRecuperacion(email: string): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.API_URL}/auth/recuperar`, { email });
+  }
+
+  /** Guarda la contraseña nueva usando el token que llegó en el enlace del mail. */
+  restablecerContrasenia(token: string, contraseniaNueva: string): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.API_URL}/auth/restablecer`, { token, contraseniaNueva });
+  }
+
   /**
    * Cierra la sesión y borra el token.
    * @param porSesionInvalida si es true, el login muestra un aviso explicando por qué se cerró.

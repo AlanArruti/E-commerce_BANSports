@@ -44,6 +44,25 @@ function errorGeneral(error: HttpErrorResponse): ErrorTraducido | null {
   return null;
 }
 
+/** Errores de "¿Olvidaste tu contraseña?" (pedir el enlace o guardar la contraseña nueva). */
+export function traducirErrorRecuperacion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje.toLowerCase().includes('enlace')) {
+    return {
+      titulo: 'El enlace ya no sirve',
+      detalle: 'Venció (dura 30 minutos), ya se usó o pediste uno más nuevo. Pedí otro desde "¿Olvidaste tu contraseña?".'
+    };
+  }
+  return {
+    titulo: 'No pudimos completar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 /** @param credencial cómo se llama el dato de ingreso en ese login (email para clientes, usuario para admins). */
 export function traducirErrorLogin(
   error: HttpErrorResponse,

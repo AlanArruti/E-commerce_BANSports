@@ -80,20 +80,28 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-OAUTH_DISABLED}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-OAUTH_DISABLED}
 
-      # ── Mail: dentro del stack SIEMPRE va a Mailpit ──
-      # Fijo a propósito, sin leer del .env: ese archivo suele tener las
-      # credenciales de Mailtrap para correr fuera de Docker, y si se filtran
-      # acá la app intenta salir a internet con la config equivocada y los
-      # mails se pierden en silencio.
-      # Para mandar por Mailtrap/Gmail desde Docker, cambiá estas cuatro líneas
-      # a mano y poné MAIL_SMTP_AUTH/STARTTLS en "true".
-      MAIL_HOST: mailpit
-      MAIL_PORT: "1025"
-      MAIL_SMTP_AUTH: "false"
-      MAIL_SMTP_STARTTLS: "false"
-      MAIL_USERNAME: ""
-      MAIL_PASSWORD: ""
-      MAIL_FROM: ${MAIL_FROM:-no-reply@ecommerce-blandi-arruti.com}
+      # ── Mail: Mailpit salvo que el .env defina SMTP_HOST ──
+      # Para Docker se usan variables SMTP_* y no MAIL_*: el .env suele tener
+      # MAIL_* de Mailtrap para correr fuera de Docker, y si se colaran acá los
+      # mails se perderían en silencio. Sin SMTP_HOST nada sale a internet.
+      #
+      # Gmail (ver README → "Mails reales con Gmail"):
+      #   SMTP_HOST=smtp.gmail.com
+      #   SMTP_PORT=587
+      #   SMTP_USERNAME=la-casilla@gmail.com
+      #   SMTP_PASSWORD=contraseña de aplicación de 16 letras
+      # Con SMTP_HOST definido se activan auth y STARTTLS. El remitente es la
+      # misma casilla (Gmail reescribe cualquier otro), salvo que pongas SMTP_FROM.
+      MAIL_HOST: ${SMTP_HOST:-mailpit}
+      MAIL_PORT: ${SMTP_PORT:-1025}
+      MAIL_SMTP_AUTH: ${SMTP_HOST:+true}
+      MAIL_SMTP_STARTTLS: ${SMTP_HOST:+true}
+      MAIL_USERNAME: ${SMTP_USERNAME:-}
+      MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${SMTP_FROM:-${SMTP_USERNAME:-no-reply@ecommerce-blandi-arruti.com}}
+
+      # Base de los enlaces que van en los mails (ej. recuperar la contraseña).
+      FRONT_URL: ${FRONT_URL:-http://localhost:4200}
 
       # ── Servicios externos (opcionales: sin token quedan inactivos) ──
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}

@@ -48,6 +48,22 @@ public class NotificacionService {
         enviar(cliente.getEmail(), asunto, texto);
     }
 
+    public void notificarRecuperacionPassword(Cliente cliente, String enlace, int minutosValidez) {
+        String asunto = "Recuperá tu contraseña";
+        String texto = """
+                Hola %s,
+
+                Pediste restablecer la contraseña de tu cuenta. Entrá a este enlace para elegir una nueva:
+
+                %s
+
+                El enlace vence en %d minutos y se puede usar una sola vez.
+                Si no fuiste vos, ignorá este mail: tu contraseña no cambia.""".formatted(
+                cliente.getNombre(), enlace, minutosValidez);
+
+        enviar(cliente.getEmail(), asunto, texto);
+    }
+
     public void notificarEnvioActualizado(Envio envio) {
         Pedido pedido = envio.getPedido();
         Cliente cliente = pedido.getCliente();

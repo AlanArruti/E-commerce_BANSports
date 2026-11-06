@@ -46,6 +46,21 @@ export const routes: Routes = [
 
   { path: 'login', component: Login, canActivate: [guestGuard], title: 'Iniciar sesión | BAN Sports' },
   { path: 'registro', component: Registro, canActivate: [guestGuard], title: 'Crear cuenta | BAN Sports' },
+  {
+    path: 'recuperar-contrasena',
+    loadComponent: () =>
+      import('./page/recuperar-contrasena/recuperar-contrasena').then((m) => m.RecuperarContrasena),
+    canActivate: [guestGuard],
+    title: 'Recuperar contraseña | BAN Sports'
+  },
+  {
+    // Es la página del enlace que llega por mail (?token=...).
+    path: 'restablecer-contrasena',
+    loadComponent: () =>
+      import('./page/restablecer-contrasena/restablecer-contrasena').then((m) => m.RestablecerContrasena),
+    canActivate: [guestGuard],
+    title: 'Contraseña nueva | BAN Sports'
+  },
   // Va antes de 'admin' para que no la tape el guard del panel.
   { path: 'admin/login', component: AdminLogin, canActivate: [guestGuard], title: 'Acceso administradores | BAN Sports' },
 

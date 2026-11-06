@@ -54,7 +54,14 @@ export const routes: Routes = [
   {
     path: 'perfil',
     canActivate: [rolGuard('CLIENTE')],
-    children: [{ path: '', component: Perfil, title: 'Mi perfil | BAN Sports' }]
+    children: [
+      { path: '', component: Perfil, title: 'Mi perfil | BAN Sports' },
+      {
+        path: 'favoritos',
+        loadComponent: () => import('./page/favoritos/favoritos').then((m) => m.Favoritos),
+        title: 'Mis favoritos | BAN Sports'
+      }
+    ]
   },
 
   // ── Admin: todo lo que cuelga de /admin exige rol ADMIN ──

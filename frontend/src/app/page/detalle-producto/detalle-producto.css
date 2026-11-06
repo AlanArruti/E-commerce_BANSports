@@ -291,6 +291,26 @@
   color: var(--color-texto-secundario);
 }
 
+/* "Agregar al carrito" ocupa el resto de la fila; "Guardar" queda a su lado. */
+.acciones-compra {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.btn-agregar {
+  flex: 1;
+}
+
+.btn-favorito {
+  flex-shrink: 0;
+  gap: var(--espacio-2);
+}
+
+.btn-favorito.activo {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
 .aviso-maximo {
   margin: 0;
   font-size: 14px;

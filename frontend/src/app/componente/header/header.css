@@ -148,7 +148,8 @@
   color: var(--color-verde);
 }
 
-.carrito {
+.carrito,
+.favoritos {
   position: relative;
 }
 

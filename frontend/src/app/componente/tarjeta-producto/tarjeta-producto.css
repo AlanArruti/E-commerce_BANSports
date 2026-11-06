@@ -183,6 +183,36 @@
   z-index: 2;
 }
 
+/* Corazón de favoritos: abajo a la derecha de la imagen, para no pisar las etiquetas. */
+.btn-favorito {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3; /* por encima del link que cubre la tarjeta (z-index 2) */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-borde-input);
+  border-radius: 50%;
+  background: var(--color-negro);
+  color: var(--color-texto);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-favorito:hover,
+.btn-favorito.activo {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.btn-favorito:focus-visible {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+
 .producto-link:focus-visible {
   outline: none;
 }
@@ -209,6 +239,11 @@
 
   .producto-pote {
     transform: scale(0.75);
+  }
+
+  .btn-favorito {
+    right: 8px;
+    bottom: 8px;
   }
 
   .producto-info {

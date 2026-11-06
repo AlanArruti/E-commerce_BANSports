@@ -11,6 +11,7 @@ import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../.
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
+import { FavoritoService } from '../../services/favorito.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorProducto } from '../../validaciones/errores-api';
 
@@ -103,6 +104,7 @@ export class DetalleProducto {
   constructor(
     private productoService: ProductoService,
     private carritoService: CarritoService,
+    protected favoritoService: FavoritoService,
     protected authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,

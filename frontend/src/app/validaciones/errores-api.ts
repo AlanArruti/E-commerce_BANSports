@@ -355,6 +355,23 @@ export function traducirErrorBajaProducto(error: HttpErrorResponse): ErrorTraduc
   };
 }
 
+export function traducirErrorFavoritos(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese producto ya no está disponible',
+      detalle: 'Puede que lo hayan dado de baja, así que no se puede guardar en favoritos.'
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar tus favoritos',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

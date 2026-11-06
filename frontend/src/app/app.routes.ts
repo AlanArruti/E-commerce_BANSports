@@ -6,7 +6,7 @@ import { Perfil } from './page/perfil/perfil';
 import { AdminLogin } from './page/admin-login/admin-login';
 import { AdminInicio } from './page/admin-inicio/admin-inicio';
 import { guestGuard } from './guards/guest.guard';
-import { rolGuard } from './guards/rol.guard';
+import { rolGuard, sinAdminGuard } from './guards/rol.guard';
 
 export const routes: Routes = [
   // ── Públicas ───────────────────────────────────────────
@@ -33,7 +33,8 @@ export const routes: Routes = [
   {
     path: 'carrito',
     loadComponent: () => import('./page/carrito/carrito').then((m) => m.Carrito),
-    canActivate: [rolGuard('CLIENTE')],
+    // Funciona sin sesión: el carrito se guarda en el navegador hasta que el cliente ingresa.
+    canActivate: [sinAdminGuard],
     title: 'Carrito | BAN Sports'
   },
 

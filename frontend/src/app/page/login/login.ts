@@ -5,6 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PanelAuth } from '../../componente/panel-auth/panel-auth';
 import { AuthService, SoloClientesError } from '../../services/auth.service';
+import { CarritoService } from '../../services/carrito.service';
 import {
   ErrorTraducido,
   MSJ_SOLO_CLIENTES,
@@ -38,12 +39,15 @@ export class Login implements OnInit {
   protected readonly errorServidor = signal<ErrorTraducido | null>(null);
   protected readonly aviso = signal<string | null>(null);
   protected readonly cuentaCreada = signal(false);
-  /** Llegó desde "Agregar al carrito" sin sesión: al entrar vuelve al producto. */
-  protected readonly paraCarrito = signal(false);
+  /** Llegó desde "Continuar compra" sin sesión: al entrar se suma el carrito y vuelve al checkout. */
+  protected readonly paraCheckout = signal(false);
   protected readonly paraFavoritos = signal(false);
+  /** El link a "Creala gratis" lleva el mismo destino, para volver a donde estaba después de registrarse. */
+  protected readonly paramsRegistro = signal<Record<string, string>>({});
 
   constructor(
     private authService: AuthService,
+    protected carritoService: CarritoService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -67,8 +71,11 @@ export class Login implements OnInit {
     this.cuentaCreada.set(this.route.snapshot.queryParamMap.has('cuentaCreada'));
 
     const motivo = this.route.snapshot.queryParamMap.get('motivo');
-    this.paraCarrito.set(motivo === 'carrito');
+    this.paraCheckout.set(motivo === 'checkout');
     this.paraFavoritos.set(motivo === 'favoritos');
+
+    const redirect = this.route.snapshot.queryParamMap.get('redirect');
+    this.paramsRegistro.set({ ...(redirect ? { redirect } : {}), ...(motivo ? { motivo } : {}) });
   }
 
   /** Mensaje de error del campo, solo si el usuario ya lo tocó o intentó enviar. */

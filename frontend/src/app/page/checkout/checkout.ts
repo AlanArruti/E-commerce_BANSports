@@ -3,6 +3,7 @@ import { DatePipe, NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
+import { AvisoFusion } from '../../componente/aviso-fusion/aviso-fusion';
 import { forkJoin } from 'rxjs';
 import { FormDireccion } from '../../componente/form-direccion/form-direccion';
 import { Direccion, localidadDeDireccion } from '../../models/direccion';
@@ -17,7 +18,7 @@ import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout } from '../
 /** Checkout: elegir (o cargar) la dirección de entrega y convertir el carrito en un pedido. */
 @Component({
   selector: 'app-checkout',
-  imports: [NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion],
+  imports: [NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion, AvisoFusion],
   templateUrl: './checkout.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './checkout.css'

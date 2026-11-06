@@ -3,7 +3,7 @@ import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
@@ -106,7 +106,6 @@ export class DetalleProducto {
     private carritoService: CarritoService,
     protected favoritoService: FavoritoService,
     protected authService: AuthService,
-    private router: Router,
     private route: ActivatedRoute,
     private title: Title
   ) {
@@ -229,20 +228,13 @@ export class DetalleProducto {
   }
 
   /**
-   * Agrega la variante elegida al carrito. Sin sesión, manda al login y guarda en la URL
-   * la variante elegida, para volver al mismo producto con el mismo sabor.
+   * Agrega la variante elegida al carrito. Sin sesión se guarda en el navegador
+   * y se suma al de la cuenta cuando el cliente ingresa. Los admins no tienen carrito.
    */
   agregarAlCarrito(): void {
     const producto = this.estado().producto;
     const variante = this.varianteElegida();
-    if (!producto || !variante || this.maximo() === 0) {
-      return;
-    }
-
-    if (!this.authService.estaLogueado()) {
-      this.router.navigate(['/login'], {
-        queryParams: { redirect: `/productos/${producto.id}?variante=${variante.id}`, motivo: 'carrito' }
-      });
+    if (!producto || !variante || this.maximo() === 0 || this.authService.esAdmin()) {
       return;
     }
 

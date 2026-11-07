@@ -23,11 +23,13 @@ export interface ItemPedido {
 }
 
 // Respuesta de POST /cliente/{id}/carrito/checkout y GET /pedido/{id} (PedidoResponse).
-// Solo los campos que usa el front; el back también manda el cliente, el envío y la factura.
+// Solo los campos que usa el front; el back también manda el envío y la factura.
 export interface Pedido {
   id: number;
   uuidPedido: string;
   fechaCreacion: string;
+  /** Solo para el panel admin. El checkout no lo usa. */
+  cliente?: { id: number; nombre: string; apellido: string };
   items: ItemPedido[];
   costoEnvio: number;
   total: number;

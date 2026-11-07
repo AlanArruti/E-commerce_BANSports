@@ -15,18 +15,87 @@
   color: var(--color-texto-secundario);
 }
 
+/* ── Tarjetas de resumen ────────────────────────────────── */
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--espacio-4);
+  margin-top: var(--espacio-5);
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+a.tarjeta:hover {
+  border-color: var(--color-verde);
+}
+
+.tarjeta-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-numero {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 1;
+  color: var(--color-verde);
+}
+
+.tarjeta-detalle {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-filas {
+  gap: var(--espacio-3);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  font-size: 15px;
+  color: var(--color-texto-suave);
+}
+
+.fila strong {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--color-texto);
+}
+
+a.fila:hover strong,
+a.fila:hover {
+  color: var(--color-verde);
+}
+
+/* ── Accesos al catálogo ─────────────────────────────────── */
 .accesos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--espacio-4);
-  margin-top: var(--espacio-5);
+  margin-top: var(--espacio-3);
 }
 
 .acceso {
   display: flex;
   flex-direction: column;
   gap: var(--espacio-1);
-  padding: var(--espacio-5);
+  padding: var(--espacio-4);
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-grande);
@@ -39,11 +108,63 @@
 .acceso-titulo {
   font-family: var(--fuente-titulos);
   font-weight: 800;
-  font-size: 28px;
+  font-size: 20px;
   text-transform: uppercase;
 }
 
 .acceso-detalle {
   font-size: 14px;
   color: var(--color-texto-secundario);
+}
+
+/* ── Estados ────────────────────────────────────────────── */
+.esqueleto {
+  border-radius: var(--radio-grande);
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+.esqueleto-tarjeta {
+  min-height: 140px;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+.alerta-error {
+  align-items: center;
+  margin-top: var(--espacio-5);
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
 }

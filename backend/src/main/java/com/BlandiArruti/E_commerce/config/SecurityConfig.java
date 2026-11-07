@@ -95,6 +95,7 @@ public class SecurityConfig {
 
                 // ── Solo ADMIN ───────────────────────────────────────────────
                 .requestMatchers("/api/v1/administrador/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/envio/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/factura/**").hasRole("ADMIN")
 

@@ -448,3 +448,36 @@ export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido 
     }
   );
 }
+
+export function traducirErrorResumen(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el resumen',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorStock(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el stock',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}

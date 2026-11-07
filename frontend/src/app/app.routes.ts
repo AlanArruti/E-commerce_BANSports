@@ -97,6 +97,16 @@ export const routes: Routes = [
     children: [
       { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
       {
+        path: 'pedidos',
+        loadComponent: () => import('./page/admin-pedidos/admin-pedidos').then((m) => m.AdminPedidos),
+        title: 'Pedidos | Panel BAN Sports'
+      },
+      {
+        path: 'stock-bajo',
+        loadComponent: () => import('./page/admin-stock-bajo/admin-stock-bajo').then((m) => m.AdminStockBajo),
+        title: 'Stock bajo | Panel BAN Sports'
+      },
+      {
         path: 'categorias',
         loadComponent: () => import('./page/admin-categorias/admin-categorias').then((m) => m.AdminCategorias),
         title: 'Categorías | Panel BAN Sports'

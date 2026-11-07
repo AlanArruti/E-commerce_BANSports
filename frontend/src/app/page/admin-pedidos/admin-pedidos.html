@@ -1,0 +1,88 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Pedidos</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Pedidos</h1>
+      @if (!cargando() && !errorCarga()) {
+        <p class="cuenta">{{ total() }} {{ total() === 1 ? 'pedido' : 'pedidos' }}</p>
+      }
+    </div>
+    <label class="filtro-estado">
+      <span class="solo-lectores">Filtrar por estado</span>
+      <select #seleccion class="input" [value]="estado() ?? ''" (change)="cambiarEstado(seleccion.value)">
+        <option value="">Todos los estados</option>
+        @for (e of estados; track e) {
+          <option [value]="e">{{ etiquetasEstado[e] }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (cargando()) {
+    <div class="esqueleto" aria-busy="true"></div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Pedido</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Cliente</th>
+            <th scope="col" class="col-total">Total</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pedido of pedidos(); track pedido.id) {
+            <tr>
+              <td class="numero">#{{ pedido.id }}</td>
+              <td>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ nombreCliente(pedido) }}</td>
+              <td class="col-total">{{ pedido.total | precio }}</td>
+              <td>
+                <span class="estado" [ngClass]="'estado-' + pedido.estado.toLowerCase()">{{ etiquetasEstado[pedido.estado] }}</span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="sin-resultados">
+                @if (estado()) {
+                  No hay pedidos en este estado.
+                } @else {
+                  Todavía no hay pedidos.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (total() > 0) {
+      <div class="pie-tabla">
+        <span class="rango">Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }}</span>
+        @if (totalPaginas() > 1) {
+          <nav class="paginacion" aria-label="Páginas">
+            <button type="button" class="pag" aria-label="Página anterior" [disabled]="pagina() === 0" (click)="irAPagina(pagina() - 1)">‹</button>
+            <span class="pagina-actual">{{ pagina() + 1 }} de {{ totalPaginas() }}</span>
+            <button type="button" class="pag" aria-label="Página siguiente" [disabled]="pagina() >= totalPaginas() - 1" (click)="irAPagina(pagina() + 1)">›</button>
+          </nav>
+        }
+      </div>
+    }
+  }
+</div>

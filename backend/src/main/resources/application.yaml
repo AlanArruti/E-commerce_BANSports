@@ -9,12 +9,18 @@ spring:
           github:
             client-id: ${GITHUB_CLIENT_ID:OAUTH_DISABLED}
             client-secret: ${GITHUB_CLIENT_SECRET:OAUTH_DISABLED}
+            # En local {baseUrl} sale del navegador (nginx/proxy). En la nube el front (Vercel)
+            # reenvía al back y conviene fijarla: OAUTH2_CALLBACK_BASE=https://<front>.
+            redirect-uri: ${OAUTH2_CALLBACK_BASE:{baseUrl}}/login/oauth2/code/{registrationId}
             scope:
               - user:email
               - read:user
           google:
             client-id: ${GOOGLE_CLIENT_ID:OAUTH_DISABLED}
             client-secret: ${GOOGLE_CLIENT_SECRET:OAUTH_DISABLED}
+            # En local {baseUrl} sale del navegador (nginx/proxy). En la nube el front (Vercel)
+            # reenvía al back y conviene fijarla: OAUTH2_CALLBACK_BASE=https://<front>.
+            redirect-uri: ${OAUTH2_CALLBACK_BASE:{baseUrl}}/login/oauth2/code/{registrationId}
             # Sin "openid" a propósito: así Google pasa por el mismo OAuth2ClienteService que
             # GitHub (con openid Spring usaría el flujo OIDC, que necesita otro servicio).
             scope:
@@ -58,7 +64,8 @@ spring:
             enable: ${MAIL_SMTP_STARTTLS:true}
 
 server:
-  port: 8080
+  # Render (y otros PaaS) dicen en PORT dónde escuchar.
+  port: ${PORT:8080}
   shutdown: graceful
   # Detrás de nginx (Docker) o del proxy de ng serve: arma las URLs con el host y el
   # puerto del navegador (localhost:4200), no con los del contenedor. Lo necesita el

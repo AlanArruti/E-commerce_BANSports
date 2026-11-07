@@ -1,0 +1,84 @@
+# Blueprint de Render: el backend en la nube (plan gratis).
+# Render → New → Blueprint → elegir este repo. Pide cargar las variables con
+# `sync: false`; los secretos se cargan solo en el panel, nunca acá (el repo es público).
+# Pasos completos: README → "Deploy en la nube".
+services:
+  - type: web
+    name: bansports-api
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      # ── Base (Neon). DB_URL con formato jdbc:postgresql://<host>/<base>?sslmode=require
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Neon gratis acepta pocas conexiones; con 5 alcanza.
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
+      - key: SPRING_JPA_SHOW_SQL
+        value: "false"
+
+      # ── Seguridad: Render genera una clave al azar y nadie la ve.
+      - key: JWT_SECRET
+        generateValue: true
+
+      # ── Front (Vercel). Si Vercel te da otro dominio, cambialo en estas 4.
+      - key: FRONT_URL
+        value: https://bansports.vercel.app
+      - key: FRONT_ORIGINS
+        value: https://bansports.vercel.app
+      - key: OAUTH2_REDIRECT_URI
+        value: https://bansports.vercel.app/ingreso-social
+      - key: OAUTH2_CALLBACK_BASE
+        value: https://bansports.vercel.app
+
+      # ── Login social (opcional: sin client id el botón no aparece)
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # ── Mail. Render gratis bloquea los puertos SMTP 25, 465 y 587 (Gmail no anda).
+      # Brevo (gratis, 300 mails/día) acepta el puerto 2525.
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_SMTP_AUTH
+        value: "true"
+      - key: MAIL_SMTP_STARTTLS
+        value: "true"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      # Remitente verificado en Brevo (Senders).
+      - key: MAIL_FROM
+        sync: false
+
+      # ── Pagos (opcional: sin token MercadoPago no aparece)
+      - key: MP_ACCESS_TOKEN
+        sync: false
+
+      # La base de la nube se carga con datos reales: sin descuentos de ejemplo.
+      - key: OFERTAS_DEMO
+        value: "false"
+
+      # 512 MB de RAM en el plan gratis: heap más chico y arranque más rápido.
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=55 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:+ExitOnOutOfMemoryError"
+      - key: TZ
+        value: America/Argentina/Buenos_Aires

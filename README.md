@@ -414,6 +414,61 @@ Hibernate genera el esquema correcto de cero.
 
 ---
 
+## Deploy en la nube
+
+Todo con planes gratis:
+
+| Parte | Servicio | Archivo |
+|---|---|---|
+| Base | [Neon](https://neon.tech) (Postgres) | — |
+| Back | [Render](https://render.com) (web service desde el `Dockerfile`) | `render.yaml` |
+| Front | [Vercel](https://vercel.com) (sitio estático) | `frontend/vercel.json` |
+| Mails | [Brevo](https://www.brevo.com) (SMTP, 300 mails/día) | — |
+
+El front reenvía `/api`, `/oauth2` y `/login/oauth2` al back (igual que nginx en Docker),
+así que el navegador ve un solo dominio y no hace falta tocar el código.
+
+**Demo:** https://bansports.vercel.app (si Render "duerme" el back, el primer pedido tarda hasta un minuto).
+
+> Los secretos (base, JWT, OAuth, MercadoPago, mail) se cargan **solo** en el panel de
+> Render. El repo es público: nunca van en `render.yaml` ni en ningún archivo.
+
+### Primera vez
+
+1. **Base (Neon).** Crear un proyecto (región AWS US East) y copiar la *connection string*.
+   Para Render se separa en tres variables:
+   `DB_URL=jdbc:postgresql://<host>/<base>?sslmode=require`, `DB_USERNAME` y `DB_PASSWORD`.
+2. **Back (Render).** New → Blueprint → este repo. Render lee `render.yaml` y pide las
+   variables marcadas `sync: false`. `JWT_SECRET` la genera Render sola. Las opcionales
+   (GitHub, Google, MercadoPago) se pueden dejar vacías: esa función no aparece.
+   La URL queda `https://bansports-api.onrender.com`.
+3. **Front (Vercel).** Add New → Project → este repo, con *Root Directory* `frontend`.
+   El resto sale de `vercel.json`. Si Render le dio otro nombre al back, cambiarlo en
+   los `rewrites`; si Vercel le da otro dominio al front, cambiarlo en las 4 variables
+   `FRONT_*` / `OAUTH2_*` de Render.
+4. **Catálogo y primer admin.** Con el back ya arrancado una vez (crea las tablas), copiar
+   los de la base local de Docker. No copia clientes ni pedidos:
+
+   ```bash
+   NUBE_DB_URL='postgresql://...' ./scripts/copiar-catalogo-a-la-nube.sh
+   ```
+5. **Mails (Brevo).** Render gratis bloquea los puertos SMTP 25, 465 y 587, así que Gmail
+   no anda desde ahí; Brevo acepta el 2525. Crear la cuenta, verificar el remitente en
+   *Senders* y generar una *SMTP key*. En Render: `MAIL_USERNAME` = el login SMTP de Brevo,
+   `MAIL_PASSWORD` = la SMTP key, `MAIL_FROM` = el remitente verificado.
+6. **Login social.** Sumar en GitHub y en Google la URL de vuelta
+   `https://bansports.vercel.app/login/oauth2/code/github` (y `.../google`). En Google,
+   además, el origen `https://bansports.vercel.app`.
+7. **Webhook de MercadoPago.** En el panel de MP → Webhooks, tópico *Order*:
+   `https://bansports-api.onrender.com/api/v1/webhook/mercadopago`.
+
+### Volver a deployar
+
+Cada push a `main` redeploya solo: Render el back y Vercel el front. Para forzarlo:
+Render → *Manual Deploy* y Vercel → *Redeploy*.
+
+---
+
 ## Variables de entorno
 
 | Variable | Descripción | Ejemplo |
@@ -437,6 +492,8 @@ Hibernate genera el esquema correcto de cero.
 | `GOOGLE_CLIENT_SECRET` | Secreto del cliente OAuth de Google | `GOCSPX-...` |
 | `FRONT_ORIGINS` | Orígenes del front habilitados por CORS (separados por coma) | `http://localhost:5173` |
 | `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub/Google. En Docker por defecto `${FRONT_URL}/ingreso-social`; fuera de Docker vacío = responde JSON (Postman) | `http://localhost:4200/ingreso-social` |
+| `OAUTH2_CALLBACK_BASE` | Solo en la nube: base de la URL a la que vuelven GitHub y Google (`<base>/login/oauth2/code/{proveedor}`). Vacía = la del navegador | `https://bansports.vercel.app` |
+| `PORT` | Puerto en el que escucha el back (lo pone Render). Por defecto 8080 | `10000` |
 
 Copiar `.env.example` como `.env` y completar con los valores reales.
 

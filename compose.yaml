@@ -104,16 +104,15 @@ services:
       MAIL_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${SMTP_FROM:-${SMTP_USERNAME:-no-reply@ecommerce-blandi-arruti.com}}
 
-      # Base de los enlaces que van en los mails (ej. recuperar la contraseña).
+      # Base de los enlaces que van en los mails (ej. recuperar la contraseña) y de
+      # la vuelta de las pasarelas de pago (/pago/resultado).
       FRONT_URL: ${FRONT_URL:-http://localhost:4200}
 
       # ── Servicios externos (opcionales: sin token quedan inactivos) ──
+      # Pasarela MercadoPago. Su webhook (https://<NGROK_DOMAIN>/api/v1/webhook/mercadopago,
+      # tópico "order") se carga en el panel de MercadoPago; sin él, el pago lo confirma la
+      # pantalla de vuelta del front.
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
-      # Si definís NGROK_DOMAIN en el .env, estas dos se arman solas con ese
-      # dominio. Podés pisarlas seteándolas a mano. Vacías = sin webhook, y la
-      # app cae a http://localhost:8080 para las back_urls.
-      MP_NOTIFICATION_URL: ${MP_NOTIFICATION_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}/api/v1/webhook/mercadopago}}
-      MP_BACK_URL: ${MP_BACK_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}}}
       CORREO_ARGENTINO_USER_TOKEN: ${CORREO_ARGENTINO_USER_TOKEN:-}
       CORREO_ARGENTINO_PASSWORD_TOKEN: ${CORREO_ARGENTINO_PASSWORD_TOKEN:-}
       CORREO_ARGENTINO_CUSTOMER_ID: ${CORREO_ARGENTINO_CUSTOMER_ID:-}
@@ -179,8 +178,8 @@ services:
   #   NGROK_DOMAIN     → tu dominio estático, sin el https://
   #
   # El dominio estático es en la práctica obligatorio: sin él ngrok da una URL
-  # distinta en cada arranque, y la app lee MP_NOTIFICATION_URL una sola vez al
-  # iniciar. El plan gratuito incluye uno.
+  # distinta en cada arranque, y habría que volver a cargar la URL del webhook en el
+  # panel de MercadoPago cada vez. El plan gratuito incluye uno.
   ngrok:
     image: ngrok/ngrok:latest
     container_name: ecommerce-ngrok
@@ -217,7 +216,7 @@ services:
           exec ngrok http app:8080 --url="https://$$NGROK_DOMAIN" --log=stdout
         fi
         echo "Sin NGROK_DOMAIN: la URL va a ser distinta en cada arranque."
-        echo "Mirá cuál te tocó en http://localhost:4040 y actualizá MP_NOTIFICATION_URL."
+        echo "Mirá cuál te tocó en http://localhost:4040 y cargala en el panel de MercadoPago (Webhooks)."
         exec ngrok http app:8080 --log=stdout
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:4040/api/tunnels || exit 1"]

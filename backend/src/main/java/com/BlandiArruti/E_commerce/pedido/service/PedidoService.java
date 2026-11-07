@@ -16,8 +16,8 @@ import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.*;
-import com.BlandiArruti.E_commerce.mercadopago.dto.response.PreferenciaResponse;
-import com.BlandiArruti.E_commerce.mercadopago.service.MercadoPagoService;
+import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
@@ -50,6 +50,7 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class PedidoService implements IPedidoService {
 
     private final PedidoRepository pedidoRepository;
@@ -59,7 +60,6 @@ public class PedidoService implements IPedidoService {
     private final FacturaRepository facturaRepository;
     private final EnvioRepository envioRepository;
     private final DireccionRepository direccionRepository;
-    private final MercadoPagoService mercadoPagoService;
     private final NotificacionService notificacionService;
     private final PedidoMapper pedidoMapper;
     private final FacturaMapper facturaMapper;
@@ -186,28 +186,61 @@ public class PedidoService implements IPedidoService {
         pedidoRepository.save(pedido);
     }
 
-    public PreferenciaResponse iniciarPagoMercadoPago(Long id, PagoRequest request) {
+    // ── Lo que necesita PagoService (pasarelas de pago) ──────────────────────
+    // El pago con pasarelas vive en el paquete pago/. Acá queda solo lo que es del pedido
+    // (Experto en Información): quién puede pagarlo y qué pasa cuando se cobra.
+
+    /** El pedido del cliente logueado, listo para iniciar un pago. */
+    @Transactional(readOnly = true)
+    public Pedido obtenerParaPagar(Long id) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
         verificarPropietario(pedido);
-
         if (pedido.getEstadoPedido() != EstadoPedido.PENDIENTE_PAGO) {
             throw PedidoNoModificableException.porEstado(id, pedido.getEstadoPedido());
         }
-
-        return mercadoPagoService.crearPreferencia(pedido, request.tipoFactura());
+        // Inicializa los ítems y sus productos para armar el cobro fuera de esta transacción.
+        pedido.getItems().forEach(item -> item.getProducto().getNombre());
+        return pedido;
     }
 
-    public void confirmarPagoMercadoPago(Long pedidoId, TipoFactura tipoFactura) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+    /** Falla con 403 si el pedido no es del cliente logueado (un admin puede ver todos). */
+    public void verificarAcceso(Pedido pedido) {
+        verificarPropietario(pedido);
+    }
+
+    /**
+     * Una pasarela confirmó el cobro: pasa el pedido a PAGADO (descuenta stock, emite factura
+     * y avisa por mail). Bloquea la fila del pedido: el webhook y la página de vuelta pueden
+     * llegar a la vez y solo el primero tiene que cobrar.
+     *
+     * @return true si el pedido quedó pagado (ahora o antes); false si el monto no alcanza
+     *         o el pedido ya no se puede cobrar (por ejemplo, cancelado)
+     */
+    public boolean registrarPagoAprobado(Long pedidoId, TipoFactura tipoFactura, BigDecimal montoPagado) {
+        Pedido pedido = pedidoRepository.findByIdParaActualizar(pedidoId)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(pedidoId));
 
-        // El webhook puede llegar repetido: si el pedido ya no está esperando pago, no hacemos nada.
         if (!esCobrable(pedido.getEstadoPedido())) {
-            return;
+            return pedido.getEstadoPedido() != EstadoPedido.CANCELADO;
+        }
+
+        BigDecimal total = BigDecimal.valueOf(calcularTotal(pedido));
+        if (montoPagado == null || montoPagado.add(TOLERANCIA_REDONDEO).compareTo(total) < 0) {
+            log.warn("Pago del pedido {} por ${} no cubre el total ${}: no se acredita.",
+                    pedidoId, montoPagado, total);
+            return false;
         }
 
         acreditarPago(pedido, tipoFactura);
+        return true;
+    }
+
+    /** Margen por redondeo de centavos en la pasarela. */
+    private static final BigDecimal TOLERANCIA_REDONDEO = new BigDecimal("0.05");
+
+    public double calcularTotal(Pedido pedido) {
+        return pedido.getItems().stream().mapToDouble(ItemPedido::getPrecioProducto).sum();
     }
 
     public PedidoResponse pagar(Long id, PagoRequest request) {
@@ -245,9 +278,7 @@ public class PedidoService implements IPedidoService {
             }
         }
 
-        double total = pedido.getItems().stream()
-                .mapToDouble(ItemPedido::getPrecioProducto)
-                .sum();
+        double total = calcularTotal(pedido);
 
         Factura factura = Factura.builder()
                 .pedido(pedido)

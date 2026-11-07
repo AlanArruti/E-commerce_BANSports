@@ -114,6 +114,24 @@
           }
         </div>
 
+        <div class="campo campo-precio">
+          <label for="var-precio">Precio de esta variante <span class="opcional">(opcional)</span></label>
+          <div class="input-con-prefijo">
+            <span class="prefijo" aria-hidden="true">$</span>
+            <input id="var-precio" class="input" formControlName="precio" inputmode="decimal" placeholder="42.999,99"
+              [ngClass]="{ 'input-error': errorCampo(precio, 'precio') }" aria-describedby="var-precio-ayuda var-precio-error" />
+          </div>
+          @if (errorCampo(precio, 'precio'); as mensaje) {
+            <p class="msj-error" id="var-precio-error">{{ mensaje }}</p>
+          } @else {
+            <p class="ayuda" id="var-precio-ayuda">
+              Vacío = cuesta lo mismo que el producto
+              @if (producto(); as p) { ({{ p.precioBase | precio }}) }.
+              La oferta del producto se aplica igual.
+            </p>
+          }
+        </div>
+
         <div class="acciones-form">
           <button type="submit" class="btn btn-primario" [disabled]="guardando()">
             {{ guardando() ? 'Guardando…' : modo === 'nueva' ? 'Agregar variante' : 'Guardar cambios' }}
@@ -129,6 +147,7 @@
         <thead>
           <tr>
             <th scope="col">Variante</th>
+            <th scope="col" class="col-precio">Precio</th>
             <th scope="col" class="col-stock">Stock</th>
             <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
           </tr>
@@ -142,6 +161,12 @@
                     <li class="chip"><span class="chip-clave">{{ etiqueta(par[0]) }}</span> {{ par[1] }}</li>
                   }
                 </ul>
+              </td>
+              <td class="col-precio">
+                <span class="precio-variante">{{ variante.precioFinal | precio }}</span>
+                @if (variante.precio == null) {
+                  <span class="precio-heredado">igual al producto</span>
+                }
               </td>
               <td class="col-stock">
                 <span class="stock">

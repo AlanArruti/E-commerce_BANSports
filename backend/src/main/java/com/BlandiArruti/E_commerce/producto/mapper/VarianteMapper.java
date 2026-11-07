@@ -11,6 +11,8 @@ public interface VarianteMapper {
 
     @Mapping(source = "uuid", target = "uuidVariante")
     @Mapping(source = "producto.id", target = "idProducto")
+    @Mapping(target = "precioFinal",
+             expression = "java(variante.getProducto() == null ? null : variante.getProducto().precioUnitario(variante))")
     VarianteResponse toResponse(Variante variante);
 
     @Mapping(target = "id", ignore = true)

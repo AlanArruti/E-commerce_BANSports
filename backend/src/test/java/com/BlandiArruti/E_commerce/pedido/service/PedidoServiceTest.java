@@ -23,6 +23,10 @@ import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
+import org.mockito.ArgumentCaptor;
+import com.BlandiArruti.E_commerce.producto.entity.Producto;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ItemPedidoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.mapper.PedidoMapper;
 import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
 import com.BlandiArruti.E_commerce.producto.entity.Variante;
@@ -384,6 +388,49 @@ class PedidoServiceTest {
 
         assertThatThrownBy(() -> pedidoService.obtenerParaPagar(1L))
                 .isInstanceOf(PedidoNoModificableException.class);
+    }
+
+    // ─── crear: precio por variante (SCRUM-154) ───────────────────────────────
+
+    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").contrasenia("x").activo(true).build();
+
+    private Producto proteina() {
+        return Producto.builder().id(2L).nombre("Whey").precio(30000.0).descuento(0).activo(true).build();
+    }
+
+    @Test
+    void crear_varianteConPrecioPropio_guardaElPrecioDeLaVariante() {
+        Producto producto = proteina();
+        Variante dosKilos = Variante.builder().id(7L).producto(producto).stock(10).precio(55000.0).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(dosKilos));
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, null, List.of(new ItemPedidoRequest(2L, 7L, 2))),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getItems()).singleElement()
+                .extracting(ItemPedido::getPrecioProducto).isEqualTo(110000.0);
+    }
+
+    @Test
+    void crear_varianteDeOtroProducto_rechaza() {
+        Producto producto = proteina();
+        Producto otro = Producto.builder().id(9L).precio(90000.0).build();
+        Variante deOtro = Variante.builder().id(7L).producto(otro).stock(10).precio(90000.0).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(deOtro));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, List.of(new ItemPedidoRequest(2L, 7L, 1))),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("no pertenece al producto");
+        verify(pedidoRepository, never()).save(any());
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

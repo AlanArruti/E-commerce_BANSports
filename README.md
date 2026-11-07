@@ -25,6 +25,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - Al confirmar el pago se genera automáticamente una **Factura** (tipo A, B o C) y el pedido pasa a `PAGADO`.
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
+- Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
 - Las bajas de clientes y productos son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 

@@ -99,9 +99,9 @@
                     {{ descripcionVariante(item) }} ·
                   }
                   @if ((item.producto.descuento ?? 0) > 0) {
-                    <span class="item-precio-anterior">{{ item.producto.precioBase | precio }}</span>
+                    <span class="item-precio-anterior">{{ precioLista(item) | precio }}</span>
                   }
-                  {{ item.producto.precioFinal | precio }} c/u
+                  {{ precioUnitario(item) | precio }} c/u
                 </span>
                 @if (item.cantidad >= maximo(item)) {
                   <span class="item-aviso">Llegaste al máximo disponible ({{ maximo(item) }})</span>

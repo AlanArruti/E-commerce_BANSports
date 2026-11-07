@@ -122,6 +122,15 @@ public class PedidoService implements IPedidoService {
             if (itemReq.idVariante() != null) {
                 variante = varianteRepository.findById(itemReq.idVariante())
                         .orElseThrow(() -> EntidadNoEncontradaException.variante(itemReq.idVariante()));
+                // Cada variante tiene su precio y su stock: no se puede combinar la variante de un
+                // producto con otro producto (por ejemplo, para llevarse su oferta).
+                if (!variante.getProducto().getId().equals(producto.getId())) {
+                    throw new EcommerceException("La variante " + variante.getId()
+                            + " no pertenece al producto " + producto.getId() + ".");
+                }
+                if (!variante.isActivo()) {
+                    throw new EcommerceException("La variante " + variante.getId() + " ya no está a la venta.");
+                }
                 if (variante.getStock() < itemReq.cantidad()) {
                     throw StockInsuficienteException.stockInsuficiente(
                             itemReq.idVariante(), variante.getStock(), itemReq.cantidad());
@@ -153,7 +162,7 @@ public class PedidoService implements IPedidoService {
                     .producto(productos.get(i))
                     .variante(variantes.get(i))
                     .cantidad(itemReq.cantidad())
-                    .precioProducto(productos.get(i).getPrecioConDescuento() * itemReq.cantidad())
+                    .precioProducto(productos.get(i).precioUnitario(variantes.get(i)) * itemReq.cantidad())
                     .build();
             pedido.getItems().add(item);
         }

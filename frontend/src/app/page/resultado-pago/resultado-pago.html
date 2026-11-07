@@ -1,0 +1,68 @@
+<div class="contenedor resultado-pagina">
+  <section class="resultado" aria-live="polite">
+    @switch (resultado()) {
+      @case ('cargando') {
+        <span class="spinner" aria-hidden="true"></span>
+        <h1 class="titulo-display resultado-titulo">Confirmando tu pago…</h1>
+        <p class="resultado-texto">Estamos consultando a Mercado Pago. No cierres esta página.</p>
+      }
+
+      @case ('pagado') {
+        <div class="icono icono-ok" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>
+        </div>
+        <h1 class="titulo-display resultado-titulo">¡Pago aprobado!</h1>
+        <p class="resultado-texto">Te mandamos la factura por mail. Ya estamos preparando tu pedido.</p>
+      }
+
+      @case ('procesando') {
+        <div class="icono icono-espera" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <h1 class="titulo-display resultado-titulo">Tu pago se está procesando</h1>
+        <p class="resultado-texto">La pasarela todavía no lo confirmó. Puede tardar unos minutos; cuando se acredite, el pedido se actualiza solo.</p>
+        <button type="button" class="btn btn-secundario" (click)="consultar()">Volver a consultar</button>
+      }
+
+      @case ('rechazado') {
+        <div class="icono icono-error" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </div>
+        <h1 class="titulo-display resultado-titulo">El pago no se aprobó</h1>
+        <p class="resultado-texto">No se te cobró nada. Podés intentarlo de nuevo con otro medio de pago.</p>
+      }
+
+      @case ('sin-pago') {
+        <div class="icono icono-espera" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+        </div>
+        <h1 class="titulo-display resultado-titulo">Tu pedido sigue pendiente de pago</h1>
+        <p class="resultado-texto">Volviste sin completar el pago. Tu pedido quedó guardado.</p>
+      }
+
+      @case ('error') {
+        <div class="icono icono-error" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        </div>
+        <h1 class="titulo-display resultado-titulo">{{ error()?.titulo }}</h1>
+        <p class="resultado-texto">{{ error()?.detalle }}</p>
+        @if (hayIdDePago()) {
+          <button type="button" class="btn btn-secundario" (click)="consultar()">Reintentar</button>
+        }
+      }
+    }
+
+    @if (pago(); as pagoActual) {
+      <div class="tarjeta">
+        <span class="tarjeta-titulo">Pedido #{{ pagoActual.pedidoId }}</span>
+        <span class="tarjeta-total">{{ pagoActual.monto | precio }}</span>
+      </div>
+    }
+
+    @if ((resultado() === 'rechazado' || resultado() === 'sin-pago') && pago(); as pagoActual) {
+      <app-pagar-pedido [idPedido]="pagoActual.pedidoId" textoBoton="Intentar de nuevo con {pasarela}" />
+    }
+
+    <a routerLink="/productos" class="link">Seguir comprando</a>
+  </section>
+</div>

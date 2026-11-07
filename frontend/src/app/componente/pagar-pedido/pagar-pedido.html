@@ -1,0 +1,57 @@
+<div class="pagar">
+  @if (pasarelas(); as lista) {
+    @if (lista.length === 0) {
+      <div class="alerta-error" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div>
+          <div class="alerta-error-titulo">No hay medios de pago online configurados</div>
+          <div class="alerta-error-texto">La tienda todavía no cargó las credenciales de ninguna pasarela de pago. Tu pedido quedó guardado como pendiente de pago.</div>
+        </div>
+      </div>
+    } @else {
+      <fieldset class="facturas">
+        <legend class="facturas-titulo">¿Qué factura necesitás?</legend>
+        <div class="facturas-opciones">
+          @for (opcion of opciones; track opcion.valor) {
+            <label class="factura" [class.factura-elegida]="tipoFactura() === opcion.valor">
+              <input
+                type="radio"
+                name="tipo-factura-{{ idPedido() }}"
+                [value]="opcion.valor"
+                [checked]="tipoFactura() === opcion.valor"
+                (change)="tipoFactura.set(opcion.valor)"
+              />
+              <span class="factura-titulo">{{ opcion.titulo }}</span>
+              <span class="factura-detalle">{{ opcion.detalle }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      @if (error(); as errorActual) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+            <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+          </div>
+        </div>
+      }
+
+      @for (pasarela of lista; track pasarela.codigo; let primera = $first) {
+        <button
+          type="button"
+          class="btn btn-bloque"
+          [class.btn-primario]="primera"
+          [class.btn-secundario]="!primera"
+          [disabled]="redirigiendo() !== null"
+          (click)="pagar(pasarela)"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+          {{ redirigiendo() === pasarela.codigo ? 'Te llevamos a ' + pasarela.nombre + '…' : texto(pasarela) }}
+        </button>
+      }
+      <p class="pagar-nota">Pagás en la página segura de la pasarela y volvés acá al terminar.</p>
+    }
+  }
+</div>

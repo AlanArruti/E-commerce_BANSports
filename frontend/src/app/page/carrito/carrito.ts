@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { AvisoFusion } from '../../componente/aviso-fusion/aviso-fusion';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { ItemCarrito } from '../../models/item-carrito';
-import { atributosOrdenados } from '../../models/variante';
+import { atributosOrdenados, precioFinalDe, precioListaDe } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { CarritoService, ItemNoDisponible } from '../../services/carrito.service';
 import { ErrorTraducido, traducirErrorCarrito } from '../../validaciones/errores-api';
@@ -112,6 +112,16 @@ export class Carrito implements OnInit {
   /** Tope de unidades: el stock de la variante. Sin variante, el back no limita. */
   protected maximo(item: ItemCarrito): number {
     return item.variante?.stock ?? Number.MAX_SAFE_INTEGER;
+  }
+
+  /** Precio por unidad de la variante del ítem, con la oferta aplicada (SCRUM-154). */
+  protected precioUnitario(item: ItemCarrito): number {
+    return precioFinalDe(item.producto, item.variante);
+  }
+
+  /** Precio por unidad sin la oferta, para mostrarlo tachado. */
+  protected precioLista(item: ItemCarrito): number {
+    return precioListaDe(item.producto, item.variante);
   }
 
   /** "1 kg · Chocolate". Vacío si el producto no tiene variante. */

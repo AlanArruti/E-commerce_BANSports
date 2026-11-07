@@ -172,6 +172,52 @@
   max-width: 200px;
 }
 
+.campo-precio {
+  max-width: 320px;
+}
+
+.opcional {
+  color: var(--color-texto-secundario);
+  font-weight: 400;
+}
+
+.input-con-prefijo {
+  position: relative;
+}
+
+.input-con-prefijo .prefijo {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-texto-secundario);
+  pointer-events: none;
+}
+
+.input-con-prefijo .input {
+  padding-left: 30px;
+}
+
+.ayuda {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.col-precio {
+  white-space: nowrap;
+}
+
+.precio-variante {
+  display: block;
+  font-weight: 700;
+}
+
+.precio-heredado {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+}
+
 .acciones-form {
   display: flex;
   flex-wrap: wrap;

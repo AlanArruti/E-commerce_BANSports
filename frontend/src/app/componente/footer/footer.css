@@ -34,11 +34,6 @@
   font-size: 20px;
 }
 
-.redes {
-  display: flex;
-  gap: var(--espacio-2);
-}
-
 .columna {
   flex: 1 1 160px;
   display: flex;
@@ -73,15 +68,6 @@
   padding-bottom: 20px;
   font-size: 13px;
   color: var(--color-texto-secundario);
-}
-
-.legales {
-  display: flex;
-  gap: 20px;
-}
-
-.legales a:hover {
-  color: var(--color-texto);
 }
 
 @media (max-width: 640px) {

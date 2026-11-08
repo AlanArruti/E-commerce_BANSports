@@ -143,6 +143,12 @@
   text-decoration: line-through;
 }
 
+.producto-precio-desde {
+  color: var(--color-texto-secundario);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .producto-precio {
   min-width: 0;
   white-space: nowrap;

@@ -322,7 +322,7 @@ class CarritoServiceTest {
         Carrito carrito = carritoVacio(1L);
         when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carrito));
 
-        assertThatThrownBy(() -> carritoService.checkout(1L, null, 0.0))
+        assertThatThrownBy(() -> carritoService.checkout(1L, null, null))
                 .isInstanceOf(ConflictoException.class)
                 .hasMessageContaining("vacío");
     }
@@ -340,7 +340,7 @@ class CarritoServiceTest {
         when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carrito));
         when(pedidoService.crear(any(), any())).thenReturn(null);
 
-        carritoService.checkout(1L, null, 0.0);
+        carritoService.checkout(1L, null, null);
 
         assertThat(carrito.getItems()).isEmpty();
         verify(carritoRepository).save(carrito);

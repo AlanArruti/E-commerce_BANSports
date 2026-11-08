@@ -5,6 +5,7 @@ import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EstadoEnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
@@ -16,8 +17,8 @@ import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.*;
-import com.BlandiArruti.E_commerce.mercadopago.dto.response.PreferenciaResponse;
-import com.BlandiArruti.E_commerce.mercadopago.service.MercadoPagoService;
+import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
@@ -50,6 +51,7 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class PedidoService implements IPedidoService {
 
     private final PedidoRepository pedidoRepository;
@@ -59,11 +61,11 @@ public class PedidoService implements IPedidoService {
     private final FacturaRepository facturaRepository;
     private final EnvioRepository envioRepository;
     private final DireccionRepository direccionRepository;
-    private final MercadoPagoService mercadoPagoService;
     private final NotificacionService notificacionService;
     private final PedidoMapper pedidoMapper;
     private final FacturaMapper facturaMapper;
     private final EnvioMapper envioMapper;
+    private final CotizacionEnvioService cotizacionEnvioService;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -122,6 +124,15 @@ public class PedidoService implements IPedidoService {
             if (itemReq.idVariante() != null) {
                 variante = varianteRepository.findById(itemReq.idVariante())
                         .orElseThrow(() -> EntidadNoEncontradaException.variante(itemReq.idVariante()));
+                // Cada variante tiene su precio y su stock: no se puede combinar la variante de un
+                // producto con otro producto (por ejemplo, para llevarse su oferta).
+                if (!variante.getProducto().getId().equals(producto.getId())) {
+                    throw new EcommerceException("La variante " + variante.getId()
+                            + " no pertenece al producto " + producto.getId() + ".");
+                }
+                if (!variante.isActivo()) {
+                    throw new EcommerceException("La variante " + variante.getId() + " ya no está a la venta.");
+                }
                 if (variante.getStock() < itemReq.cantidad()) {
                     throw StockInsuficienteException.stockInsuficiente(
                             itemReq.idVariante(), variante.getStock(), itemReq.cantidad());
@@ -144,7 +155,7 @@ public class PedidoService implements IPedidoService {
                 .cliente(cliente)
                 .estadoPedido(EstadoPedido.PENDIENTE_PAGO)
                 .direccionEnvio(direccionEnvio)
-                .costoEnvio(request.costoEnvio() != null ? request.costoEnvio() : 0.0)
+                .costoEnvio(cotizarEnvio(direccionEnvio, request))
                 .build();
 
         for (int i = 0; i < request.items().size(); i++) {
@@ -154,12 +165,26 @@ public class PedidoService implements IPedidoService {
                     .producto(productos.get(i))
                     .variante(variantes.get(i))
                     .cantidad(itemReq.cantidad())
-                    .precioProducto(productos.get(i).getPrecioConDescuento() * itemReq.cantidad())
+                    .precioProducto(productos.get(i).precioUnitario(variantes.get(i)) * itemReq.cantidad())
                     .build();
             pedido.getItems().add(item);
         }
 
         return pedidoMapper.toResponse(pedidoRepository.save(pedido));
+    }
+
+    /**
+     * El costo de envío lo cotiza el back para la dirección y la opción elegida:
+     * nunca se acepta un precio mandado por el front. Sin dirección no hay envío.
+     */
+    private double cotizarEnvio(Direccion direccionEnvio, PedidoRequest request) {
+        if (direccionEnvio == null) {
+            return 0.0;
+        }
+        if (request.opcionEnvio() == null) {
+            throw new EcommerceException("Tenés que elegir una opción de envío.");
+        }
+        return cotizacionEnvioService.precioDeOpcion(direccionEnvio.getId(), request.opcionEnvio());
     }
 
     public void cancelar(Long id) {
@@ -187,28 +212,67 @@ public class PedidoService implements IPedidoService {
         pedidoRepository.save(pedido);
     }
 
-    public PreferenciaResponse iniciarPagoMercadoPago(Long id, PagoRequest request) {
+    // ── Lo que necesita PagoService (pasarelas de pago) ──────────────────────
+    // El pago con pasarelas vive en el paquete pago/. Acá queda solo lo que es del pedido
+    // (Experto en Información): quién puede pagarlo y qué pasa cuando se cobra.
+
+    /** El pedido del cliente logueado, listo para iniciar un pago. */
+    @Transactional(readOnly = true)
+    public Pedido obtenerParaPagar(Long id) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
         verificarPropietario(pedido);
-
         if (pedido.getEstadoPedido() != EstadoPedido.PENDIENTE_PAGO) {
             throw PedidoNoModificableException.porEstado(id, pedido.getEstadoPedido());
         }
-
-        return mercadoPagoService.crearPreferencia(pedido, request.tipoFactura());
+        // Inicializa los ítems y sus productos para armar el cobro fuera de esta transacción.
+        pedido.getItems().forEach(item -> item.getProducto().getNombre());
+        return pedido;
     }
 
-    public void confirmarPagoMercadoPago(Long pedidoId, TipoFactura tipoFactura) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+    /** Falla con 403 si el pedido no es del cliente logueado (un admin puede ver todos). */
+    public void verificarAcceso(Pedido pedido) {
+        verificarPropietario(pedido);
+    }
+
+    /**
+     * Una pasarela confirmó el cobro: pasa el pedido a PAGADO (descuenta stock, emite factura
+     * y avisa por mail). Bloquea la fila del pedido: el webhook y la página de vuelta pueden
+     * llegar a la vez y solo el primero tiene que cobrar.
+     *
+     * @return true si el pedido quedó pagado (ahora o antes); false si el monto no alcanza
+     *         o el pedido ya no se puede cobrar (por ejemplo, cancelado)
+     */
+    public boolean registrarPagoAprobado(Long pedidoId, TipoFactura tipoFactura, BigDecimal montoPagado) {
+        Pedido pedido = pedidoRepository.findByIdParaActualizar(pedidoId)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(pedidoId));
 
-        // El webhook puede llegar repetido: si el pedido ya no está esperando pago, no hacemos nada.
         if (!esCobrable(pedido.getEstadoPedido())) {
-            return;
+            return pedido.getEstadoPedido() != EstadoPedido.CANCELADO;
+        }
+
+        BigDecimal total = BigDecimal.valueOf(calcularTotal(pedido));
+        if (montoPagado == null || montoPagado.add(TOLERANCIA_REDONDEO).compareTo(total) < 0) {
+            log.warn("Pago del pedido {} por ${} no cubre el total ${}: no se acredita.",
+                    pedidoId, montoPagado, total);
+            return false;
         }
 
         acreditarPago(pedido, tipoFactura);
+        return true;
+    }
+
+    /** Margen por redondeo de centavos en la pasarela. */
+    private static final BigDecimal TOLERANCIA_REDONDEO = new BigDecimal("0.05");
+
+    /** Productos más envío: es lo que se cobra en la pasarela y lo que va a la factura. */
+    public double calcularTotal(Pedido pedido) {
+        double productos = pedido.getItems().stream().mapToDouble(ItemPedido::getPrecioProducto).sum();
+        return productos + costoEnvio(pedido);
+    }
+
+    private static double costoEnvio(Pedido pedido) {
+        return pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0;
     }
 
     public PedidoResponse pagar(Long id, PagoRequest request) {
@@ -246,10 +310,7 @@ public class PedidoService implements IPedidoService {
             }
         }
 
-        double total = pedido.getItems().stream()
-                .mapToDouble(ItemPedido::getPrecioProducto)
-                .sum()
-                + (pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0);
+        double total = calcularTotal(pedido);
 
         Factura factura = Factura.builder()
                 .pedido(pedido)

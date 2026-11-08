@@ -217,6 +217,7 @@ public class ProductoService implements IProductoService {
 
         variante.setAtributos(request.atributos());
         variante.setStock(request.stock());
+        variante.setPrecio(request.precio());
         return varianteMapper.toResponse(varianteRepository.save(variante));
     }
 

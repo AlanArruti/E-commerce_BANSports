@@ -4,6 +4,8 @@ export interface VarianteRequest {
   atributos: Record<string, string>;
   /** Stock inicial (≥ 0). */
   stock: number;
+  /** Precio propio de la variante, sin descuento. null = cuesta lo mismo que el producto. */
+  precio: number | null;
 }
 
 // Cuerpo de PATCH /producto/{id}/variante/{idVariante}/stock (StockRequest).

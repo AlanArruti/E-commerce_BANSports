@@ -8,5 +8,9 @@ public record VarianteResponse(
         Map<String, String> atributos,
         Integer stock,
         boolean activo,
-        Long idProducto
+        Long idProducto,
+        /** Precio propio cargado en el panel, sin descuento; null si usa el del producto. */
+        Double precio,
+        /** Lo que paga el cliente por una unidad: precio de la variante (o del producto) con la oferta aplicada. */
+        Double precioFinal
 ) {}

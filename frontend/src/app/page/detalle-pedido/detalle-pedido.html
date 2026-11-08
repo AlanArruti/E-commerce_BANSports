@@ -1,0 +1,140 @@
+<div class="contenedor pedido-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/">Inicio</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/perfil">Mi perfil</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/perfil/pedidos">Mis pedidos</a>
+    @if (estado().pedido; as pedido) {
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Pedido #{{ pedido.id }}</span>
+    }
+  </nav>
+
+  @if (estado().cargando) {
+    <div class="esqueleto esqueleto-titulo" aria-busy="true"></div>
+    <div class="esqueleto esqueleto-avance"></div>
+    <div class="cuerpo">
+      <div class="esqueleto esqueleto-items"></div>
+      <div class="esqueleto esqueleto-lateral"></div>
+    </div>
+  } @else if (estado().noEncontrado) {
+    <div class="vacio">
+      <h1>Pedido no encontrado</h1>
+      <p>Puede que el link esté mal escrito o que el pedido no sea de tu cuenta.</p>
+      <a routerLink="/perfil/pedidos" class="btn btn-primario">Ver mis pedidos</a>
+    </div>
+  } @else if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else if (estado().pedido; as pedido) {
+    <div class="encabezado">
+      <h1 class="titulo-display titulo">Pedido #{{ pedido.id }}</h1>
+      <app-estado-pedido [estado]="pedido.estado" />
+    </div>
+    <p class="fecha">Hecho el {{ pedido.fechaCreacion | date: "dd/MM/yyyy 'a las' HH:mm" }}</p>
+
+    <!-- ── Avance ──────────────────────────────────────── -->
+    <section class="panel avance" aria-label="Avance del pedido">
+      @if (pedido.estado === 'CANCELADO') {
+        <p class="cancelado">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
+          Este pedido se canceló.
+        </p>
+      } @else {
+        <ol class="pasos">
+          @for (paso of pasos(); track paso.etiqueta) {
+            <li class="paso" [class.hecho]="paso.hecho" [class.actual]="paso.actual" [attr.aria-current]="paso.actual ? 'step' : null">
+              <span class="paso-barra" aria-hidden="true"></span>
+              <span class="paso-texto">{{ paso.etiqueta }}</span>
+            </li>
+          }
+        </ol>
+      }
+    </section>
+
+    <div class="cuerpo">
+      <!-- ── Productos ─────────────────────────────────── -->
+      <section class="panel" aria-labelledby="titulo-productos">
+        <h2 class="panel-titulo" id="titulo-productos">Productos</h2>
+        <ul class="items">
+          @for (item of pedido.items; track item.idItemPedido) {
+            <li class="item">
+              <div class="item-imagen" aria-hidden="true">
+                @if (item.producto.imagenUrl; as imagen) {
+                  <img [src]="imagen" alt="" loading="lazy" />
+                } @else {
+                  <app-pote-producto class="item-pote" [nombre]="abreviatura(item)" />
+                }
+              </div>
+              <div class="item-datos">
+                <a class="item-nombre" [routerLink]="['/productos', item.producto.id]">{{ item.producto.nombre }}</a>
+                <span class="item-detalle">
+                  @if (descripcionVariante(item)) {
+                    {{ descripcionVariante(item) }} ·
+                  }
+                  {{ item.cantidad }} × {{ precioUnitario(item) | precio }}
+                </span>
+              </div>
+              <span class="item-subtotal">{{ item.precioTotalProducto | precio }}</span>
+            </li>
+          }
+        </ul>
+        <div class="total">
+          <span>Total ({{ unidades() }} {{ unidades() === 1 ? 'producto' : 'productos' }})</span>
+          <strong>{{ pedido.total | precio }}</strong>
+        </div>
+      </section>
+
+      <!-- ── Entrega y acciones ───────────────────────── -->
+      <div class="lateral">
+        <section class="panel" aria-labelledby="titulo-entrega">
+          <h2 class="panel-titulo" id="titulo-entrega">Entrega en</h2>
+          <!-- Los pedidos viejos no guardaban la dirección en el pedido: se usa la del envío. -->
+          @if (pedido.direccionEnvio ?? pedido.envio?.direccion; as direccion) {
+            <p class="direccion">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</p>
+            <p class="direccion-localidad">{{ localidad(direccion) }}</p>
+          } @else {
+            <p class="direccion-localidad">Este pedido no tiene una dirección de entrega cargada.</p>
+          }
+
+          <p class="envio">
+            @if (pedido.envio; as envio) {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
+              @switch (envio.estado) {
+                @case ('ENTREGADO') {
+                  Entregado{{ envio.fechaLlegada ? ' el ' + (envio.fechaLlegada | date: 'dd/MM/yyyy') : '' }}.
+                }
+                @case ('EN_CAMINO') {
+                  En camino{{ envio.fechaSalida ? ': salió el ' + (envio.fechaSalida | date: 'dd/MM/yyyy') : '' }}.
+                }
+                @default {
+                  Despachado{{ envio.fechaSalida ? ' el ' + (envio.fechaSalida | date: 'dd/MM/yyyy') : '' }}.
+                }
+              }
+            } @else if (pedido.estado === 'PENDIENTE_PAGO') {
+              Se despacha cuando se confirme el pago.
+            } @else if (pedido.estado === 'PAGADO' || pedido.estado === 'EN_PREPARACION') {
+              Estamos preparando tu pedido.
+            }
+          </p>
+        </section>
+
+        @if (pedido.estado === 'PENDIENTE_PAGO') {
+          <!-- El pago llega con SCRUM-122. -->
+          <button type="button" class="btn btn-primario btn-bloque" title="Próximamente">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+            Pagar con Mercado Pago
+          </button>
+          <p class="nota">El stock se reserva cuando se confirma el pago.</p>
+        }
+      </div>
+    </div>
+  }
+</div>

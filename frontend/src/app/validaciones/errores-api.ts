@@ -379,6 +379,16 @@ export function traducirErrorFavoritos(error: HttpErrorResponse): ErrorTraducido
   };
 }
 
+/** Para "Mis pedidos". En el detalle, el 403 y el 404 los muestra la página como "Pedido no encontrado". */
+export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
+  return (
+    errorGeneral(error) ?? {
+      titulo: 'No pudimos cargar tus pedidos',
+      detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+    }
+  );
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

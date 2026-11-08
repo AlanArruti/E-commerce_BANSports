@@ -1,3 +1,4 @@
+import { Direccion } from './direccion';
 import { Producto } from './producto';
 import { Variante } from './variante';
 
@@ -22,8 +23,22 @@ export interface ItemPedido {
   precioTotalProducto: number;
 }
 
-// Respuesta de POST /cliente/{id}/carrito/checkout y GET /pedido/{id} (PedidoResponse).
-// Solo los campos que usa el front; el back también manda el cliente, el envío y la factura.
+/** Orden en que avanza un pedido. CANCELADO queda afuera: corta el recorrido. */
+export const PASOS_PEDIDO: EstadoPedido[] = ['PENDIENTE_PAGO', 'PAGADO', 'EN_PREPARACION', 'DESPACHADO', 'ENTREGADO'];
+
+export type EstadoEnvio = 'DESPACHADO' | 'EN_CAMINO' | 'ENTREGADO';
+
+// Envío del pedido (EnvioResponse). Lo crea el admin al despachar; antes es null.
+export interface Envio {
+  id: number;
+  direccion: Direccion | null;
+  estado: EstadoEnvio;
+  fechaSalida: string | null;
+  fechaLlegada: string | null;
+}
+
+// Respuesta de POST /cliente/{id}/carrito/checkout, GET /pedido/{id} y del historial (PedidoResponse).
+// Solo los campos que usa el front; el back también manda el cliente y la factura.
 export interface Pedido {
   id: number;
   uuidPedido: string;
@@ -31,4 +46,7 @@ export interface Pedido {
   items: ItemPedido[];
   total: number;
   estado: EstadoPedido;
+  /** Dirección elegida en el checkout. */
+  direccionEnvio: Direccion | null;
+  envio: Envio | null;
 }

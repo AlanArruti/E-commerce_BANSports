@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { CambioPasswordRequest } from '../models/cambio-password-request';
 import { Cliente } from '../models/cliente';
@@ -26,8 +26,16 @@ export class ClienteService {
     return this.http.patch<void>(`${this.API_URL}/cliente/${this.idCliente()}/password`, datos);
   }
 
+  /** Historial del cliente. El back no los ordena: van del más nuevo al más viejo. */
   listarPedidos(): Observable<Pedido[]> {
-    return this.http.get<Pedido[]>(`${this.API_URL}/cliente/${this.idCliente()}/pedido`);
+    return this.http
+      .get<Pedido[]>(`${this.API_URL}/cliente/${this.idCliente()}/pedido`)
+      .pipe(map((pedidos) => [...pedidos].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))));
+  }
+
+  /** Un pedido propio. Si es de otro cliente el back responde 403, y si no existe, 404. */
+  obtenerPedido(id: number): Observable<Pedido> {
+    return this.http.get<Pedido>(`${this.API_URL}/pedido/${id}`);
   }
 
   private idCliente(): number {

@@ -1,6 +1,7 @@
 package com.BlandiArruti.E_commerce.pedido.dto.response;
 
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
+import com.BlandiArruti.E_commerce.cliente.dto.response.DireccionResponse;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
@@ -17,6 +18,8 @@ public record PedidoResponse(
         /** Suma de los ítems. Se calcula al mapear, no está persistido. */
         Double total,
         EstadoPedido estado,
+        /** Dirección elegida en el checkout. A diferencia de envio, existe desde que se crea el pedido. */
+        DireccionResponse direccionEnvio,
         EnvioResponse envio,
         FacturaResponse factura
 ) {}

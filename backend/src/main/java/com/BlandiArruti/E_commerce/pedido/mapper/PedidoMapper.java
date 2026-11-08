@@ -1,6 +1,7 @@
 package com.BlandiArruti.E_commerce.pedido.mapper;
 
 import com.BlandiArruti.E_commerce.cliente.mapper.ClienteMapper;
+import com.BlandiArruti.E_commerce.cliente.mapper.DireccionMapper;
 import com.BlandiArruti.E_commerce.envio.mapper.EnvioMapper;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
@@ -8,12 +9,13 @@ import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = {ClienteMapper.class, ItemPedidoMapper.class, EnvioMapper.class, FacturaMapper.class})
+@Mapper(componentModel = "spring", uses = {ClienteMapper.class, DireccionMapper.class, ItemPedidoMapper.class, EnvioMapper.class, FacturaMapper.class})
 public interface PedidoMapper {
 
     @Mapping(source = "id", target = "id")
     @Mapping(source = "uuid", target = "uuidPedido")
     @Mapping(source = "estadoPedido", target = "estado")
+    @Mapping(source = "direccionEnvio", target = "direccionEnvio")
     @Mapping(source = "items", target = "items")
     @Mapping(target = "total", expression = "java(calcularTotal(pedido))")
     PedidoResponse toResponse(Pedido pedido);

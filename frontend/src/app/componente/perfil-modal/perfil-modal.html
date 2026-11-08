@@ -268,7 +268,12 @@
     </section>
 
     <section class="perfil-seccion">
-      <h3 class="titulo-display seccion-titulo">Mis pedidos</h3>
+      <div class="seccion-cabecera">
+        <h3 class="titulo-display seccion-titulo">Mis pedidos</h3>
+        @if (pedidos().length) {
+          <a routerLink="/perfil/pedidos" class="btn btn-secundario btn-chico" (click)="cerrar.emit()">Ver todos</a>
+        }
+      </div>
 
       @if (cargandoPedidos()) {
         <p class="perfil-vacio">Cargando pedidos…</p>
@@ -277,17 +282,20 @@
       } @else if (pedidos().length === 0) {
         <p class="perfil-vacio">Todavía no hiciste pedidos.</p>
       } @else {
+        <!-- Solo los últimos: el historial completo, con filtro y detalle, está en /perfil/pedidos. -->
         <ul class="lista-simple">
-          @for (pedido of pedidos(); track pedido.id) {
-            <li class="pedido">
-              <div>
-                <strong>Pedido #{{ pedido.id }}</strong>
-                <span>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }} · {{ cantidadProductos(pedido) }} productos</span>
-              </div>
-              <div class="pedido-meta">
-                <span class="estado" [ngClass]="estadoClase(pedido.estado)">{{ estadoPedido(pedido.estado) }}</span>
-                <strong>$ {{ pedido.total | number: '1.2-2' }}</strong>
-              </div>
+          @for (pedido of pedidos().slice(0, 3); track pedido.id) {
+            <li>
+              <a class="pedido" [routerLink]="['/perfil/pedidos', pedido.id]" (click)="cerrar.emit()">
+                <div>
+                  <strong>Pedido #{{ pedido.id }}</strong>
+                  <span>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }} · {{ cantidadProductos(pedido) }} productos</span>
+                </div>
+                <div class="pedido-meta">
+                  <span class="estado" [ngClass]="estadoClase(pedido.estado)">{{ estadoPedido(pedido.estado) }}</span>
+                  <strong>$ {{ pedido.total | number: '1.2-2' }}</strong>
+                </div>
+              </a>
             </li>
           }
         </ul>

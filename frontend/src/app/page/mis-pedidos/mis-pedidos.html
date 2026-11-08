@@ -1,0 +1,71 @@
+<div class="contenedor pedidos-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/">Inicio</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/perfil">Mi perfil</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Mis pedidos</span>
+  </nav>
+
+  <h1 class="titulo-display titulo">Mis pedidos</h1>
+
+  @if (cargando()) {
+    <div class="lista" aria-busy="true">
+      @for (fila of [1, 2, 3]; track fila) {
+        <div class="esqueleto"></div>
+      }
+    </div>
+  } @else if (error(); as errorActual) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+        <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (!pedidos().length) {
+    <div class="vacio">
+      <div class="vacio-icono" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>
+      </div>
+      <h2>Todavía no hiciste pedidos</h2>
+      <p>Cuando compres, vas a poder seguir el estado de tu pedido acá.</p>
+      <a routerLink="/productos" class="btn btn-primario">Ver el catálogo</a>
+    </div>
+  } @else {
+    <div class="filtros" role="group" aria-label="Filtrar por estado">
+      @for (filtro of filtros(); track filtro.estado) {
+        <button
+          type="button"
+          class="filtro"
+          [class.activo]="filtro.estado === estadoElegido()"
+          [attr.aria-pressed]="filtro.estado === estadoElegido()"
+          (click)="elegirEstado(filtro.estado)"
+        >
+          {{ filtro.etiqueta }}
+          <span class="filtro-cantidad">{{ filtro.cantidad }}</span>
+        </button>
+      }
+    </div>
+
+    <ul class="lista" aria-live="polite">
+      @for (pedido of pedidosVisibles(); track pedido.id) {
+        <li>
+          <a class="pedido" [routerLink]="['/perfil/pedidos', pedido.id]">
+            <span class="pedido-datos">
+              <span class="pedido-numero">Pedido #{{ pedido.id }}</span>
+              <span class="pedido-detalle">
+                {{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }} · {{ unidades(pedido) }}
+                {{ unidades(pedido) === 1 ? 'producto' : 'productos' }}
+              </span>
+            </span>
+            <app-estado-pedido [estado]="pedido.estado" />
+            <span class="pedido-total">{{ pedido.total | precio }}</span>
+            <svg class="pedido-flecha" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</div>

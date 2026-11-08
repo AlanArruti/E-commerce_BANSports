@@ -1,0 +1,238 @@
+.pedidos-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  max-width: 900px;
+  padding-bottom: var(--espacio-8);
+}
+
+.migas {
+  display: flex;
+  gap: var(--espacio-2);
+  padding-top: var(--espacio-5);
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.migas a:hover {
+  color: var(--color-verde);
+}
+
+.migas [aria-current] {
+  color: var(--color-texto);
+}
+
+.titulo {
+  font-size: clamp(40px, 6vw, 60px);
+  line-height: 1;
+}
+
+/* ── Filtro por estado ──────────────────────────────────── */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: 999px;
+  background: var(--color-superficie);
+  color: var(--color-texto-suave);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filtro:hover {
+  border-color: var(--color-texto-secundario);
+}
+
+.filtro.activo {
+  border-color: var(--color-verde);
+  background: var(--color-superficie-2);
+  color: var(--color-verde);
+}
+
+.filtro-cantidad {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+}
+
+/* ── Lista ──────────────────────────────────────────────── */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pedido {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 150px 20px;
+  align-items: center;
+  gap: var(--espacio-4);
+  min-height: 76px;
+  padding: var(--espacio-3) var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.pedido:hover {
+  border-color: var(--color-verde);
+}
+
+.pedido-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pedido-numero {
+  font-weight: 700;
+}
+
+.pedido-detalle {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.pedido-total {
+  text-align: right;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pedido-flecha {
+  color: var(--color-texto-secundario);
+}
+
+.pedido:hover .pedido-flecha {
+  color: var(--color-verde);
+}
+
+/* ── Estados ────────────────────────────────────────────── */
+.esqueleto {
+  height: 76px;
+  border-radius: var(--radio-grande);
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+.alerta-error {
+  align-items: center;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-4);
+  padding: 64px var(--espacio-5);
+  text-align: center;
+  border: 1px dashed var(--color-borde-input);
+  border-radius: var(--radio-grande);
+}
+
+.vacio-icono {
+  width: 68px;
+  height: 68px;
+  border-radius: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-superficie-2);
+  color: var(--color-verde);
+}
+
+.vacio h2 {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.vacio p {
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+/* ── Mobile: el estado baja debajo del número ───────────── */
+@media (max-width: 600px) {
+  .pedido {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'datos total'
+      'estado flecha';
+    row-gap: var(--espacio-2);
+    padding: var(--espacio-3) var(--espacio-4);
+  }
+
+  .pedido-datos {
+    grid-area: datos;
+  }
+
+  .pedido app-estado-pedido {
+    grid-area: estado;
+    justify-self: start;
+  }
+
+  .pedido-total {
+    grid-area: total;
+    font-size: 22px;
+  }
+
+  .pedido-flecha {
+    grid-area: flecha;
+    justify-self: end;
+  }
+}

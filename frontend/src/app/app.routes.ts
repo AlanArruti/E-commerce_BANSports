@@ -63,6 +63,17 @@ export const routes: Routes = [
         path: 'favoritos',
         loadComponent: () => import('./page/favoritos/favoritos').then((m) => m.Favoritos),
         title: 'Mis favoritos | BAN Sports'
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () => import('./page/mis-pedidos/mis-pedidos').then((m) => m.MisPedidos),
+        title: 'Mis pedidos | BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el número de pedido.
+        path: 'pedidos/:id',
+        loadComponent: () => import('./page/detalle-pedido/detalle-pedido').then((m) => m.DetallePedido),
+        title: 'Pedido | BAN Sports'
       }
     ]
   },

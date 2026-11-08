@@ -108,6 +108,9 @@ export const MENSAJES: Record<string, Mensajes> = {
   codigoPostal: {
     requerido: () => 'Ingresá el código postal.',
     maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  resenaComentario: {
+    maxlength: (d) => `El comentario puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   }
 };
 

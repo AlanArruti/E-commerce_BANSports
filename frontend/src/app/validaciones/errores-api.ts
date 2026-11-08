@@ -389,6 +389,33 @@ export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
   );
 }
 
+export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 403) {
+    return {
+      titulo: 'No podés opinar sobre este producto',
+      detalle: 'Solo pueden opinar quienes lo compraron y ya tienen el pedido pagado.'
+    };
+  }
+  if (error.status === 409) {
+    return { titulo: 'Ya opinaste sobre este producto', detalle: 'Se puede dejar una sola opinión por producto.' };
+  }
+  if (error.status === 404) {
+    return { titulo: 'Esa opinión ya no existe', detalle: 'Puede que la hayan borrado. La lista se actualizó.' };
+  }
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá tu opinión', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar tu opinión',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

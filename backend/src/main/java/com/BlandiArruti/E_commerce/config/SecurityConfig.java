@@ -96,6 +96,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/envio/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/factura/**").hasRole("ADMIN")
 
+                // Dejar una reseña es del cliente: va antes de la regla general de POST /producto/**.
+                .requestMatchers(HttpMethod.POST,   "/api/v1/producto/*/resenas").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.POST,   "/api/v1/producto/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/producto/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/producto/**").hasRole("ADMIN")

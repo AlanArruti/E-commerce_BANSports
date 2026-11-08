@@ -16,6 +16,9 @@ import { FavoritoService } from '../../services/favorito.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorProducto } from '../../validaciones/errores-api';
 import { ErrorCarga } from '../../componente/error-carga/error-carga';
+import { Estrellas } from '../../componente/estrellas/estrellas';
+import { ResenasProducto, ResumenResenas } from '../../componente/resenas-producto/resenas-producto';
+import { PromedioPipe } from '../../pipes/promedio.pipe';
 
 interface EstadoDetalle {
   cargando: boolean;
@@ -68,13 +71,15 @@ function varianteInicial(variantes: Variante[], idDeLaUrl: string | null): Varia
 
 @Component({
   selector: 'app-detalle-producto',
-  imports: [ErrorCarga, NgClass, RouterLink, NoEncontrado, PoteProducto, PrecioPipe],
+  imports: [ErrorCarga, NgClass, RouterLink, NoEncontrado, PoteProducto, Estrellas, ResenasProducto, PrecioPipe, PromedioPipe],
   templateUrl: './detalle-producto.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-producto.css'
 })
 export class DetalleProducto {
   protected readonly estado;
+  /** Promedio y cantidad de opiniones que se muestran junto al nombre. */
+  protected readonly resumenResenas;
   protected readonly abreviatura;
   protected readonly seleccion;
   protected readonly varianteElegida;
@@ -145,6 +150,12 @@ export class DetalleProducto {
     );
 
     this.abreviatura = computed(() => abreviarNombre(this.estado().producto?.nombre ?? ''));
+
+    // Lo trae el producto; la sección de opiniones lo actualiza después de opinar o borrar.
+    this.resumenResenas = linkedSignal<ResumenResenas>(() => ({
+      promedio: this.estado().producto?.promedioResenas ?? 0,
+      cantidad: this.estado().producto?.cantidadResenas ?? 0
+    }));
     this.imagenFallo = linkedSignal({ source: () => this.estado().producto?.id, computation: () => false });
 
     // Atributos elegidos. Vuelve a la variante inicial cada vez que se carga otro producto.
@@ -274,5 +285,10 @@ export class DetalleProducto {
 
   reintentar(): void {
     this.recargar$.next();
+  }
+
+  /** Las estrellas del encabezado bajan hasta la sección de opiniones. */
+  verOpiniones(): void {
+    document.getElementById('opiniones')?.scrollIntoView({ behavior: 'smooth' });
   }
 }

@@ -59,6 +59,16 @@
           </a>
         }
         <h1 class="titulo-display detalle-nombre">{{ producto.nombre }}</h1>
+        <button type="button" class="detalle-resenas" (click)="verOpiniones()">
+          @if (resumenResenas().cantidad) {
+            <app-estrellas [valor]="resumenResenas().promedio" />
+            {{ resumenResenas().promedio | promedio }} ·
+            {{ resumenResenas().cantidad }} {{ resumenResenas().cantidad === 1 ? 'opinión' : 'opiniones' }}
+          } @else {
+            <app-estrellas [valor]="0" />
+            Todavía no tiene opiniones
+          }
+        </button>
         <div class="detalle-precios">
           @if (tieneOferta()) {
             <span class="etiqueta-descuento">-{{ descuento() }}%</span>
@@ -194,5 +204,12 @@
         }
       </div>
     </div>
+
+    <app-resenas-producto
+      [idProducto]="producto.id"
+      [promedio]="producto.promedioResenas"
+      [cantidad]="producto.cantidadResenas"
+      (resumenCambio)="resumenResenas.set($event)"
+    />
   }
 </div>

@@ -38,6 +38,11 @@ export class ClienteService {
     return this.http.get<Pedido>(`${this.API_URL}/pedido/${id}`);
   }
 
+  /** Solo pedidos sin cobrar (PENDIENTE_PAGO o EN_PREPARACION); con otro estado el back responde 400. */
+  cancelarPedido(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.API_URL}/pedido/${id}/cancelar`, {});
+  }
+
   private idCliente(): number {
     const id = this.authService.usuario()?.id;
     if (id === undefined) {

@@ -352,14 +352,182 @@
   }
 }
 
-.seguimiento {
+
+/* ── Seguimiento del envío y factura (SCRUM-140) ────────── */
+.linea-tiempo {
   margin: 0;
-  padding-left: 26px;
+  padding: 0;
+  list-style: none;
+}
+
+.hito {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: var(--espacio-3);
+  padding-bottom: var(--espacio-4);
+}
+
+.hito:last-child {
+  padding-bottom: 0;
+}
+
+/* Tramo vertical que une un hito con el siguiente. */
+.hito:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 22px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-borde);
+}
+
+.hito.hecho:not(:last-child)::before {
+  background: var(--color-verde);
+}
+
+.hito-punto {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-borde-input);
+  border-radius: 50%;
+  background: var(--color-negro);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hito.hecho .hito-punto {
+  background: var(--color-verde);
+  border-color: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.hito-titulo {
+  display: block;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.hito.hecho .hito-titulo {
+  color: var(--color-texto);
+}
+
+.hito-detalle {
+  display: block;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--espacio-1) var(--espacio-3);
+  margin: 0;
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--color-borde);
   font-size: 14px;
-  color: var(--color-texto-suave);
+}
+
+.datos dt {
+  color: var(--color-texto-secundario);
+}
+
+.datos dd {
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
-.seguimiento strong {
+.dato-seguimiento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.dato-total {
+  font-weight: 700;
+}
+
+.btn-copiar {
+  min-height: 32px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio-chico);
+  background: transparent;
   color: var(--color-texto);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-copiar:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+/* ── Cancelar ───────────────────────────────────────────── */
+.btn-peligro {
+  background: var(--color-error-fondo);
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: var(--color-error);
+  color: var(--color-texto-sobre-verde);
+}
+
+.alerta-ok {
+  align-items: center;
+}
+
+.fondo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(6, 8, 7, 0.78);
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 51;
+  width: min(460px, calc(100% - 2 * var(--espacio-4)));
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  padding: var(--espacio-5);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.titulo-modal {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.texto-modal {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-texto-suave);
+}
+
+.acciones-modal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--espacio-3);
+}
+
+.acciones-modal .btn {
+  min-height: 48px;
+  padding: 0 var(--espacio-5);
+  font-size: 14px;
 }

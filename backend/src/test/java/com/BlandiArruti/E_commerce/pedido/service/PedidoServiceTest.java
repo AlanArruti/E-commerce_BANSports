@@ -134,6 +134,33 @@ class PedidoServiceTest {
     }
 
     @Test
+    void cancelar_clienteDesdePendientePago_cancela() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        pedidoService.cancelar(1L);
+
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+    }
+
+    @Test
+    void cancelar_clienteDesdePagado_lanzaExcepcionYNoTocaStock() {
+        Variante variante = Variante.builder().id(1L).stock(7).build();
+        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(3).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, item);
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.cancelar(1L))
+                .isInstanceOf(PedidoNoModificableException.class);
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
+        assertThat(variante.getStock()).isEqualTo(7);
+    }
+
+    @Test
     void cancelar_desdeEntregado_lanzaExcepcion() {
         Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
 
@@ -358,6 +385,13 @@ class PedidoServiceTest {
             pedido.getItems().add(item);
         }
         return pedido;
+    }
+
+    private void autenticarComoCliente(Long id) {
+        UsuarioDetails cliente = UsuarioDetails.fromCliente(
+                Cliente.builder().id(id).email("cliente@mail.com").contrasenia("x").build());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(cliente, null, cliente.getAuthorities()));
     }
 
     private void autenticarComoAdmin() {

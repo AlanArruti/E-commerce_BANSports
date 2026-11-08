@@ -445,3 +445,18 @@ h3 {
 .alerta-ok .alerta-error-texto {
   color: var(--color-texto-suave);
 }
+
+/* ── Impresión (factura, SCRUM-140): sin header, footer ni avisos; fondo blanco ── */
+@media print {
+  app-header,
+  app-footer,
+  app-aviso-conexion {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+}

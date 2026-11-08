@@ -71,6 +71,18 @@ export interface Factura {
   tipo: TipoFactura;
   precioTotal: number;
   idPedido: number;
+  /** Null en las facturas de antes de SCRUM-140. */
+  fechaEmision: string | null;
+}
+
+/** El back no numera las facturas: se arma con el punto de venta 0001 y el id. "0001-00000004" */
+export function numeroFactura(factura: Factura): string {
+  return `0001-${String(factura.id).padStart(8, '0')}`;
+}
+
+/** El cliente cancela solo lo que todavía no pagó (lo cobrado lo cancela la tienda). */
+export function clientePuedeCancelar(estado: EstadoPedido): boolean {
+  return estado === 'PENDIENTE_PAGO' || estado === 'EN_PREPARACION';
 }
 
 // Respuesta de POST /cliente/{id}/carrito/checkout, GET /pedido/{id} y del historial (PedidoResponse).

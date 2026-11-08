@@ -416,6 +416,31 @@ export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
+/** Cuando el cliente cancela un pedido desde "Mis pedidos". */
+export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (mensaje.includes('ya fue cobrado')) {
+    return {
+      titulo: 'Este pedido ya está pago',
+      detalle: 'Ya no se puede cancelar desde acá. Escribinos y lo resolvemos con la devolución del dinero.'
+    };
+  }
+  if (mensaje.includes('no puede cancelarse')) {
+    return { titulo: 'Este pedido ya no se puede cancelar', detalle: 'Ya estaba cancelado o entregado. Actualizamos su estado.' };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return { titulo: 'No encontramos ese pedido', detalle: 'Puede que no sea de tu cuenta. Volvé a Mis pedidos.' };
+  }
+  return {
+    titulo: 'No pudimos cancelar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 /** Para el panel de pedidos: listado, detalle y cambios de estado. */
 export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);

@@ -74,6 +74,12 @@ export const routes: Routes = [
         path: 'pedidos/:id',
         loadComponent: () => import('./page/detalle-pedido/detalle-pedido').then((m) => m.DetallePedido),
         title: 'Pedido | BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el tipo y número de factura.
+        path: 'pedidos/:id/factura',
+        loadComponent: () => import('./page/factura-pedido/factura-pedido').then((m) => m.FacturaPedido),
+        title: 'Factura | BAN Sports'
       }
     ]
   },

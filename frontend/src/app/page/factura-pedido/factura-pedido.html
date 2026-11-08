@@ -1,0 +1,97 @@
+<div class="contenedor factura-pagina">
+  <div class="barra no-imprimir">
+    <nav class="migas" aria-label="Ubicación">
+      <a routerLink="/perfil/pedidos">Mis pedidos</a>
+      <span aria-hidden="true">/</span>
+      @if (estado().pedido; as pedido) {
+        <a [routerLink]="['/perfil/pedidos', pedido.id]">Pedido #{{ pedido.id }}</a>
+        <span aria-hidden="true">/</span>
+      }
+      <span aria-current="page">Factura</span>
+    </nav>
+    @if (estado().pedido?.factura) {
+      <div class="botones">
+        <a class="btn btn-secundario" [routerLink]="['/perfil/pedidos', estado().pedido?.id]">Volver al pedido</a>
+        <button type="button" class="btn btn-primario" (click)="imprimir()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>
+          Imprimir
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (estado().cargando) {
+    <div class="esqueleto" aria-busy="true"></div>
+  } @else if (estado().noEncontrado) {
+    <app-no-encontrado titulo="Pedido no encontrado" texto="Puede que el link esté mal escrito o que el pedido no sea de tu cuenta." />
+  } @else if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else if (estado().pedido; as pedido) {
+    @if (pedido.factura; as factura) {
+      <article class="factura" aria-label="Factura">
+        <header class="factura-cabecera">
+          <div>
+            <p class="marca">BAN SPORTS</p>
+            <p class="secundario">Suplementos deportivos · Mar del Plata</p>
+          </div>
+          <div class="factura-tipo">
+            <span class="letra" aria-label="Tipo de factura">{{ factura.tipo }}</span>
+            <p><strong>N.º {{ numero() }}</strong></p>
+            @if (factura.fechaEmision) {
+              <p>Fecha: {{ factura.fechaEmision | date: 'dd/MM/yyyy' }}</p>
+            }
+          </div>
+        </header>
+
+        <section class="factura-cliente" aria-label="Datos del cliente">
+          @if (pedido.cliente; as cliente) {
+            <p><strong>Cliente:</strong> {{ cliente.nombre }} {{ cliente.apellido }}</p>
+            <p><strong>DNI:</strong> {{ cliente.dni }}</p>
+          }
+          @if (pedido.direccionEnvio ?? pedido.envio?.direccion; as direccion) {
+            <p class="ancho"><strong>Domicilio:</strong> {{ direccion.nombreCalle }} {{ direccion.numeroCalle }}, {{ localidad(direccion) }}</p>
+          }
+        </section>
+
+        <table class="factura-items">
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col" class="num">Cant.</th>
+              <th scope="col" class="num">Unitario</th>
+              <th scope="col" class="num">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pedido.items; track item.idItemPedido) {
+              <tr>
+                <td>{{ descripcion(item) }}</td>
+                <td class="num">{{ item.cantidad }}</td>
+                <td class="num">{{ precioUnitario(item) | precio }}</td>
+                <td class="num">{{ item.precioTotalProducto | precio }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <p class="factura-total">Total: <strong>{{ factura.precioTotal | precio }}</strong></p>
+        <p class="factura-pie">
+          Pedido #{{ pedido.id }} · Comprobante generado por BAN Sports. Documento no válido como factura fiscal (trabajo práctico académico).
+        </p>
+      </article>
+    } @else {
+      <div class="sin-factura">
+        <h1>Este pedido todavía no tiene factura</h1>
+        <p>La factura se emite cuando se confirma el pago.</p>
+        <a class="btn btn-primario" [routerLink]="['/perfil/pedidos', pedido.id]">Volver al pedido</a>
+      </div>
+    }
+  }
+</div>

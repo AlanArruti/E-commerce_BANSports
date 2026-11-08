@@ -17,11 +17,12 @@ import { CotizacionService } from '../../services/cotizacion.service';
 import { DireccionService } from '../../services/direccion.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout, traducirErrorCotizacion } from '../../validaciones/errores-api';
 import { ErrorCarga } from '../../componente/error-carga/error-carga';
+import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 
 /** Checkout: elegir (o cargar) la dirección de entrega y convertir el carrito en un pedido. */
 @Component({
   selector: 'app-checkout',
-  imports: [ErrorCarga, NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion, AvisoFusion],
+  imports: [ErrorCarga, NgClass, DatePipe, RouterLink, PrecioPipe, FormDireccion, AvisoFusion, PagarPedido],
   templateUrl: './checkout.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './checkout.css'
@@ -174,7 +175,7 @@ export class Checkout implements OnInit {
 
     this.confirmando.set(true);
     this.errorConfirmar.set(null);
-    this.carritoService.checkout(direccion.id, opcion.precio).subscribe({
+    this.carritoService.checkout(direccion.id, opcion).subscribe({
       next: (pedido) => {
         this.confirmando.set(false);
         this.direccionDelPedido.set(direccion);

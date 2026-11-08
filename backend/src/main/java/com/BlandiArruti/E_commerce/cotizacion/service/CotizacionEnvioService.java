@@ -7,6 +7,7 @@ import com.BlandiArruti.E_commerce.cotizacion.client.CorreoArgentinoClient;
 import com.BlandiArruti.E_commerce.cotizacion.client.dto.CorreoArgentinoRatesRequest;
 import com.BlandiArruti.E_commerce.cotizacion.client.dto.CorreoArgentinoRatesResponse;
 import com.BlandiArruti.E_commerce.cotizacion.config.CorreoArgentinoProperties;
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
 import com.BlandiArruti.E_commerce.cotizacion.dto.response.CotizacionEnvioResponse;
 import com.BlandiArruti.E_commerce.cotizacion.entity.TarifaEnvio;
 import com.BlandiArruti.E_commerce.cotizacion.repository.TarifaEnvioRepository;
@@ -51,6 +52,22 @@ public class CotizacionEnvioService {
         }
 
         return List.of(cotizarDesdeTabla(direccion));
+    }
+
+    /**
+     * Precio de la opción que eligió el cliente, cotizado acá y no tomado del front:
+     * así nadie puede mandar un costo de envío inventado. Si la opción ya no aparece
+     * (por ejemplo, Correo dejó de responder y ahora se usa la tabla propia), falla
+     * para que el cliente vuelva a elegir.
+     */
+    public double precioDeOpcion(Long idDireccion, OpcionEnvioRequest opcion) {
+        return cotizarPorDireccion(idDireccion).stream()
+                .filter(c -> opcion.tipoEntrega().equalsIgnoreCase(c.tipoEntrega())
+                        && opcion.servicio().equalsIgnoreCase(c.servicio()))
+                .map(CotizacionEnvioResponse::precio)
+                .findFirst()
+                .orElseThrow(() -> new EcommerceException(
+                        "La opción de envío elegida ya no está disponible. Volvé a elegir el envío."));
     }
 
     /**

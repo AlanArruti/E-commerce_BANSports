@@ -82,9 +82,10 @@ jwt:
   expiration: 86400000
 
 mercadopago:
-  access-token: ${MP_ACCESS_TOKEN}
-  notification-url: ${MP_NOTIFICATION_URL:}
-  back-url: ${MP_BACK_URL:http://localhost:8080}
+  # Vacío = MercadoPago no aparece como opción de pago. Las URLs de vuelta salen de FRONT_URL.
+  # El webhook (/api/v1/webhook/mercadopago, tópico "order") se configura en el panel de
+  # MercadoPago y solo llega con una URL pública (ngrok); sin él, confirma la pantalla de vuelta.
+  access-token: ${MP_ACCESS_TOKEN:}
 
 correo-argentino:
   base-url: https://apitest.correoargentino.com.ar/micorreo/v1

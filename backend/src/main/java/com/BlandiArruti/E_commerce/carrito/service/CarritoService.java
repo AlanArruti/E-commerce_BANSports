@@ -3,6 +3,7 @@ package com.BlandiArruti.E_commerce.carrito.service;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.carrito.dto.request.CantidadCarritoRequest;
 import com.BlandiArruti.E_commerce.carrito.dto.request.ItemCarritoRequest;
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
 import com.BlandiArruti.E_commerce.carrito.dto.response.CarritoResponse;
 import com.BlandiArruti.E_commerce.carrito.entity.Carrito;
 import com.BlandiArruti.E_commerce.carrito.entity.ItemCarrito;
@@ -127,7 +128,7 @@ public class CarritoService {
         carritoRepository.save(carrito);
     }
 
-    public PedidoResponse checkout(Long idCliente, Long idDireccion, Double costoEnvio) {
+    public PedidoResponse checkout(Long idCliente, Long idDireccion, OpcionEnvioRequest opcionEnvio) {
         Carrito carrito = obtenerOCrearCarrito(idCliente);
 
         if (carrito.getItems().isEmpty()) {
@@ -142,7 +143,7 @@ public class CarritoService {
                 .toList();
 
         PedidoResponse pedido = pedidoService.crear(
-                new PedidoRequest(idCliente, idDireccion, costoEnvio, items), getPrincipal());
+                new PedidoRequest(idCliente, idDireccion, opcionEnvio, items), getPrincipal());
 
         carrito.getItems().clear();
         carritoRepository.save(carrito);

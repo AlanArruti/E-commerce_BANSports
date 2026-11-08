@@ -1,13 +1,15 @@
 package com.BlandiArruti.E_commerce.carrito.dto.request;
 
-import jakarta.validation.constraints.DecimalMin;
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 public record CheckoutRequest(
         @NotNull(message = "Tenés que elegir una dirección de envío.")
         Long idDireccion,
 
-        @NotNull(message = "El costo de envío no puede estar vacío.")
-        @DecimalMin(value = "0.0", inclusive = true, message = "El costo de envío no puede ser negativo.")
-        Double costoEnvio
+        // Solo la opción elegida: el costo lo vuelve a cotizar el back para esa dirección.
+        @NotNull(message = "Tenés que elegir una opción de envío.")
+        @Valid
+        OpcionEnvioRequest opcionEnvio
 ) {}

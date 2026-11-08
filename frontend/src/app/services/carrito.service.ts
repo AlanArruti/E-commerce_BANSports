@@ -20,8 +20,9 @@ import { Carrito } from '../models/carrito';
 import { ItemCarrito } from '../models/item-carrito';
 import { ItemCarritoRequest } from '../models/item-carrito-request';
 import { Pedido } from '../models/pedido';
+import { CotizacionEnvio } from '../models/cotizacion-envio';
 import { Producto } from '../models/producto';
-import { Variante, atributosOrdenados } from '../models/variante';
+import { Variante, atributosOrdenados, precioFinalDe } from '../models/variante';
 import { AuthService } from './auth.service';
 import { ProductoService } from './producto.service';
 
@@ -183,9 +184,13 @@ export class CarritoService {
    * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock
    * y que la dirección sea del cliente, y vacía el carrito. Solo con sesión.
    */
-  checkout(idDireccion: number, costoEnvio: number): Observable<Pedido> {
+  checkout(idDireccion: number, opcion: CotizacionEnvio): Observable<Pedido> {
     return this.http
-      .post<Pedido>(`${this.url()}/checkout`, { idDireccion, costoEnvio })
+      .post<Pedido>(`${this.url()}/checkout`, {
+        idDireccion,
+        // Solo la opción elegida: el back vuelve a cotizar y pone el precio él.
+        opcionEnvio: { tipoEntrega: opcion.tipoEntrega, servicio: opcion.servicio }
+      })
       .pipe(tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito))));
   }
 
@@ -235,7 +240,7 @@ export class CarritoService {
           }
           linea.nombre = producto.nombre;
           linea.detalle = variante ? describir(variante) : '';
-          const precio = producto.precioFinal ?? producto.precioBase;
+          const precio = precioFinalDe(producto, variante);
           // El id es la posición en localStorage + 1: alcanza para cambiar o quitar ese ítem.
           items.push({ idItemCarrito: indice + 1, producto, variante, cantidad: linea.cantidad, subtotal: precio * linea.cantidad });
         });

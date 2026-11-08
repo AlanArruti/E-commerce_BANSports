@@ -6,6 +6,8 @@ import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
+import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.envio.mapper.EnvioMapper;
 import com.BlandiArruti.E_commerce.envio.repository.EnvioRepository;
@@ -18,13 +20,16 @@ import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
-import com.BlandiArruti.E_commerce.mercadopago.service.MercadoPagoService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
+import org.mockito.ArgumentCaptor;
+import com.BlandiArruti.E_commerce.producto.entity.Producto;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ItemPedidoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.mapper.PedidoMapper;
 import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
 import com.BlandiArruti.E_commerce.producto.entity.Variante;
@@ -37,9 +42,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -59,11 +66,11 @@ class PedidoServiceTest {
     @Mock FacturaRepository facturaRepository;
     @Mock EnvioRepository envioRepository;
     @Mock DireccionRepository direccionRepository;
-    @Mock MercadoPagoService mercadoPagoService;
     @Mock NotificacionService notificacionService;
     @Mock PedidoMapper pedidoMapper;
     @Mock FacturaMapper facturaMapper;
     @Mock EnvioMapper envioMapper;
+    @Mock CotizacionEnvioService cotizacionEnvioService;
 
     @InjectMocks
     PedidoService pedidoService;
@@ -337,34 +344,169 @@ class PedidoServiceTest {
         verify(notificacionService).notificarEnvioActualizado(any());
     }
 
-    // ─── confirmarPagoMercadoPago() ───────────────────────────────────────────
+    // ─── Lo que usa PagoService ───────────────────────────────────────────────
 
     @Test
-    void confirmarPagoMercadoPago_pedidoYaPagado_retornaSinHacerNada() {
-        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO);
-        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+    void registrarPagoAprobado_porElTotal_pagaDescuentaStockYEmiteFactura() {
+        Variante variante = variante(10);
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, itemDe(500.0, variante, 2));
+        when(pedidoRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(pedido));
+        when(facturaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        pedidoService.confirmarPagoMercadoPago(1L, TipoFactura.B);
+        boolean pagado = pedidoService.registrarPagoAprobado(1L, TipoFactura.B, new BigDecimal("500.00"));
 
-        verify(varianteRepository, never()).save(any());
-        verify(facturaRepository, never()).save(any());
-        verify(notificacionService, never()).notificarFacturaGenerada(any());
+        assertThat(pagado).isTrue();
+        assertThat(variante.getStock()).isEqualTo(8);
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
+        assertThat(pedido.getFactura().getTipoFactura()).isEqualTo(TipoFactura.B);
+        verify(notificacionService).notificarFacturaGenerada(any());
     }
 
     @Test
-    void confirmarPagoMercadoPago_pedidoPendiente_procesaPagoYNotifica() {
-        Variante variante = Variante.builder().id(1L).stock(10).build();
-        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(2).precioProducto(500.0).build();
-        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, item);
+    void registrarPagoAprobado_pedidoYaPagado_noCobraDosVeces() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, itemDe(500.0, variante(10), 2));
+        when(pedidoRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(pedido));
 
+        boolean pagado = pedidoService.registrarPagoAprobado(1L, TipoFactura.B, new BigDecimal("500.00"));
+
+        assertThat(pagado).isTrue();
+        verify(varianteRepository, never()).save(any());
+        verify(facturaRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarPagoAprobado_montoMenorAlTotal_noAcredita() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, itemDe(500.0, variante(10), 2));
+        when(pedidoRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(pedido));
+
+        boolean pagado = pedidoService.registrarPagoAprobado(1L, TipoFactura.B, new BigDecimal("100.00"));
+
+        assertThat(pagado).isFalse();
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PENDIENTE_PAGO);
+        verify(facturaRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarPagoAprobado_pedidoCancelado_noAcredita() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.CANCELADO, itemDe(500.0, variante(10), 2));
+        when(pedidoRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(pedido));
+
+        assertThat(pedidoService.registrarPagoAprobado(1L, TipoFactura.B, new BigDecimal("500.00"))).isFalse();
+        verify(facturaRepository, never()).save(any());
+    }
+
+    @Test
+    void obtenerParaPagar_pedidoDeOtroCliente_rechaza() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, itemDe(500.0, variante(10), 2));
+        autenticarComoCliente(2L);
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
-        when(facturaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        pedidoService.confirmarPagoMercadoPago(1L, TipoFactura.B);
+        assertThatThrownBy(() -> pedidoService.obtenerParaPagar(1L))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 
-        assertThat(variante.getStock()).isEqualTo(8);
-        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
-        verify(notificacionService).notificarFacturaGenerada(any());
+    @Test
+    void obtenerParaPagar_pedidoYaPagado_rechaza() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, itemDe(500.0, variante(10), 2));
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.obtenerParaPagar(1L))
+                .isInstanceOf(PedidoNoModificableException.class);
+    }
+
+    // ─── crear: precio por variante (SCRUM-154) ───────────────────────────────
+
+    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").contrasenia("x").activo(true).build();
+
+    private Producto proteina() {
+        return Producto.builder().id(2L).nombre("Whey").precio(30000.0).descuento(0).activo(true).build();
+    }
+
+    @Test
+    void crear_varianteConPrecioPropio_guardaElPrecioDeLaVariante() {
+        Producto producto = proteina();
+        Variante dosKilos = Variante.builder().id(7L).producto(producto).stock(10).precio(55000.0).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(dosKilos));
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 2))),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getItems()).singleElement()
+                .extracting(ItemPedido::getPrecioProducto).isEqualTo(110000.0);
+    }
+
+    @Test
+    void crear_varianteDeOtroProducto_rechaza() {
+        Producto producto = proteina();
+        Producto otro = Producto.builder().id(9L).precio(90000.0).build();
+        Variante deOtro = Variante.builder().id(7L).producto(otro).stock(10).precio(90000.0).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(deOtro));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 1))),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("no pertenece al producto");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    // ─── crear: costo de envío cotizado por el back ───────────────────────────
+
+    private Direccion direccionDe(Cliente cliente) {
+        return Direccion.builder().id(5L).cliente(cliente).build();
+    }
+
+    @Test
+    void crear_conDireccion_guardaElCostoQueCotizaElBack() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();
+        OpcionEnvioRequest opcion = new OpcionEnvioRequest("D", "Clasico");
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccionDe(clienteCrear)));
+        when(cotizacionEnvioService.precioDeOpcion(5L, opcion)).thenReturn(4300.0);
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, 5L, opcion, List.of(new ItemPedidoRequest(2L, 7L, 1))),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getCostoEnvio()).isEqualTo(4300.0);
+    }
+
+    @Test
+    void crear_conDireccionSinOpcionDeEnvio_rechaza() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccionDe(clienteCrear)));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, 5L, null, List.of(new ItemPedidoRequest(2L, 7L, 1))),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("opción de envío");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void calcularTotal_sumaProductosMasEnvio() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, itemDe(500.0, variante(10), 2));
+        pedido.setCostoEnvio(1200.0);
+
+        assertThat(pedidoService.calcularTotal(pedido)).isEqualTo(1700.0);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
@@ -380,6 +522,21 @@ class PedidoServiceTest {
             pedido.getItems().add(item);
         }
         return pedido;
+    }
+
+    private Variante variante(int stock) {
+        return Variante.builder().id(1L).stock(stock).build();
+    }
+
+    private ItemPedido itemDe(double precioTotal, Variante variante, int cantidad) {
+        return ItemPedido.builder().variante(variante).cantidad(cantidad).precioProducto(precioTotal).build();
+    }
+
+    private void autenticarComoCliente(Long id) {
+        UsuarioDetails cliente = UsuarioDetails.fromCliente(
+                Cliente.builder().id(id).email("c@test.com").contrasenia("x").build());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(cliente, null, cliente.getAuthorities()));
     }
 
     private void autenticarComoAdmin() {

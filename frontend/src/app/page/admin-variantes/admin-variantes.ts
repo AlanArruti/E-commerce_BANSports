@@ -18,7 +18,8 @@ import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../.
 import { OperacionStock } from '../../models/variante-request';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorProducto, traducirErrorVariante } from '../../validaciones/errores-api';
-import { requerido } from '../../validaciones/validadores';
+import { leerPrecio, precioValido, requerido } from '../../validaciones/validadores';
+import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
 
 type FilaAtributo = FormGroup<{ clave: FormControl<string>; valor: FormControl<string> }>;
 
@@ -54,7 +55,7 @@ function entero(min: number) {
  */
 @Component({
   selector: 'app-admin-variantes',
-  imports: [RouterLink, ReactiveFormsModule, NgClass],
+  imports: [RouterLink, ReactiveFormsModule, NgClass, PrecioPipe],
   templateUrl: './admin-variantes.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-variantes.css',
@@ -86,7 +87,9 @@ export class AdminVariantes implements OnInit {
 
   atributos = new FormArray<FilaAtributo>([], { validators: [sinClavesRepetidas] });
   stock = new FormControl('0', { nonNullable: true, validators: [entero(0)] });
-  formulario = new FormGroup({ atributos: this.atributos, stock: this.stock });
+  /** Precio propio de la variante (SCRUM-154). Vacío = cuesta lo mismo que el producto. */
+  precio = new FormControl('', { nonNullable: true, validators: [precioValido] });
+  formulario = new FormGroup({ atributos: this.atributos, stock: this.stock, precio: this.precio });
 
   // ── Ajuste de stock ────────────────────────────────────
   protected readonly ajustando = signal<Variante | null>(null);
@@ -161,11 +164,12 @@ export class AdminVariantes implements OnInit {
   // ── Alta / edición ─────────────────────────────────────
 
   nueva(): void {
-    this.abrirFormulario('nueva', [['', '']], '0');
+    this.abrirFormulario('nueva', [['', '']], '0', '');
   }
 
   editar(variante: Variante): void {
-    this.abrirFormulario(variante, this.ordenados(variante), String(variante.stock));
+    const precio = variante.precio != null ? formatearPrecio(variante.precio).replace('$ ', '') : '';
+    this.abrirFormulario(variante, this.ordenados(variante), String(variante.stock), precio);
   }
 
   agregarAtributo(): void {
@@ -185,12 +189,14 @@ export class AdminVariantes implements OnInit {
   }
 
   /** Mensaje de un campo del formulario, solo si ya lo tocaron o se intentó guardar. */
-  protected errorCampo(control: AbstractControl, campo: 'clave' | 'valor' | 'stock' | 'cantidad'): string | null {
+  protected errorCampo(control: AbstractControl, campo: 'clave' | 'valor' | 'stock' | 'cantidad' | 'precio'): string | null {
     const intento = campo === 'cantidad' ? this.intentoAjuste() : this.intentoGuardar();
     if (!control.errors || (!control.touched && !intento)) return null;
     if (control.errors['requerido'] || control.errors['required']) {
-      return { clave: 'Poné el nombre del atributo.', valor: 'Poné el valor.', stock: 'Poné el stock.', cantidad: 'Poné una cantidad.' }[campo];
+      return { clave: 'Poné el nombre del atributo.', valor: 'Poné el valor.', stock: 'Poné el stock.', cantidad: 'Poné una cantidad.', precio: 'Poné el precio.' }[campo];
     }
+    if (control.errors['precioFormato']) return 'Usá solo números, puntos para los miles y coma para los centavos (por ejemplo 42.999,99).';
+    if (control.errors['precioCero']) return 'El precio tiene que ser mayor a $ 0.';
     if (control.errors['maxlength']) return `Máximo ${LARGO_ATRIBUTO} caracteres.`;
     if (control.errors['entero']) return 'Solo números enteros, sin puntos ni comas.';
     if (control.errors['min']) return campo === 'cantidad' ? 'Tiene que ser al menos 1.' : 'No puede ser negativo.';
@@ -214,7 +220,8 @@ export class AdminVariantes implements OnInit {
     for (const fila of this.atributos.controls) {
       atributos[fila.controls.clave.value.trim().toLowerCase()] = fila.controls.valor.value.trim();
     }
-    const cuerpo = { atributos, stock: Number(this.stock.value) };
+    const precioTexto = this.precio.value.trim();
+    const cuerpo = { atributos, stock: Number(this.stock.value), precio: precioTexto ? leerPrecio(precioTexto) : null };
     const actual = this.editando();
     const pedido =
       actual === 'nueva' || actual === null
@@ -328,12 +335,13 @@ export class AdminVariantes implements OnInit {
 
   // ── Internos ───────────────────────────────────────────
 
-  private abrirFormulario(modo: Variante | 'nueva', atributos: [string, string][], stock: string): void {
+  private abrirFormulario(modo: Variante | 'nueva', atributos: [string, string][], stock: string, precio: string): void {
     this.atributos.clear();
     for (const [clave, valor] of atributos) {
       this.atributos.push(this.filaAtributo(clave, valor));
     }
     this.stock.reset(stock);
+    this.precio.reset(precio);
     this.intentoGuardar.set(false);
     this.errorForm.set(null);
     this.aviso.set(null);

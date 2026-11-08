@@ -21,7 +21,7 @@ import { ItemCarrito } from '../models/item-carrito';
 import { ItemCarritoRequest } from '../models/item-carrito-request';
 import { Pedido } from '../models/pedido';
 import { Producto } from '../models/producto';
-import { Variante, atributosOrdenados } from '../models/variante';
+import { Variante, atributosOrdenados, precioFinalDe } from '../models/variante';
 import { AuthService } from './auth.service';
 import { ProductoService } from './producto.service';
 
@@ -235,7 +235,7 @@ export class CarritoService {
           }
           linea.nombre = producto.nombre;
           linea.detalle = variante ? describir(variante) : '';
-          const precio = producto.precioFinal ?? producto.precioBase;
+          const precio = precioFinalDe(producto, variante);
           // El id es la posición en localStorage + 1: alcanza para cambiar o quitar ese ítem.
           items.push({ idItemCarrito: indice + 1, producto, variante, cantidad: linea.cantidad, subtotal: precio * linea.cantidad });
         });

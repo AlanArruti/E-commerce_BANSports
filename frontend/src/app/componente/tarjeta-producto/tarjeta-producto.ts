@@ -3,7 +3,7 @@ import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PoteProducto, abreviarNombre } from '../pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
-import { STOCK_BAJO, atributosOrdenados } from '../../models/variante';
+import { STOCK_BAJO, atributosOrdenados, rangoDePrecios } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { AuthService } from '../../services/auth.service';
 import { FavoritoService } from '../../services/favorito.service';
@@ -43,9 +43,10 @@ export class TarjetaProducto {
   protected readonly sinStock = computed(() => this.stock() === 0);
   protected readonly tieneOferta = computed(() => (this.producto().descuento ?? 0) > 0);
   protected readonly descuento = computed(() => Math.round(this.producto().descuento ?? 0));
-  protected readonly precioVigente = computed(
-    () => this.producto().precioFinal ?? this.producto().precioBase
-  );
+  /** Si las variantes tienen precios distintos se muestra el más barato con "Desde" (SCRUM-154). */
+  protected readonly rango = computed(() => rangoDePrecios(this.producto()));
+  protected readonly precioVigente = computed(() => this.rango().minimo);
+  protected readonly esPrecioDesde = computed(() => this.rango().minimo < this.rango().maximo);
   protected readonly stockBajo = computed(() => {
     const stock = this.stock();
     return stock !== null && stock > 0 && stock <= STOCK_BAJO;

@@ -1,0 +1,84 @@
+.resultado-pagina {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--espacio-8, 64px);
+}
+
+.resultado {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-4, 16px);
+  text-align: center;
+}
+
+.resultado-titulo {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 44px);
+}
+
+.resultado-texto {
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+.icono {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.icono-ok {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.icono-espera {
+  border: 2px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+}
+
+.icono-error {
+  border: 2px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-borde);
+  border-top-color: var(--color-verde);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tarjeta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 18px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande, 14px);
+  background: var(--color-superficie);
+}
+
+.tarjeta-titulo {
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+}
+
+.tarjeta-total {
+  font-size: 20px;
+  font-weight: 800;
+}

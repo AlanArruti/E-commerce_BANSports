@@ -12,6 +12,9 @@ import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.carrito.repository.ItemCarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
+import com.BlandiArruti.E_commerce.cotizacion.dto.response.CotizacionEnvioResponse;
+import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
@@ -49,6 +52,7 @@ class CarritoServiceTest {
     @Mock VarianteRepository varianteRepository;
     @Mock CarritoMapper carritoMapper;
     @Mock IPedidoService pedidoService;
+    @Mock CotizacionEnvioService cotizacionEnvioService;
 
     @InjectMocks
     CarritoService carritoService;
@@ -344,5 +348,39 @@ class CarritoServiceTest {
 
         assertThat(carrito.getItems()).isEmpty();
         verify(carritoRepository).save(carrito);
+    }
+
+    private Carrito carritoConUnItem(Long idCliente) {
+        Variante variante = varianteConStock(10L, 5);
+        Carrito carrito = carritoVacio(idCliente);
+        carrito.getItems().add(ItemCarrito.builder()
+                .id(1L).carrito(carrito)
+                .producto(variante.getProducto()).variante(variante).cantidad(1).build());
+        return carrito;
+    }
+
+    @Test
+    void checkout_costoEnvioCoincideConLaCotizacion_creaPedido() {
+        autenticarComoCliente(1L);
+        when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carritoConUnItem(1L)));
+        when(cotizacionEnvioService.cotizarPorDireccion(5L)).thenReturn(List.of(
+                new CotizacionEnvioResponse("Envío estándar", "D", "Envío a domicilio", 4500.0, 3, 6)));
+
+        carritoService.checkout(1L, 5L, 4500.0);
+
+        verify(pedidoService).crear(any(), any());
+    }
+
+    @Test
+    void checkout_costoEnvioDistintoDeLaCotizacion_rechazaYNoCreaPedido() {
+        autenticarComoCliente(1L);
+        when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carritoConUnItem(1L)));
+        when(cotizacionEnvioService.cotizarPorDireccion(5L)).thenReturn(List.of(
+                new CotizacionEnvioResponse("Envío estándar", "D", "Envío a domicilio", 4500.0, 3, 6)));
+
+        assertThatThrownBy(() -> carritoService.checkout(1L, 5L, 0.0))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("no coincide");
+        verify(pedidoService, org.mockito.Mockito.never()).crear(any(), any());
     }
 }

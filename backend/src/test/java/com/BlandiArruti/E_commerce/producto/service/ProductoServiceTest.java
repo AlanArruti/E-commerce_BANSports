@@ -57,7 +57,7 @@ class ProductoServiceTest {
         when(productoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(producto1));
         when(varianteRepository.findByIdAndActivoTrue(10L)).thenReturn(Optional.of(variante));
 
-        var request = new VarianteRequest(Map.of("talle", "M"), 5);
+        var request = new VarianteRequest(Map.of("talle", "M"), 5, null);
 
         assertThatThrownBy(() -> productoService.actualizarVariante(1L, 10L, request))
                 .isInstanceOf(EntidadNoEncontradaException.class);
@@ -73,9 +73,10 @@ class ProductoServiceTest {
         when(varianteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(varianteMapper.toResponse(any())).thenReturn(null);
 
-        productoService.actualizarVariante(1L, 10L, new VarianteRequest(Map.of("color", "rojo"), 8));
+        productoService.actualizarVariante(1L, 10L, new VarianteRequest(Map.of("color", "rojo"), 8, 55000.0));
 
         assertThat(variante.getStock()).isEqualTo(8);
+        assertThat(variante.getPrecio()).isEqualTo(55000.0);
         verify(varianteRepository).save(variante);
     }
 

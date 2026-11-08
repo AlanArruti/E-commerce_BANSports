@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiError } from '../models/api-error';
+import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido } from '../models/pedido';
 
 // Traduce los errores HTTP del back a mensajes claros para el usuario.
 
@@ -300,6 +301,46 @@ export function traducirErrorCotizacion(error: HttpErrorResponse): ErrorTraducid
   return {
     titulo: 'No pudimos calcular el costo de envío',
     detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Errores al iniciar o confirmar el pago con MercadoPago. */
+/**
+ * Errores al iniciar o confirmar un pago. Se muestra el motivo puntual que manda el back
+ * (pasarela sin credenciales, rechazo de la pasarela, pasarela caída…). La excepción es el 403:
+ * no se le confirma a nadie si un pedido ajeno existe.
+ */
+export function traducirErrorPago(error: HttpErrorResponse): ErrorTraducido {
+  if (error.status === 0) {
+    return errorGeneral(error)!;
+  }
+  if (error.status === 403) {
+    return {
+      titulo: 'No tenés permiso para pagar este pedido',
+      detalle: 'Solo se pueden pagar los pedidos de la cuenta con la que iniciaste sesión.'
+    };
+  }
+
+  const mensaje = mensajeDelBack(error);
+  const estado = /está en estado: ([A-Z_]+)/.exec(mensaje)?.[1] as EstadoPedido | undefined;
+  if (error.status === 400 && estado) {
+    return {
+      titulo: 'Este pedido ya no se puede pagar',
+      detalle: `Está "${ETIQUETAS_ESTADO_PEDIDO[estado] ?? estado}". Solo se pagan los pedidos pendientes de pago.`
+    };
+  }
+
+  const titulo =
+    error.status === 404
+      ? 'No encontramos el pago'
+      : error.status === 503
+        ? 'No se pudo iniciar el pago'
+        : error.status >= 500
+          ? 'Ocurrió un error al procesar el pago'
+          : 'No se pudo completar el pago';
+  return {
+    titulo,
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }
 

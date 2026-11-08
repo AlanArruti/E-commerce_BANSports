@@ -11,7 +11,10 @@ import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.carrito.repository.ItemCarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
+import com.BlandiArruti.E_commerce.cotizacion.dto.response.CotizacionEnvioResponse;
+import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
 import com.BlandiArruti.E_commerce.enums.Rol;
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
@@ -43,6 +46,7 @@ public class CarritoService {
     private final VarianteRepository varianteRepository;
     private final CarritoMapper carritoMapper;
     private final IPedidoService pedidoService;
+    private final CotizacionEnvioService cotizacionEnvioService;
 
     public CarritoResponse obtenerCarrito(Long idCliente) {
         return carritoMapper.toResponse(obtenerOCrearCarrito(idCliente));
@@ -134,6 +138,8 @@ public class CarritoService {
             throw new ConflictoException("El carrito está vacío.");
         }
 
+        validarCostoEnvio(idDireccion, costoEnvio);
+
         List<ItemPedidoRequest> items = carrito.getItems().stream()
                 .map(item -> new ItemPedidoRequest(
                         item.getProducto().getId(),
@@ -149,6 +155,31 @@ public class CarritoService {
 
         return pedido;
     }
+
+    /**
+     * El costo de envío lo manda el front, pero no se le cree: se vuelve a cotizar la dirección
+     * y tiene que coincidir con alguna de las opciones. Si no, un cliente podría pagar envío 0.
+     */
+    private void validarCostoEnvio(Long idDireccion, Double costoEnvio) {
+        double costo = costoEnvio != null ? costoEnvio : 0.0;
+        if (idDireccion == null) {
+            if (costo > 0) {
+                throw new EcommerceException("No se puede cobrar un envío sin dirección de entrega.");
+            }
+            return;
+        }
+        List<CotizacionEnvioResponse> opciones = cotizacionEnvioService.cotizarPorDireccion(idDireccion);
+        boolean coincide = opciones.stream()
+                .anyMatch(o -> o.precio() != null && Math.abs(o.precio() - costo) < TOLERANCIA_ENVIO);
+        if (!coincide) {
+            throw new EcommerceException(String.format(
+                    "El costo de envío ($%.2f) no coincide con la cotización actual para esa dirección. "
+                            + "Volvé a elegir el envío y confirmá de nuevo.", costo));
+        }
+    }
+
+    /** Margen por redondeo de centavos entre la cotización que vio el cliente y la actual. */
+    private static final double TOLERANCIA_ENVIO = 0.01;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

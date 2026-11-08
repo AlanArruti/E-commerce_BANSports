@@ -1,0 +1,109 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Pedidos</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Pedidos</h1>
+      <p class="cuenta" aria-live="polite">
+        @if (resultado(); as r) {
+          {{ r.total }} {{ r.total === 1 ? 'pedido' : 'pedidos' }}{{ filtroEstado() ? ' en estado ' + etiquetaFiltro() : '' }}
+        } @else if (estado().cargando) {
+          Buscando pedidos…
+        }
+      </p>
+    </div>
+    <div class="filtro-estado">
+      <label for="filtro-estado">Estado</label>
+      <select id="filtro-estado" class="input" [formControl]="filtro">
+        <option [ngValue]="null">Todos</option>
+        @for (opcion of estados; track opcion.valor) {
+          <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor" [attr.aria-busy]="estado().cargando">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Pedido</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Fecha</th>
+            <th scope="col" class="col-precio">Total</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (estado().cargando) {
+            @for (fila of [1, 2, 3, 4, 5]; track fila) {
+              <tr class="fila-esqueleto">
+                <td colspan="5"><span class="esqueleto"></span></td>
+              </tr>
+            }
+          } @else {
+            @for (pedido of estado().pagina?.content ?? []; track pedido.id) {
+              <tr class="fila-pedido" (click)="abrir(pedido)">
+                <td>
+                  <a class="nombre" [routerLink]="['/admin/pedidos', pedido.id]" (click)="$event.stopPropagation()">#{{ pedido.id }}</a>
+                </td>
+                <td>
+                  @if (pedido.cliente; as cliente) {
+                    <span class="cliente">{{ cliente.nombre }} {{ cliente.apellido }}</span>
+                    <span class="id">{{ cliente.email }}</span>
+                  } @else {
+                    <span class="sin-dato">Sin cliente</span>
+                  }
+                </td>
+                <td class="col-fecha">{{ pedido.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="col-precio">{{ pedido.total | precio }}</td>
+                <td><app-estado-pedido [estado]="pedido.estado" /></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="sin-resultados">
+                  @if (filtroEstado()) {
+                    No hay pedidos en estado {{ etiquetaFiltro() }}.
+                    <button type="button" class="link" (click)="verTodos()">Ver todos</button>
+                  } @else {
+                    Todavía no hay pedidos.
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (resultado(); as r) {
+      <div class="pie-tabla">
+        <span class="rango">Mostrando {{ r.desde }}–{{ r.hasta }} de {{ r.total }} · más nuevos primero</span>
+        @if (paginas().length && estado().pagina; as pagina) {
+          <nav class="paginacion" aria-label="Páginas">
+            <button type="button" class="pag" aria-label="Página anterior" [disabled]="pagina.page === 0" (click)="irAPagina(pagina.page - 1)">‹</button>
+            @for (numero of paginas(); track numero) {
+              <button type="button" class="pag" [ngClass]="{ actual: numero === pagina.page }"
+                [attr.aria-current]="numero === pagina.page ? 'page' : null" (click)="irAPagina(numero)">{{ numero + 1 }}</button>
+            }
+            <button type="button" class="pag" aria-label="Página siguiente" [disabled]="pagina.page >= pagina.totalPages - 1" (click)="irAPagina(pagina.page + 1)">›</button>
+          </nav>
+        }
+      </div>
+    }
+  }
+</div>

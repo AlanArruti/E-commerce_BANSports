@@ -1,0 +1,54 @@
+/* Lo común (tabla, paginado, migas, encabezado) viene de admin-productos.css. */
+.tabla {
+  min-width: 680px;
+}
+
+.fila-pedido {
+  cursor: pointer;
+}
+
+.cliente {
+  display: block;
+  color: var(--color-texto);
+}
+
+.col-fecha {
+  white-space: nowrap;
+}
+
+.filtro-estado {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.filtro-estado select {
+  min-width: 200px;
+  cursor: pointer;
+}
+
+.alerta-error {
+  align-items: center;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}

@@ -109,3 +109,23 @@ export const emailValido: ValidatorFn = (control: AbstractControl): ValidationEr
   }
   return { emailValido: true };
 };
+
+/** Hoy en formato AAAA-MM-DD, con la hora local (toISOString usaría UTC y de noche daría mañana). */
+export function hoyIso(): string {
+  const hoy = new Date();
+  const dosDigitos = (n: number) => String(n).padStart(2, '0');
+  return `${hoy.getFullYear()}-${dosDigitos(hoy.getMonth() + 1)}-${dosDigitos(hoy.getDate())}`;
+}
+
+/** Fecha (AAAA-MM-DD) de hoy en adelante. */
+export const fechaNoPasada: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = String(control.value ?? '');
+  return valor === '' || valor >= hoyIso() ? null : { fechaPasada: true };
+};
+
+/** Para la fecha de llegada de un envío: no puede ser antes que el control hermano "fechaSalida". */
+export const noAntesDeSalida: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const llegada = String(control.value ?? '');
+  const salida = String(control.parent?.get('fechaSalida')?.value ?? '');
+  return llegada === '' || salida === '' || llegada >= salida ? null : { antesDeSalida: true };
+};

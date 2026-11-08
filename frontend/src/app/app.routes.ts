@@ -119,6 +119,17 @@ export const routes: Routes = [
         path: 'productos/:id/variantes',
         loadComponent: () => import('./page/admin-variantes/admin-variantes').then((m) => m.AdminVariantes),
         title: 'Variantes y stock | Panel BAN Sports'
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () => import('./page/admin-pedidos/admin-pedidos').then((m) => m.AdminPedidos),
+        title: 'Pedidos | Panel BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el número de pedido.
+        path: 'pedidos/:id',
+        loadComponent: () => import('./page/admin-pedido/admin-pedido').then((m) => m.AdminPedido),
+        title: 'Pedido | Panel BAN Sports'
       }
     ]
   },

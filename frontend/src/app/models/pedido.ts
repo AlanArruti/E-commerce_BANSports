@@ -1,3 +1,4 @@
+import { Cliente } from './cliente';
 import { Direccion } from './direccion';
 import { Producto } from './producto';
 import { Variante } from './variante';
@@ -37,8 +38,18 @@ export interface Envio {
   fechaLlegada: string | null;
 }
 
+export type TipoFactura = 'A' | 'B' | 'C';
+
+// Factura del pedido (FacturaResponse). Se emite al cobrar; antes es null.
+export interface Factura {
+  id: number;
+  uuidFactura: string;
+  tipo: TipoFactura;
+  precioTotal: number;
+  idPedido: number;
+}
+
 // Respuesta de POST /cliente/{id}/carrito/checkout, GET /pedido/{id} y del historial (PedidoResponse).
-// Solo los campos que usa el front; el back también manda el cliente y la factura.
 export interface Pedido {
   id: number;
   uuidPedido: string;
@@ -49,4 +60,21 @@ export interface Pedido {
   /** Dirección elegida en el checkout. */
   direccionEnvio: Direccion | null;
   envio: Envio | null;
+  /** Lo usa el panel del admin. */
+  cliente: Cliente | null;
+  factura: Factura | null;
+}
+
+/** Cambios de estado que el admin hace a mano (PATCH /pedido/{id}/estado). PAGADO nunca: se llega cobrando. */
+export type EstadoManual = Exclude<EstadoPedido, 'PAGADO'>;
+
+// Body de POST /pedido/{id}/envio (EnvioRequest). Fechas en formato AAAA-MM-DD.
+export interface EnvioRequest {
+  fechaSalida: string;
+  fechaLlegada: string;
+}
+
+/** Si el pedido ya se había cobrado, el back devuelve el stock al cancelarlo. */
+export function cancelarDevuelveStock(estado: EstadoPedido): boolean {
+  return estado === 'PAGADO' || estado === 'DESPACHADO';
 }

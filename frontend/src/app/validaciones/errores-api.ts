@@ -416,6 +416,43 @@ export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
+/** Para el panel de pedidos: listado, detalle y cambios de estado. */
+export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return { titulo: 'Ese pedido ya no existe', detalle: 'Volvé al listado y elegí otro.' };
+  }
+  if (error.status === 403) {
+    return { titulo: 'No tenés permiso para esto', detalle: 'Solo un administrador puede gestionar pedidos.' };
+  }
+  if (mensaje.startsWith('Transición de estado inválida') || mensaje.includes('no puede cancelarse')) {
+    return {
+      titulo: 'El pedido ya no admite ese cambio',
+      detalle: 'Puede que otra persona lo haya modificado mientras lo mirabas. Actualizamos el pedido para que veas su estado real.'
+    };
+  }
+  if (mensaje.startsWith('Solo se puede crear un envío')) {
+    return { titulo: 'No se puede despachar todavía', detalle: 'Solo se despachan pedidos que ya están pagados.' };
+  }
+  if (error.status === 409 || mensaje.includes('ya tiene un envío')) {
+    return { titulo: 'Este pedido ya fue despachado', detalle: 'Ya tiene un envío creado. Actualizamos el pedido.' };
+  }
+  if (mensaje.includes('no tiene dirección de envío')) {
+    return {
+      titulo: 'El pedido no tiene dirección de entrega',
+      detalle: 'Es un pedido viejo, de antes de que el checkout guardara la dirección. No se puede despachar desde acá.'
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

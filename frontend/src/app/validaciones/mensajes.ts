@@ -109,6 +109,14 @@ export const MENSAJES: Record<string, Mensajes> = {
     requerido: () => 'Ingresá el código postal.',
     maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   },
+  fechaSalida: {
+    requerido: () => 'Elegí el día en que sale el pedido.',
+    fechaPasada: () => 'La fecha de salida no puede ser anterior a hoy.'
+  },
+  fechaLlegada: {
+    requerido: () => 'Elegí el día aproximado de llegada.',
+    antesDeSalida: () => 'La llegada no puede ser antes de la salida.'
+  },
   resenaComentario: {
     maxlength: (d) => `El comentario puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   }

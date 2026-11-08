@@ -351,3 +351,15 @@
     flex: none;
   }
 }
+
+.seguimiento {
+  margin: 0;
+  padding-left: 26px;
+  font-size: 14px;
+  color: var(--color-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.seguimiento strong {
+  color: var(--color-texto);
+}

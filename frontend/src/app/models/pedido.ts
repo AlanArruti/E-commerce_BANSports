@@ -29,13 +29,37 @@ export const PASOS_PEDIDO: EstadoPedido[] = ['PENDIENTE_PAGO', 'PAGADO', 'EN_PRE
 
 export type EstadoEnvio = 'DESPACHADO' | 'EN_CAMINO' | 'ENTREGADO';
 
+export const ETIQUETAS_ESTADO_ENVIO: Record<EstadoEnvio, string> = {
+  DESPACHADO: 'Despachado',
+  EN_CAMINO: 'En camino',
+  ENTREGADO: 'Entregado'
+};
+
+/** Orden en que avanza un envío. */
+export const PASOS_ENVIO: EstadoEnvio[] = ['DESPACHADO', 'EN_CAMINO', 'ENTREGADO'];
+
+/** Próximo estado del envío, o null si ya se entregó. */
+export function siguienteEstadoEnvio(estado: EstadoEnvio): EstadoEnvio | null {
+  const i = PASOS_ENVIO.indexOf(estado);
+  return i >= 0 && i < PASOS_ENVIO.length - 1 ? PASOS_ENVIO[i + 1] : null;
+}
+
+/** Empresas que se sugieren al despachar. Se puede escribir otra. */
+export const EMPRESAS_ENVIO = ['Correo Argentino', 'Andreani', 'OCA'];
+
 // Envío del pedido (EnvioResponse). Lo crea el admin al despachar; antes es null.
 export interface Envio {
   id: number;
+  idPedido: number;
+  /** "Juan Pérez". */
+  cliente: string | null;
   direccion: Direccion | null;
   estado: EstadoEnvio;
   fechaSalida: string | null;
   fechaLlegada: string | null;
+  /** Null en los envíos de antes de SCRUM-139. */
+  empresa: string | null;
+  numeroSeguimiento: string | null;
 }
 
 export type TipoFactura = 'A' | 'B' | 'C';
@@ -70,6 +94,8 @@ export type EstadoManual = Exclude<EstadoPedido, 'PAGADO'>;
 
 // Body de POST /pedido/{id}/envio (EnvioRequest). Fechas en formato AAAA-MM-DD.
 export interface EnvioRequest {
+  empresa: string;
+  numeroSeguimiento: string;
   fechaSalida: string;
   fechaLlegada: string;
 }

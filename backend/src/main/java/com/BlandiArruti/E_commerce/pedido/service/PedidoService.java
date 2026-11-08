@@ -354,6 +354,8 @@ public class PedidoService implements IPedidoService {
                 .estado(EstadoEnvio.DESPACHADO)
                 .fechaSalida(request.fechaSalida())
                 .fechaLlegada(request.fechaLlegada())
+                .empresa(request.empresa().trim())
+                .numeroSeguimiento(request.numeroSeguimiento().trim())
                 .build();
         envioRepository.save(envio);
 

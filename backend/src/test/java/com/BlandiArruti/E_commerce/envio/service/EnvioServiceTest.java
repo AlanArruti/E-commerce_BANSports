@@ -48,7 +48,7 @@ class EnvioServiceTest {
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
 
         assertThatThrownBy(() ->
-                envioService.crear(1L, new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3))))
+                envioService.crear(1L, new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3))))
                 .isInstanceOf(EcommerceException.class);
 
         verify(envioRepository, never()).save(any());
@@ -63,7 +63,7 @@ class EnvioServiceTest {
         when(envioRepository.findByPedidoId(1L)).thenReturn(Optional.of(envioExistente));
 
         assertThatThrownBy(() ->
-                envioService.crear(1L, new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3))))
+                envioService.crear(1L, new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3))))
                 .isInstanceOf(ConflictoException.class);
     }
 
@@ -77,11 +77,14 @@ class EnvioServiceTest {
         when(envioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(envioMapper.toResponse(any())).thenReturn(null);
 
-        envioService.crear(1L, new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3)));
+        envioService.crear(1L, new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3)));
 
         assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.DESPACHADO);
         verify(pedidoRepository).save(pedido);
         verify(notificacionService).notificarEnvioActualizado(any());
+        // Empresa y seguimiento se guardan sin espacios de más.
+        assertThat(pedido.getEnvio().getEmpresa()).isEqualTo("Andreani");
+        assertThat(pedido.getEnvio().getNumeroSeguimiento()).isEqualTo("360002541870");
     }
 
     // ─── actualizarEstado ─────────────────────────────────────────────────────

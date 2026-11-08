@@ -429,7 +429,8 @@ export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTradu
   if (error.status === 403) {
     return { titulo: 'No tenés permiso para esto', detalle: 'Solo un administrador puede gestionar pedidos.' };
   }
-  if (mensaje.startsWith('Transición de estado inválida') || mensaje.includes('no puede cancelarse')) {
+  // Cubre los cambios de estado del pedido y los del envío ("Transición de estado de envío inválida…").
+  if (mensaje.startsWith('Transición de estado') || mensaje.includes('no puede cancelarse')) {
     return {
       titulo: 'El pedido ya no admite ese cambio',
       detalle: 'Puede que otra persona lo haya modificado mientras lo mirabas. Actualizamos el pedido para que veas su estado real.'

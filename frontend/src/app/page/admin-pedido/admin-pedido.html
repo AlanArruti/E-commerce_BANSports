@@ -116,26 +116,36 @@
                 <span class="sin-dato">Sin factura: se emite al cobrar.</span>
               }
             </p>
-            <p class="linea">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
-              @if (pedido.envio; as envio) {
-                <span>
-                  @switch (envio.estado) {
-                    @case ('ENTREGADO') { Envío entregado. }
-                    @case ('EN_CAMINO') { Envío en camino. }
-                    @default { Envío despachado. }
-                  }
-                  @if (envio.fechaSalida) {
-                    Salió el {{ envio.fechaSalida | date: 'dd/MM/yyyy' }}
-                  }
-                  @if (envio.fechaLlegada) {
-                    · llega aprox. el {{ envio.fechaLlegada | date: 'dd/MM/yyyy' }}
-                  }
-                </span>
-              } @else {
+            @if (pedido.envio; as envio) {
+              <ol class="pasos-envio" aria-label="Avance del envío">
+                @for (paso of pasosEnvio; track paso; let i = $index) {
+                  <li class="paso-envio" [class.hecho]="i <= pasosEnvio.indexOf(envio.estado)"
+                    [attr.aria-current]="paso === envio.estado ? 'step' : null">
+                    <span class="paso-barra" aria-hidden="true"></span>
+                    {{ etiquetasEnvio[paso] }}
+                  </li>
+                }
+              </ol>
+              <dl class="datos-envio">
+                <dt>Empresa</dt>
+                <dd>{{ envio.empresa ?? 'Sin cargar' }}</dd>
+                <dt>Seguimiento</dt>
+                <dd class="seguimiento">{{ envio.numeroSeguimiento ?? 'Sin cargar' }}</dd>
+                @if (envio.fechaSalida) {
+                  <dt>Salió</dt>
+                  <dd>{{ envio.fechaSalida | date: 'dd/MM/yyyy' }}</dd>
+                }
+                @if (envio.fechaLlegada) {
+                  <dt>Llega aprox.</dt>
+                  <dd>{{ envio.fechaLlegada | date: 'dd/MM/yyyy' }}</dd>
+                }
+              </dl>
+            } @else {
+              <p class="linea">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
                 <span class="sin-dato">Sin envío: se crea al despachar.</span>
-              }
-            </p>
+              </p>
+            }
           </section>
         </div>
       </div>
@@ -164,9 +174,19 @@
             }
           }
           @case ('DESPACHADO') {
-            <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="marcarEntregado(pedido)">
-              {{ procesando() === 'entregar' ? 'Guardando…' : 'Marcar como entregado' }}
-            </button>
+            @if (siguienteEnvio(); as siguiente) {
+              <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="avanzarEnvio(pedido)">
+                {{ procesando() === 'avanzar' ? 'Guardando…' : siguiente === 'EN_CAMINO' ? 'Marcar en camino' : 'Marcar entregado' }}
+              </button>
+              @if (siguiente === 'ENTREGADO') {
+                <p class="nota">El pedido también pasa a Entregado.</p>
+              }
+            } @else if (!pedido.envio) {
+              <!-- Pedidos viejos despachados sin envío: no hay envío que avanzar. -->
+              <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="marcarEntregado(pedido)">
+                {{ procesando() === 'avanzar' ? 'Guardando…' : 'Marcar como entregado' }}
+              </button>
+            }
           }
           @case ('ENTREGADO') {
             <p class="nota">Pedido terminado: no tiene más pasos.</p>
@@ -193,18 +213,39 @@
         }
         <form class="form-envio" [formGroup]="formEnvio" (ngSubmit)="confirmarDespacho(pedido)" novalidate>
           <div class="campo">
+            <label for="empresa-envio">Empresa</label>
+            <input id="empresa-envio" class="input" formControlName="empresa" list="empresas-envio" autocomplete="off"
+              placeholder="Ej. Andreani"
+              [class.input-error]="errorCampo('empresa')" [attr.aria-invalid]="errorCampo('empresa') ? true : null"
+              aria-describedby="error-empresa" />
+            <datalist id="empresas-envio">
+              @for (empresa of empresas; track empresa) {
+                <option [value]="empresa"></option>
+              }
+            </datalist>
+            <span class="msj-error" id="error-empresa">{{ errorCampo('empresa') }}</span>
+          </div>
+          <div class="campo">
+            <label for="seguimiento-envio">N.º de seguimiento</label>
+            <input id="seguimiento-envio" class="input" formControlName="numeroSeguimiento" autocomplete="off"
+              placeholder="Ej. 360002541870"
+              [class.input-error]="errorCampo('numeroSeguimiento')" [attr.aria-invalid]="errorCampo('numeroSeguimiento') ? true : null"
+              aria-describedby="error-seguimiento" />
+            <span class="msj-error" id="error-seguimiento">{{ errorCampo('numeroSeguimiento') }}</span>
+          </div>
+          <div class="campo">
             <label for="fecha-salida">Sale el</label>
             <input id="fecha-salida" type="date" class="input" formControlName="fechaSalida" [min]="hoy"
-              [class.input-error]="errorFecha('fechaSalida')" [attr.aria-invalid]="errorFecha('fechaSalida') ? true : null"
+              [class.input-error]="errorCampo('fechaSalida')" [attr.aria-invalid]="errorCampo('fechaSalida') ? true : null"
               aria-describedby="error-salida" />
-            <span class="msj-error" id="error-salida">{{ errorFecha('fechaSalida') }}</span>
+            <span class="msj-error" id="error-salida">{{ errorCampo('fechaSalida') }}</span>
           </div>
           <div class="campo">
             <label for="fecha-llegada">Llega aprox. el</label>
             <input id="fecha-llegada" type="date" class="input" formControlName="fechaLlegada" [min]="formEnvio.controls.fechaSalida.value || hoy"
-              [class.input-error]="errorFecha('fechaLlegada')" [attr.aria-invalid]="errorFecha('fechaLlegada') ? true : null"
+              [class.input-error]="errorCampo('fechaLlegada')" [attr.aria-invalid]="errorCampo('fechaLlegada') ? true : null"
               aria-describedby="error-llegada" />
-            <span class="msj-error" id="error-llegada">{{ errorFecha('fechaLlegada') }}</span>
+            <span class="msj-error" id="error-llegada">{{ errorCampo('fechaLlegada') }}</span>
           </div>
           <div class="acciones-modal">
             <button type="button" class="btn btn-secundario" [disabled]="procesando()" (click)="cerrarModal()">Volver</button>

@@ -118,12 +118,23 @@
                   Despachado{{ envio.fechaSalida ? ' el ' + (envio.fechaSalida | date: 'dd/MM/yyyy') : '' }}.
                 }
               }
+              @if (envio.estado !== 'ENTREGADO' && envio.fechaLlegada) {
+                Llega aprox. el {{ envio.fechaLlegada | date: 'dd/MM/yyyy' }}.
+              }
             } @else if (pedido.estado === 'PENDIENTE_PAGO') {
               Se despacha cuando se confirme el pago.
             } @else if (pedido.estado === 'PAGADO' || pedido.estado === 'EN_PREPARACION') {
               Estamos preparando tu pedido.
             }
           </p>
+          <!-- Empresa y número para que el cliente lo rastree (SCRUM-139). Los envíos viejos no los tienen. -->
+          @if (pedido.envio; as envio) {
+            @if (envio.empresa && envio.numeroSeguimiento) {
+              <p class="seguimiento">
+                {{ envio.empresa }} · seguimiento <strong>{{ envio.numeroSeguimiento }}</strong>
+              </p>
+            }
+          }
         </section>
 
         @if (pedido.estado === 'PENDIENTE_PAGO') {

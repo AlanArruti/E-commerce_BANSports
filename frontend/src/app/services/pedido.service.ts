@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Pagina } from '../models/pagina';
-import { EnvioRequest, EstadoManual, EstadoPedido, Pedido } from '../models/pedido';
+import { Envio, EnvioRequest, EstadoEnvio, EstadoManual, EstadoPedido, Pedido } from '../models/pedido';
 
-/** Gestión de pedidos del panel (SCRUM-138). Todos los endpoints de escritura son solo ADMIN. */
+/** Gestión de pedidos y envíos del panel (SCRUM-138 y 139). Todos los endpoints de escritura son solo ADMIN. */
 @Injectable({
   providedIn: 'root'
 })
@@ -36,7 +36,20 @@ export class PedidoService {
   }
 
   /** Crea el envío a la dirección del pedido y lo pasa a DESPACHADO. Solo para pedidos PAGADO. */
-  despachar(id: number, fechas: EnvioRequest): Observable<unknown> {
-    return this.http.post(`${this.API_URL}/${id}/envio`, fechas);
+  despachar(id: number, envio: EnvioRequest): Observable<Envio> {
+    return this.http.post<Envio>(`${this.API_URL}/${id}/envio`, envio);
+  }
+
+  /** DESPACHADO → EN_CAMINO → ENTREGADO. Al entregar, el back también marca el pedido ENTREGADO. */
+  avanzarEnvio(idPedido: number, estado: EstadoEnvio): Observable<Envio> {
+    return this.http.patch<Envio>(`${this.API_URL}/${idPedido}/envio/estado`, { estado });
+  }
+
+  /** Todos los envíos (GET /envio, sin paginar), del que llega antes al que llega después. */
+  listarEnvios(estado: EstadoEnvio | null): Observable<Envio[]> {
+    const params = estado ? new HttpParams().set('estado', estado) : undefined;
+    return this.http
+      .get<Envio[]>(`${environment.apiUrl}/envio`, { params })
+      .pipe(map((envios) => [...envios].sort((a, b) => (a.fechaLlegada ?? '').localeCompare(b.fechaLlegada ?? '') || b.idPedido - a.idPedido)));
   }
 }

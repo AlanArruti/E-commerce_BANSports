@@ -109,6 +109,14 @@ export const MENSAJES: Record<string, Mensajes> = {
     requerido: () => 'Ingresá el código postal.',
     maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
   },
+  empresa: {
+    requerido: () => 'Indicá la empresa que lleva el pedido (por ejemplo, Andreani).',
+    maxlength: (d) => `La empresa puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  numeroSeguimiento: {
+    requerido: () => 'Ingresá el número de seguimiento que te dio la empresa.',
+    maxlength: (d) => `El número de seguimiento puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
   fechaSalida: {
     requerido: () => 'Elegí el día en que sale el pedido.',
     fechaPasada: () => 'La fecha de salida no puede ser anterior a hoy.'

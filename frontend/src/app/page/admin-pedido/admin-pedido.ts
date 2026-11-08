@@ -2,7 +2,7 @@ import { Component, computed, effect, signal, ChangeDetectionStrategy } from '@a
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
@@ -10,7 +10,15 @@ import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedi
 import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { localidadDeDireccion } from '../../models/direccion';
-import { ItemPedido, Pedido, cancelarDevuelveStock } from '../../models/pedido';
+import {
+  EMPRESAS_ENVIO,
+  ETIQUETAS_ESTADO_ENVIO,
+  ItemPedido,
+  PASOS_ENVIO,
+  Pedido,
+  cancelarDevuelveStock,
+  siguienteEstadoEnvio
+} from '../../models/pedido';
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { PedidoService } from '../../services/pedido.service';
@@ -25,7 +33,9 @@ interface EstadoDetalle {
   error: ErrorTraducido | null;
 }
 
-type Accion = 'preparar' | 'entregar' | 'despachar' | 'cancelar';
+type Accion = 'preparar' | 'avanzar' | 'despachar' | 'cancelar';
+type CampoEnvio = 'empresa' | 'numeroSeguimiento' | 'fechaSalida' | 'fechaLlegada';
+const LARGO_DATO_ENVIO = 60;
 
 const CARGANDO: EstadoDetalle = { cargando: true, pedido: null, noEncontrado: false, error: null };
 const ERROR_INESPERADO: ErrorTraducido = {
@@ -45,6 +55,7 @@ function sumarDias(fechaIso: string, dias: number): string {
 /**
  * Detalle de un pedido en el panel (SCRUM-138): ítems, cliente, entrega, factura y envío,
  * con los cambios de estado que permite el back. A Pagado solo se llega cobrando.
+ * Despacho y avance del envío (SCRUM-139): una vez despachado, el pedido avanza por su envío.
  */
 @Component({
   selector: 'app-admin-pedido',
@@ -58,6 +69,11 @@ export class AdminPedido {
   protected readonly estado;
   protected readonly unidades;
   protected readonly devuelveStock;
+  /** Próximo paso del envío ("EN_CAMINO", "ENTREGADO"), o null si no hay envío o ya llegó. */
+  protected readonly siguienteEnvio;
+  protected readonly pasosEnvio = PASOS_ENVIO;
+  protected readonly etiquetasEnvio = ETIQUETAS_ESTADO_ENVIO;
+  protected readonly empresas = EMPRESAS_ENVIO;
   protected readonly localidad = localidadDeDireccion;
 
   /** Confirmación de la última acción ("El pedido #7 pasó a En preparación."). */
@@ -71,6 +87,11 @@ export class AdminPedido {
   protected readonly hoy = hoyIso();
 
   formEnvio = new FormGroup({
+    empresa: new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(LARGO_DATO_ENVIO)] }),
+    numeroSeguimiento: new FormControl('', {
+      nonNullable: true,
+      validators: [requerido, Validators.maxLength(LARGO_DATO_ENVIO)]
+    }),
     fechaSalida: new FormControl('', { nonNullable: true, validators: [requerido, fechaNoPasada] }),
     fechaLlegada: new FormControl('', { nonNullable: true, validators: [requerido, noAntesDeSalida] })
   });
@@ -116,6 +137,10 @@ export class AdminPedido {
     this.unidades = computed(
       () => this.estado().pedido?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0
     );
+    this.siguienteEnvio = computed(() => {
+      const envio = this.estado().pedido?.envio;
+      return envio ? siguienteEstadoEnvio(envio.estado) : null;
+    });
     this.devuelveStock = computed(() => {
       const pedido = this.estado().pedido;
       return !!pedido && cancelarDevuelveStock(pedido.estado);
@@ -146,14 +171,31 @@ export class AdminPedido {
     this.ejecutar('preparar', this.pedidoService.cambiarEstado(pedido.id, 'EN_PREPARACION'), `El pedido #${pedido.id} pasó a En preparación.`);
   }
 
+  /** DESPACHADO → EN_CAMINO → ENTREGADO. Al entregar el envío, el back también entrega el pedido. */
+  avanzarEnvio(pedido: Pedido): void {
+    const siguiente = this.siguienteEnvio();
+    if (!siguiente) {
+      return;
+    }
+    const texto =
+      siguiente === 'ENTREGADO' ? `El pedido #${pedido.id} quedó entregado.` : `El envío del pedido #${pedido.id} está en camino.`;
+    this.ejecutar('avanzar', this.pedidoService.avanzarEnvio(pedido.id, siguiente), texto);
+  }
+
+  /** Solo para pedidos despachados sin envío (datos viejos): no hay envío que avanzar. */
   marcarEntregado(pedido: Pedido): void {
-    this.ejecutar('entregar', this.pedidoService.cambiarEstado(pedido.id, 'ENTREGADO'), `El pedido #${pedido.id} quedó entregado.`);
+    this.ejecutar('avanzar', this.pedidoService.cambiarEstado(pedido.id, 'ENTREGADO'), `El pedido #${pedido.id} quedó entregado.`);
   }
 
   // ── Modales ────────────────────────────────────────────
 
   abrirDespacho(): void {
-    this.formEnvio.reset({ fechaSalida: this.hoy, fechaLlegada: sumarDias(this.hoy, DIAS_ENVIO_SUGERIDOS) });
+    this.formEnvio.reset({
+      empresa: '',
+      numeroSeguimiento: '',
+      fechaSalida: this.hoy,
+      fechaLlegada: sumarDias(this.hoy, DIAS_ENVIO_SUGERIDOS)
+    });
     this.intentoDespachar.set(false);
     this.abrirModal('despachar');
   }
@@ -173,8 +215,9 @@ export class AdminPedido {
     if (this.formEnvio.invalid) {
       return;
     }
-    const fechas = this.formEnvio.getRawValue();
-    this.ejecutar('despachar', this.pedidoService.despachar(pedido.id, fechas), `Despachaste el pedido #${pedido.id}.`);
+    const datos = this.formEnvio.getRawValue();
+    const envio = { ...datos, empresa: datos.empresa.trim(), numeroSeguimiento: datos.numeroSeguimiento.trim() };
+    this.ejecutar('despachar', this.pedidoService.despachar(pedido.id, envio), `Despachaste el pedido #${pedido.id}.`);
   }
 
   confirmarCancelacion(pedido: Pedido): void {
@@ -184,7 +227,7 @@ export class AdminPedido {
     this.ejecutar('cancelar', this.pedidoService.cancelar(pedido.id), texto);
   }
 
-  errorFecha(campo: 'fechaSalida' | 'fechaLlegada'): string | null {
+  errorCampo(campo: CampoEnvio): string | null {
     const control = this.formEnvio.controls[campo];
     return this.intentoDespachar() || control.touched ? mensajeDeError(control, campo) : null;
   }

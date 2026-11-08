@@ -130,6 +130,11 @@ export const routes: Routes = [
         path: 'pedidos/:id',
         loadComponent: () => import('./page/admin-pedido/admin-pedido').then((m) => m.AdminPedido),
         title: 'Pedido | Panel BAN Sports'
+      },
+      {
+        path: 'envios',
+        loadComponent: () => import('./page/admin-envios/admin-envios').then((m) => m.AdminEnvios),
+        title: 'Envíos | Panel BAN Sports'
       }
     ]
   },

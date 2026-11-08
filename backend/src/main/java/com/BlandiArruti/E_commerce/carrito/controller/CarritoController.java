@@ -61,6 +61,6 @@ public class CarritoController {
     @PostMapping("/checkout")
     public ResponseEntity<PedidoResponse> checkout(@PathVariable Long idCliente,
                                                     @Valid @RequestBody CheckoutRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(idCliente, request.idDireccion(), request.costoEnvio()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(idCliente, request.idDireccion(), request.opcionEnvio()));
     }
 }

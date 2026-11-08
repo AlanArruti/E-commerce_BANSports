@@ -8,7 +8,15 @@ import { BehaviorSubject, catchError, combineLatest, forkJoin, map, of, startWit
 import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
-import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../../models/variante';
+import {
+  STOCK_BAJO,
+  Variante,
+  atributosOrdenados,
+  etiquetaAtributo,
+  precioFinalDe,
+  precioListaDe,
+  rangoDePrecios
+} from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
@@ -83,9 +91,26 @@ export class DetalleProducto {
   protected readonly stockBajo;
   protected readonly tieneOferta = computed(() => (this.estado().producto?.descuento ?? 0) > 0);
   protected readonly descuento = computed(() => Math.round(this.estado().producto?.descuento ?? 0));
+  /** Precio de la variante elegida (SCRUM-154). Sin variante elegida, el más barato. */
   protected readonly precioVigente = computed(() => {
     const producto = this.estado().producto;
-    return producto ? (producto.precioFinal ?? producto.precioBase) : 0;
+    if (!producto) return 0;
+    const variante = this.varianteElegida();
+    return variante ? precioFinalDe(producto, variante) : rangoDePrecios(producto).minimo;
+  });
+  /** Precio sin la oferta, para mostrarlo tachado. */
+  protected readonly precioLista = computed(() => {
+    const producto = this.estado().producto;
+    if (!producto) return 0;
+    const variante = this.varianteElegida();
+    return variante ? precioListaDe(producto, variante) : rangoDePrecios(producto).listaMinimo;
+  });
+  /** Todavía no eligió variante y no todas cuestan lo mismo: se muestra "Desde". */
+  protected readonly esPrecioDesde = computed(() => {
+    const producto = this.estado().producto;
+    if (!producto || this.varianteElegida()) return false;
+    const rango = rangoDePrecios(producto);
+    return rango.minimo < rango.maximo;
   });
   /** La imagen del back no cargó: se muestra el dibujo del pote. */
   protected readonly imagenFallo;

@@ -16,15 +16,16 @@ Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angu
 
 ## Descripción del proyecto
 
-El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea mediante **MercadoPago Checkout Pro** y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
+El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
 
 ### Reglas de negocio principales
 
 - Un pedido se crea en estado `PENDIENTE_PAGO`. El stock **no** se descuenta hasta que el pago es confirmado.
-- El pago puede realizarse de forma directa (endpoint propio) o a través de MercadoPago (flujo de dos pasos con webhook de confirmación).
+- El cliente paga con una pasarela (MercadoPago). Cada intento queda registrado como un `Pago`. El pedido pasa a `PAGADO` cuando la pasarela confirma el cobro, ya sea al volver el cliente a la tienda o por el webhook. Un admin también puede marcarlo pagado a mano.
 - Al confirmar el pago se genera automáticamente una **Factura** (tipo A, B o C) y el pedido pasa a `PAGADO`.
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
+- Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
 - Las bajas de clientes y productos son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
@@ -40,7 +41,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 | Spring Data JPA | Hibernate 7.x |
 | PostgreSQL | 17+ |
 | MapStruct | 1.6.3 |
-| MercadoPago SDK | 3.2.1 |
+| MercadoPago | API de Orders (REST, con `RestClient`) |
 | SpringDoc OpenAPI | 3.0.2 |
 | Spring AOP | (transversal) |
 | Maven | 3.9+ |
@@ -91,8 +92,12 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
-├── mercadopago/          ← Checkout Pro + Webhook
 ├── notificacion/         ← Envío de emails (JavaMailSender)
+├── pago/                 ← Pagos con pasarelas (ver "Pasarelas de pago")
+│   ├── pasarela/         ← PasarelaPago, PasarelaPagoBase, RegistroPasarelas
+│   │   └── mercadopago/  ← MercadoPagoPasarela (hija) + cliente de la API de Orders
+│   ├── service/          ← PagoService
+│   └── controller/       ← PagoController, WebhookController
 ├── pedido/               ← Pedidos e ítems
 ├── producto/             ← Productos y variantes con JSONB
 └── shared/               ← PageResponse<T> genérico
@@ -130,8 +135,11 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito | CLIENTE / ADMIN |
 | `PATCH` | `/pedido/{id}/pagar` | Pagar directamente (genera factura) | CLIENTE / ADMIN |
-| `POST` | `/pedido/{id}/iniciar-pago` | Iniciar pago con MercadoPago | CLIENTE / ADMIN |
-| `POST` | `/webhook/mercadopago` | Confirmación de pago MP | Público |
+| `GET` | `/pago/pasarelas` | Pasarelas de pago disponibles (con credenciales cargadas) | CLIENTE / ADMIN |
+| `POST` | `/pago/pedido/{pedidoId}` | Iniciar el pago `{ pasarela, tipoFactura }` → `{ pagoId, urlPago }` | CLIENTE / ADMIN |
+| `POST` | `/pago/{pagoId}/confirmar` | Confirmar el pago al volver de la pasarela (consulta el estado real) | CLIENTE / ADMIN |
+| `GET` | `/pago/pedido/{pedidoId}` | Intentos de pago de un pedido | CLIENTE / ADMIN |
+| `POST` | `/webhook/{pasarela}` | Aviso de una pasarela (ej. `/webhook/mercadopago`) | Público |
 | `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido | CLIENTE / ADMIN |
 | `PATCH` | `/pedido/{id}/estado` | Cambiar estado manualmente (no permite saltar a `PAGADO`) | ADMIN |
 | `POST` | `/pedido/{id}/envio` | Crear envío para pedido PAGADO | ADMIN |
@@ -198,39 +206,78 @@ docker compose --profile front up -d    # suma el front de Progra 4
 docker compose --profile all up -d      # todo junto
 ```
 
+### Pasarelas de pago
+
+El pago no está atado a MercadoPago. El paquete `pago/` define una **pasarela de pago**
+abstracta, y MercadoPago es su primera implementación.
+
+```
+PasarelaPago (interfaz)
+  └── PasarelaPagoBase (clase abstracta: algoritmo común, Template Method)
+        └── MercadoPagoPasarela (hija: adapta la API de Orders de MercadoPago)
+RegistroPasarelas   → todas las pasarelas, inyectadas por Spring, por código
+PagoService         → caso de uso: iniciar, confirmar al volver, procesar el webhook
+Pago (entidad)      → cada intento: pasarela, id externo, estado, monto
+```
+
+**Flujo**
+1. El cliente elige la pasarela → `POST /pago/pedido/{id}` registra un `Pago` y devuelve la URL de la pasarela.
+2. Paga allá y vuelve a `/pago/resultado?pago={id}` del front.
+3. Esa pantalla llama a `POST /pago/{id}/confirmar`. El back **consulta el cobro en la pasarela**,
+   no confía en la URL, y si está aprobado y cubre el total el pedido pasa a `PAGADO`.
+4. El webhook `POST /webhook/{pasarela}` hace lo mismo cuando la pasarela avisa. Es opcional:
+   sin él, el paso 3 alcanza.
+
+**Sumar una pasarela nueva** (Stripe, MODO…): crear una clase `@Component` que extienda
+`PasarelaPagoBase` e implemente `codigo()`, `nombre()`, `estaDisponible()`, `crearCobro()`,
+`buscarCobro()` y `extraerIdDeNotificacion()`. No hay que tocar nada más, ni en el back ni en el front:
+el front muestra un botón por cada pasarela disponible.
+
+| Patrón / principio | Dónde |
+|---|---|
+| Template Method | `PasarelaPagoBase`: los métodos públicos son `final` y llaman a los pasos que completa cada hija |
+| Strategy + Polimorfismo (GRASP) | Cada pasarela es intercambiable detrás de `PasarelaPago` |
+| Adapter | `MercadoPagoPasarela` traduce los estados de MercadoPago a `EstadoPago` |
+| Registry · Pure Fabrication (GRASP) | `RegistroPasarelas` |
+| Controller (GRASP) | `PagoService` coordina el caso de uso |
+| Experto en Información (GRASP) | El pedido decide cuándo puede pasar a `PAGADO` (`registrarPagoAprobado`) |
+| Variaciones Protegidas · Bajo Acoplamiento | Pedido, front y webhook no conocen ninguna pasarela concreta |
+| SOLID | **S**: una responsabilidad por clase · **O**: pasarela nueva = clase nueva · **L**: cualquier hija reemplaza a la base · **D**: todo depende de la interfaz |
+
 ### Pagos con MercadoPago
 
-MP avisa que un pago se aprobó pegándole a un webhook, y para eso necesita una
-URL pública: `localhost` no le sirve. El profile `mp` levanta **ngrok**, que
-publica el backend en internet mientras el stack está corriendo.
+Se usa **Checkout Pro con la API de Orders** (la que recomienda MercadoPago; la de
+Preferences quedó como legacy).
 
-Hace falta una cuenta gratuita en [ngrok](https://dashboard.ngrok.com):
+**Credenciales de prueba.** Para probar no se usa la cuenta real (los pagos serían
+reales y las tarjetas de prueba fallan):
 
-1. Copiá tu [authtoken](https://dashboard.ngrok.com/get-started/your-authtoken).
-2. Reclamá tu [dominio estático](https://dashboard.ngrok.com/domains) (gratis, uno por cuenta).
-3. Ponelos en el `.env`:
+1. En [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) → tu
+   aplicación → **Cuentas de prueba**, creá un **Vendedor** y un **Comprador**.
+2. En una ventana de incógnito, entrá al panel con el usuario del **vendedor de prueba**,
+   creá una aplicación (Checkout Pro → **API de Orders**) y copiá su **Access Token de
+   producción** (`APP_USR-...`; es de una cuenta ficticia).
+3. En el `.env`: `MP_ACCESS_TOKEN=APP_USR-...` y `docker compose up -d app`.
+4. Para pagar, entrá en MercadoPago con el **comprador de prueba** y usá una
+   [tarjeta de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/integration-test/test-purchases)
+   (Mastercard `5031 7557 3453 0604`, CVV `123`, vto. `11/30`, DNI `12345678`).
+   Titular `APRO` → aprobado; `OTHE` → rechazado.
+
+**Webhook (opcional).** MercadoPago tiene que poder llegar al backend, y `localhost` no
+le sirve. El profile `mp` levanta **ngrok** con tu dominio estático gratuito:
 
 ```bash
 NGROK_AUTHTOKEN=tu_token
 NGROK_DOMAIN=tu-dominio.ngrok-free.dev
-MP_ACCESS_TOKEN=APP_USR-...
 ```
 
 ```bash
 docker compose --profile mp up -d
 ```
 
-`MP_NOTIFICATION_URL` y `MP_BACK_URL` se arman solas a partir de
-`NGROK_DOMAIN` — no hace falta escribirlas. Si les ponés un valor a mano, ese
-gana y el dominio se ignora.
-
-> **El dominio estático no es opcional en la práctica.** Sin él ngrok da una URL
-> distinta en cada arranque, y la app lee `MP_NOTIFICATION_URL` una sola vez al
-> iniciar: habría que reconfigurar y reiniciar antes de cada demo.
-
-Para ver si MP está llamando al webhook, abrí el inspector de ngrok en
-**http://localhost:4040**: muestra cada request que entra por el túnel con su
-body y su respuesta.
+Después, en el panel de MercadoPago → tu aplicación → **Webhooks**, cargá
+`https://tu-dominio.ngrok-free.dev/api/v1/webhook/mercadopago` con el evento **Order**.
+El inspector de ngrok (**http://localhost:4040**) muestra cada aviso que llega.
 
 ### Mails reales con Gmail
 
@@ -376,8 +423,6 @@ Hibernate genera el esquema correcto de cero.
 | `DB_PASSWORD` | Contraseña de PostgreSQL | `secreto` |
 | `JWT_SECRET` | Clave secreta para firmar tokens (mín. 32 chars) | `clave-super-secreta-de-64-caracteres...` |
 | `MP_ACCESS_TOKEN` | Access token de MercadoPago | `APP_USR-...` |
-| `MP_NOTIFICATION_URL` | URL pública para webhook de MP | `https://tu-dominio.com/api/v1/webhook/mercadopago` |
-| `MP_BACK_URL` | URL de retorno tras el pago | `http://localhost:8080` |
 | `MAIL_HOST` | Host SMTP | `smtp.gmail.com` |
 | `MAIL_PORT` | Puerto SMTP | `587` |
 | `MAIL_USERNAME` | Cuenta de correo | `tu@gmail.com` |
@@ -399,7 +444,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **129 tests** (128 unitarios en 13 clases + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **208 tests** (207 unitarios en 22 clases + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -421,8 +466,11 @@ Cobertura de tests unitarios:
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
 - `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
 - `CategoriaServiceTest` — 12 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
-- `WebhookControllerTest` — 7 tests (tipos inválidos, pago aprobado/rechazado, reference malformada)
-- `PedidoServiceTest` — 14 tests (cancelación, pago, envío, estado, confirmación MP)
+- `PagoServiceTest` — 9 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook)
+- `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
+- `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
+- `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
+- `PedidoServiceTest` — 22 tests (cancelación, pago, envío, estado, acreditación de pagos)
 - `ProductoServiceTest` — 11 tests (variantes, stock, ownership)
 - `ClienteServiceTest` — 12 tests (CRUD, owner-check, acceso)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)

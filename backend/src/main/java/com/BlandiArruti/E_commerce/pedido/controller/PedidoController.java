@@ -6,7 +6,6 @@ import com.BlandiArruti.E_commerce.envio.dto.request.EstadoEnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
-import com.BlandiArruti.E_commerce.mercadopago.dto.response.PreferenciaResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
@@ -65,15 +64,9 @@ public class PedidoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Iniciar pago con MercadoPago", description = "Devuelve el initPoint para redirigir al cliente a la página de pago.")
-    @PostMapping("/{id}/iniciar-pago")
-    public ResponseEntity<PreferenciaResponse> iniciarPago(@PathVariable Long id,
-                                                           @Valid @RequestBody PagoRequest request) {
-        return ResponseEntity.ok(pedidoService.iniciarPagoMercadoPago(id, request));
-    }
-
+    // El cliente paga con una pasarela: ver PagoController (/api/v1/pago).
     // Solo ADMIN: marca el pedido como pagado sin cobrar. Si lo pudiera llamar el cliente,
-    // se saltearía MercadoPago y se llevaría la compra gratis. El cliente paga con iniciar-pago.
+    // se saltearía la pasarela y se llevaría la compra gratis.
     @Operation(summary = "Marcar pedido como pagado sin MercadoPago (solo ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/pagar")

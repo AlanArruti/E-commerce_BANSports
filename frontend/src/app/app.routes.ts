@@ -48,6 +48,13 @@ export const routes: Routes = [
   { path: 'login', component: Login, canActivate: [guestGuard], title: 'Iniciar sesión | BAN Sports' },
   { path: 'registro', component: Registro, canActivate: [guestGuard], title: 'Crear cuenta | BAN Sports' },
   {
+    // Vuelta de MercadoPago (?pedido=...&payment_id=...&status=...). Ver MercadoPagoService.
+    path: 'pago/resultado',
+    loadComponent: () => import('./page/resultado-pago/resultado-pago').then((m) => m.ResultadoPago),
+    canActivate: [rolGuard('CLIENTE')],
+    title: 'Resultado del pago | BAN Sports'
+  },
+  {
     // Vuelta del login con GitHub o Google (?token=...). Ver OAUTH2_REDIRECT_URI en compose.yaml.
     path: 'ingreso-social',
     loadComponent: () => import('./page/ingreso-social/ingreso-social').then((m) => m.IngresoSocial),

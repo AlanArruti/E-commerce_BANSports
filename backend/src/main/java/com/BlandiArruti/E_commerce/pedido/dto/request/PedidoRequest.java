@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.pedido.dto.request;
 
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -11,7 +12,9 @@ public record PedidoRequest(
 
         Long idDireccion,
 
-        Double costoEnvio,
+        // Requerida si hay dirección. El precio no viaja: lo cotiza el back.
+        @Valid
+        OpcionEnvioRequest opcionEnvio,
 
         @NotEmpty(message = "El pedido debe tener al menos un ítem.")
         @Valid

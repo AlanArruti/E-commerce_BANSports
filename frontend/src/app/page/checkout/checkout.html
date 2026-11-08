@@ -28,12 +28,11 @@
         </div>
       </div>
 
+      @if (pedidoConfirmado.estado === 'PENDIENTE_PAGO') {
+        <app-pagar-pedido [idPedido]="pedidoConfirmado.id" />
+      }
       <div class="confirmado-acciones">
-        <!-- El pago (SCRUM-122) y "Mis pedidos" (SCRUM-121) llegan con sus historias. -->
-        <button type="button" class="btn btn-primario" title="Próximamente">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
-          Pagar con Mercado Pago
-        </button>
+        <!-- "Mis pedidos" (SCRUM-121) llega con su historia. -->
         <button type="button" class="btn btn-secundario" title="Próximamente">Ver mis pedidos</button>
       </div>
       <p class="confirmado-nota">El stock se reserva cuando se confirma el pago.</p>

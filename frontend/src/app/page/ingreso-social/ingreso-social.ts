@@ -28,7 +28,7 @@ import { AuthService } from '../../services/auth.service';
       width: 20px;
       height: 20px;
       border: 2px solid var(--color-borde);
-      border-top-color: var(--color-acento, currentColor);
+      border-top-color: var(--color-verde);
       border-radius: 50%;
       animation: girar 0.8s linear infinite;
     }

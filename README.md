@@ -138,7 +138,8 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito `{ idDireccion, opcionEnvio, codigoCupon? }` | CLIENTE / ADMIN |
 | `GET` | `/cupones/validar?codigo=` | ¿Sirve el cupón para mi carrito? Devuelve el descuento o 400 con el motivo (vencido, agotado, compra mínima) | CLIENTE |
 | `GET` `POST` `PUT` `DELETE` | `/cupones`, `/cupones/{id}` | Cupones de descuento (la baja es lógica) | ADMIN |
-| `PATCH` | `/pedido/{id}/pagar` | Pagar directamente (genera factura) | CLIENTE / ADMIN |
+| `PATCH` | `/pedido/{id}/pagar` | Marcar pagado sin pasarela (genera factura) | ADMIN |
+| `GET` | `/pedido/{id}/factura/pdf` | Descargar la factura en PDF (la misma que va adjunta al mail de compra) | CLIENTE dueño / ADMIN |
 | `GET` | `/pago/pasarelas` | Pasarelas de pago disponibles (con credenciales cargadas) | CLIENTE / ADMIN |
 | `POST` | `/pago/pedido/{pedidoId}` | Iniciar el pago `{ pasarela, tipoFactura }` → `{ pagoId, urlPago }` | CLIENTE / ADMIN |
 | `POST` | `/pago/{pagoId}/confirmar` | Confirmar el pago al volver de la pasarela (consulta el estado real) | CLIENTE / ADMIN |

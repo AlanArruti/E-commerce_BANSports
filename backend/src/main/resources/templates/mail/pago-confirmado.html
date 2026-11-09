@@ -11,6 +11,7 @@
   <p style="margin:0 0 28px;">
     Hola <strong style="color:#f2f5f3;" th:text="${nombre}">Juan</strong>, acreditamos el pago de tu pedido
     y generamos la <strong style="color:#f2f5f3;" th:text="${'factura ' + tipoFactura}">factura B</strong>.
+    <span th:if="${facturaAdjunta}">Te la adjuntamos en PDF.</span>
     Te avisamos por acá cuando salga para tu casa.
   </p>
 

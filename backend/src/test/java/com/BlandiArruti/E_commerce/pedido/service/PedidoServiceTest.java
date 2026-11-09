@@ -17,6 +17,8 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
+import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
+import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
@@ -74,6 +76,7 @@ class PedidoServiceTest {
     @Mock EnvioMapper envioMapper;
     @Mock CotizacionEnvioService cotizacionEnvioService;
     @Mock ICuponService cuponService;
+    @Mock FacturaPdfGenerator facturaPdfGenerator;
 
     @InjectMocks
     PedidoService pedidoService;
@@ -562,6 +565,48 @@ class PedidoServiceTest {
         pedido.setCostoEnvio(1200.0);
 
         assertThat(pedidoService.calcularTotal(pedido)).isEqualTo(1700.0);
+    }
+
+    // ─── obtenerFacturaPdf() ─────────────────────────────────────────────────
+
+    @Test
+    void obtenerFacturaPdf_delDuenio_devuelveElPdf() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO);
+        Factura factura = Factura.builder().id(5L).pedido(pedido).tipoFactura(TipoFactura.B).precioTotal(100.0).build();
+        pedido.setFactura(factura);
+        byte[] contenido = "%PDF-prueba".getBytes();
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(facturaPdfGenerator.generar(factura)).thenReturn(contenido);
+        when(facturaPdfGenerator.nombreArchivo(factura)).thenReturn("factura-B-0001-00000005.pdf");
+
+        FacturaPdfResponse pdf = pedidoService.obtenerFacturaPdf(1L);
+
+        assertThat(pdf.nombreArchivo()).isEqualTo("factura-B-0001-00000005.pdf");
+        assertThat(pdf.contenido()).isEqualTo(contenido);
+    }
+
+    @Test
+    void obtenerFacturaPdf_deOtroCliente_rechaza() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO);
+        pedido.setFactura(Factura.builder().id(5L).pedido(pedido).tipoFactura(TipoFactura.B).precioTotal(100.0).build());
+
+        autenticarComoCliente(2L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.obtenerFacturaPdf(1L)).isInstanceOf(AccessDeniedException.class);
+        verify(facturaPdfGenerator, never()).generar(any());
+    }
+
+    @Test
+    void obtenerFacturaPdf_sinFactura_avisaQueNoEstaPago() {
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.PENDIENTE_PAGO)));
+
+        assertThatThrownBy(() -> pedidoService.obtenerFacturaPdf(1L))
+                .isInstanceOf(ConflictoException.class)
+                .hasMessageContaining("aún no tiene factura");
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

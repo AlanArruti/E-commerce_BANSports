@@ -12,7 +12,14 @@
           Ver productos
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <button type="button" class="btn btn-secundario">Crear cuenta</button>
+        <!-- Segundo botón según la sesión, igual que el header y el footer. -->
+        @if (authService.esAdmin()) {
+          <a routerLink="/admin" class="btn btn-secundario">Ir al panel</a>
+        } @else if (authService.esCliente()) {
+          <a routerLink="/ofertas" class="btn btn-secundario">Ver ofertas</a>
+        } @else if (!authService.estaLogueado()) {
+          <a routerLink="/registro" class="btn btn-secundario">Crear cuenta</a>
+        }
       </div>
     </div>
 

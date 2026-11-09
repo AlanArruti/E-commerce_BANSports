@@ -1,4 +1,4 @@
-<!-- Hero -->
+<!-- Hero: la oferta de mayor descuento -->
 <section class="hero">
   <div class="contenedor hero-grilla">
     <div class="hero-texto">
@@ -12,18 +12,55 @@
           Ver productos
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <button type="button" class="btn btn-secundario">Crear cuenta</button>
+        <!-- Segundo botón según la sesión, igual que el header y el footer. -->
+        @if (authService.esAdmin()) {
+          <a routerLink="/admin" class="btn btn-secundario">Ir al panel</a>
+        } @else if (authService.esCliente()) {
+          <a routerLink="/ofertas" class="btn btn-secundario">Ver ofertas</a>
+        } @else if (!authService.estaLogueado()) {
+          <a routerLink="/registro" class="btn btn-secundario">Crear cuenta</a>
+        }
       </div>
     </div>
 
-    <div class="hero-visual">
+    <div class="hero-visual" [class.con-oferta]="ofertaHero()">
       <div class="hero-franja"></div>
       <div class="hero-marca-agua">BAN</div>
-      <app-pote-producto class="hero-pote" nombre="WHEY" subtitulo="PROTEIN" detalle="1 KG · [SABOR]" [grande]="true" />
-      <div class="hero-precio">
-        <span>Desde</span>
-        <strong>$ 00.000</strong>
-      </div>
+      @if (ofertaHero(); as oferta) {
+        @if (oferta.imagenUrl; as imagen) {
+          <img class="hero-foto" [src]="imagen" [alt]="oferta.nombre" />
+        } @else {
+          <app-pote-producto class="hero-pote" [nombre]="abreviatura(oferta)" [subtitulo]="oferta.categoria?.nombre ?? ''" [grande]="true" />
+        }
+
+        @if (preciosHero(); as p) {
+          <div class="hero-oferta">
+            <span class="hero-oferta-volanta">
+              <span class="hero-descuento">-{{ oferta.descuento }}%</span>
+              Mejor oferta
+            </span>
+            <span class="hero-oferta-nombre">{{ oferta.nombre }}</span>
+            <span class="hero-oferta-precios">
+              <span class="hero-precio-lista">{{ p.lista | precio }}</span>
+              <strong class="hero-precio-final">
+                @if (p.desde) {
+                  <span class="desde">Desde</span>
+                }
+                {{ p.vigente | precio }}
+              </strong>
+            </span>
+            <a [routerLink]="['/productos', oferta.id]" class="btn btn-primario hero-oferta-btn">
+              Ver oferta
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        }
+      } @else if (cargandoOfertas()) {
+        <div class="hero-esqueleto" aria-hidden="true"></div>
+      } @else {
+        <!-- Sin ofertas: queda solo la marca. -->
+        <app-pote-producto class="hero-pote" nombre="BAN" subtitulo="SPORTS" [grande]="true" />
+      }
     </div>
   </div>
 </section>
@@ -58,65 +95,96 @@
   </div>
 </section>
 
-<!-- Categorías -->
-<section class="contenedor seccion seccion-categorias">
-  <div class="seccion-encabezado">
-    <h2 class="titulo-display titulo-seccion">Elegí tu <span class="acento">objetivo</span></h2>
-    <a routerLink="/productos" class="link-seccion">Ver todas las categorías →</a>
-  </div>
-  <div class="grilla-tarjetas">
-    @for (categoria of categorias; track categoria.numero) {
-      <button type="button" class="categoria" [ngClass]="{ 'categoria-destacada': categoria.destacada }">
-        <span class="categoria-numero">{{ categoria.numero }}</span>
-        <span class="categoria-texto">
-          <span class="categoria-nombre">{{ categoria.nombre }}</span>
-          <span class="categoria-descripcion">{{ categoria.descripcion }}</span>
-        </span>
-      </button>
-    }
-  </div>
-</section>
-
-<!-- Más vendidos -->
-<section class="contenedor seccion">
-  <div class="seccion-encabezado">
-    <h2 class="titulo-display titulo-seccion">Más vendidos</h2>
-    <a routerLink="/productos" class="link-seccion">Ver todos →</a>
-  </div>
-  <div class="grilla-tarjetas productos">
-    @for (producto of productos; track producto.nombre) {
-      <article class="producto">
-        <div class="producto-imagen">
-          @if (producto.etiqueta) {
-            <span class="producto-etiqueta">{{ producto.etiqueta }}</span>
-          }
-          <app-pote-producto [nombre]="producto.abreviatura" />
-        </div>
-        <div class="producto-info">
-          <span class="producto-categoria">{{ producto.categoria }}</span>
-          <h3 class="producto-nombre">{{ producto.nombre }}</h3>
-          <span class="producto-variante">{{ producto.variante }}</span>
-          <div class="producto-pie">
-            <span class="producto-precio">$ 00.000</span>
-            <button type="button" class="btn-agregar" [attr.aria-label]="'Agregar ' + producto.nombre + ' al carrito'">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-          </div>
-        </div>
-      </article>
-    }
-  </div>
-</section>
-
-<!-- Banner promo -->
-<section class="contenedor seccion-banner">
-  <div class="banner">
-    <div class="banner-marca-agua">BAN</div>
-    <div class="banner-texto">
-      <span class="banner-volanta">Combo de la semana</span>
-      <h2 class="titulo-display banner-titulo">Whey + Creatina<br />[X]% OFF</h2>
-      <p>El dúo base para ganar fuerza y masa muscular. Válido hasta agotar stock.</p>
+<!-- Categorías (GET /categorias) -->
+@if (categorias().cargando || categorias().datos.length) {
+  <section class="contenedor seccion seccion-categorias" aria-labelledby="titulo-categorias" [attr.aria-busy]="categorias().cargando">
+    <div class="seccion-encabezado">
+      <h2 id="titulo-categorias" class="titulo-display titulo-seccion">Elegí tu <span class="acento">objetivo</span></h2>
+      <a routerLink="/productos" class="link-seccion">Ver todo el catálogo →</a>
     </div>
-    <button type="button" class="btn btn-oscuro">Aprovechar combo →</button>
-  </div>
-</section>
+    <div class="grilla-tarjetas">
+      @if (categorias().cargando) {
+        @for (i of esqueletos; track i) {
+          <div class="esqueleto esqueleto-categoria" aria-hidden="true"></div>
+        }
+      } @else {
+        @for (item of categorias().datos; track item.categoria.id; let i = $index) {
+          <a
+            routerLink="/productos"
+            [queryParams]="{ categoria: item.categoria.id }"
+            class="categoria"
+            [ngClass]="{ 'categoria-destacada': item.categoria.id === idCategoriaDestacada() }"
+          >
+            <span class="categoria-numero" aria-hidden="true">{{ numero(i) }}</span>
+            <span class="categoria-texto">
+              <span class="categoria-nombre">{{ item.categoria.nombre }}</span>
+              <span class="categoria-descripcion">
+                {{ item.cantidad }} {{ item.cantidad === 1 ? 'producto' : 'productos' }} →
+              </span>
+            </span>
+          </a>
+        }
+      }
+    </div>
+  </section>
+}
+
+<!-- Ofertas destacadas (sin repetir la del hero) -->
+@if (cargandoOfertas() || ofertasFila().length) {
+  <section class="contenedor seccion" aria-labelledby="titulo-ofertas" [attr.aria-busy]="cargandoOfertas()">
+    <div class="seccion-encabezado">
+      <h2 id="titulo-ofertas" class="titulo-display titulo-seccion">Ofertas <span class="acento">destacadas</span></h2>
+      <a routerLink="/ofertas" class="link-seccion">Ver todas las ofertas →</a>
+    </div>
+    <div class="fila-productos">
+      @if (cargandoOfertas()) {
+        @for (i of esqueletos; track i) {
+          <div class="esqueleto esqueleto-producto" aria-hidden="true"></div>
+        }
+      } @else {
+        @for (producto of ofertasFila(); track producto.id) {
+          <app-tarjeta-producto [producto]="producto" />
+        }
+      }
+    </div>
+  </section>
+}
+
+<!-- Lo más nuevo -->
+@if (nuevos().cargando || nuevos().datos.length) {
+  <section class="contenedor seccion" aria-labelledby="titulo-nuevos" [attr.aria-busy]="nuevos().cargando">
+    <div class="seccion-encabezado">
+      <h2 id="titulo-nuevos" class="titulo-display titulo-seccion">Lo más <span class="acento">nuevo</span></h2>
+      <a routerLink="/productos" class="link-seccion">Ver todos →</a>
+    </div>
+    <div class="fila-productos">
+      @if (nuevos().cargando) {
+        @for (i of esqueletos; track i) {
+          <div class="esqueleto esqueleto-producto" aria-hidden="true"></div>
+        }
+      } @else {
+        @for (producto of nuevos().datos; track producto.id) {
+          <app-tarjeta-producto [producto]="producto" />
+        }
+      }
+    </div>
+  </section>
+}
+
+<!-- Banner de ofertas, con datos reales -->
+@if (ofertaHero(); as oferta) {
+  <section class="contenedor seccion-banner">
+    <div class="banner">
+      <div class="banner-marca-agua" aria-hidden="true">BAN</div>
+      <div class="banner-texto">
+        <span class="banner-volanta">Ofertas</span>
+        <h2 class="titulo-display banner-titulo">Hasta {{ oferta.descuento }}% OFF</h2>
+        <p>
+          {{ totalOfertas() }} {{ totalOfertas() === 1 ? 'producto con descuento' : 'productos con descuento' }}
+          en la tienda. Hasta agotar stock.
+        </p>
+      </div>
+      <a routerLink="/ofertas" class="btn btn-oscuro">Ver ofertas →</a>
+    </div>
+  </section>
+}

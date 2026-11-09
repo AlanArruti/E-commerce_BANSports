@@ -72,7 +72,10 @@
         <div class="detalle-precios">
           @if (tieneOferta()) {
             <span class="etiqueta-descuento">-{{ descuento() }}%</span>
-            <span class="detalle-precio-anterior">{{ producto.precioBase | precio }}</span>
+            <span class="detalle-precio-anterior">{{ precioLista() | precio }}</span>
+          }
+          @if (esPrecioDesde()) {
+            <span class="detalle-precio-desde">Desde</span>
           }
           <span class="detalle-precio">{{ precioVigente() | precio }}</span>
         </div>
@@ -211,5 +214,6 @@
       [cantidad]="producto.cantidadResenas"
       (resumenCambio)="resumenResenas.set($event)"
     />
+    <app-productos-similares [producto]="producto" />
   }
 </div>

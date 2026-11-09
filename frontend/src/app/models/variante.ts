@@ -1,3 +1,5 @@
+import type { Producto } from './producto';
+
 // Variante de un producto (VarianteResponse). Los atributos son libres: { sabor: 'Chocolate', peso: '1 kg' }.
 export interface Variante {
   id: number;
@@ -6,6 +8,41 @@ export interface Variante {
   stock: number;
   activo: boolean;
   idProducto: number;
+  /** Precio propio cargado en el panel, sin descuento. null = cuesta lo mismo que el producto. */
+  precio: number | null;
+  /** Lo que paga el cliente por una unidad: su precio (o el del producto) con la oferta aplicada. */
+  precioFinal: number;
+}
+
+// ── Precios (SCRUM-154): cada variante puede tener su propio precio ──────────
+
+/** Lo que paga el cliente por una unidad de esa variante (o del producto, si no tiene variante). */
+export function precioFinalDe(producto: Producto, variante: Variante | null | undefined): number {
+  return variante?.precioFinal ?? producto.precioFinal ?? producto.precioBase;
+}
+
+/** Precio de lista, sin la oferta: es el que se muestra tachado cuando hay descuento. */
+export function precioListaDe(producto: Producto, variante: Variante | null | undefined): number {
+  return variante?.precio ?? producto.precioBase;
+}
+
+/**
+ * Precio más bajo y más alto entre las variantes activas, para mostrar "Desde $X" cuando difieren.
+ * Sin variantes, los dos son el precio del producto.
+ */
+export function rangoDePrecios(producto: Producto): { minimo: number; maximo: number; listaMinimo: number } {
+  const activas = (producto.variantes ?? []).filter((v) => v.activo);
+  if (activas.length === 0) {
+    const unico = precioFinalDe(producto, null);
+    return { minimo: unico, maximo: unico, listaMinimo: producto.precioBase };
+  }
+  const masBarata = activas.reduce((min, v) => (precioFinalDe(producto, v) < precioFinalDe(producto, min) ? v : min));
+  const finales = activas.map((v) => precioFinalDe(producto, v));
+  return {
+    minimo: precioFinalDe(producto, masBarata),
+    maximo: Math.max(...finales),
+    listaMinimo: precioListaDe(producto, masBarata)
+  };
 }
 
 /** A partir de cuántas unidades se avisa que queda poco stock. */

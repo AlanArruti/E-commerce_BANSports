@@ -1,0 +1,127 @@
+<div class="pantalla-auth">
+  <app-panel-auth variante="oscuro">
+    <h1 class="titulo-display panel-titulo"><span class="acento cursiva">Nueva</span> clave y a seguir entrenando</h1>
+    <ul class="auth-lista panel-lista">
+      <li>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        Entre 6 y 50 caracteres
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="acento" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        Mejor si mezcla letras, números y símbolos
+      </li>
+    </ul>
+  </app-panel-auth>
+
+  <div class="auth-lado-formulario">
+    <a routerLink="/login" class="auth-volver">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Volver a iniciar sesión
+    </a>
+
+    <div class="auth-centro">
+      <div class="auth-caja">
+        <div class="auth-encabezado">
+          <h2 class="titulo-display auth-titulo">Contraseña nueva</h2>
+          <p class="auth-bajada">Escribila dos veces para confirmar que no haya errores de tipeo.</p>
+        </div>
+
+        @if (listo()) {
+          <div class="alerta-ok" role="status">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+            <div>
+              <div class="alerta-ok-titulo">Tu contraseña se actualizó</div>
+              <div class="alerta-error-texto">Ya podés iniciar sesión con la contraseña nueva.</div>
+            </div>
+          </div>
+          <a routerLink="/login" class="btn btn-primario btn-bloque">Iniciar sesión</a>
+        } @else if (sinToken()) {
+          <div class="alerta-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">El enlace está incompleto</div>
+              <div class="alerta-error-texto">Abrilo directo desde el mail, o pedí uno nuevo.</div>
+            </div>
+          </div>
+          <a routerLink="/recuperar-contrasena" class="btn btn-primario btn-bloque">Pedir un enlace nuevo</a>
+        } @else {
+          @if (errorServidor(); as errorActual) {
+            <div class="alerta-error" role="alert">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+              <div>
+                <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+                <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+              </div>
+            </div>
+          }
+
+          <form class="auth-formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+            <div class="campo">
+              <label for="contrasenia-nueva">Contraseña nueva</label>
+              <div class="input-con-boton">
+                <input
+                  id="contrasenia-nueva"
+                  class="input"
+                  formControlName="contraseniaNueva"
+                  autocomplete="new-password"
+                  placeholder="Mínimo 6 caracteres"
+                  [type]="mostrarContrasenia() ? 'text' : 'password'"
+                  [ngClass]="{ 'input-error': error(contraseniaNueva, 'contraseniaNueva') }"
+                  [attr.aria-invalid]="error(contraseniaNueva, 'contraseniaNueva') ? true : null"
+                  aria-describedby="contrasenia-nueva-error"
+                />
+                <button
+                  type="button"
+                  class="btn-ojo"
+                  (click)="alternarContrasenia()"
+                  [attr.aria-label]="mostrarContrasenia() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                >
+                  @if (mostrarContrasenia()) {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                  } @else {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
+              @if (error(contraseniaNueva, 'contraseniaNueva'); as mensaje) {
+                <p class="msj-error" id="contrasenia-nueva-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                  {{ mensaje }}
+                </p>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="repetir-contrasenia">Repetí la contraseña nueva</label>
+              <input
+                id="repetir-contrasenia"
+                class="input"
+                formControlName="repetirContrasenia"
+                autocomplete="new-password"
+                placeholder="La misma de arriba"
+                [type]="mostrarContrasenia() ? 'text' : 'password'"
+                [ngClass]="{ 'input-error': error(repetirContrasenia, 'repetirContrasenia') }"
+                [attr.aria-invalid]="error(repetirContrasenia, 'repetirContrasenia') ? true : null"
+                aria-describedby="repetir-contrasenia-error"
+              />
+              @if (error(repetirContrasenia, 'repetirContrasenia'); as mensaje) {
+                <p class="msj-error" id="repetir-contrasenia-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                  {{ mensaje }}
+                </p>
+              }
+            </div>
+
+            <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+              {{ cargando() ? 'Guardando…' : 'Guardar contraseña' }}
+            </button>
+          </form>
+
+          @if (errorServidor()) {
+            <p class="auth-pie"><a routerLink="/recuperar-contrasena" class="link">Pedir un enlace nuevo</a></p>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+/* Lo comparten las dos pantallas de recuperación (pedir el enlace y elegir la contraseña nueva). */
+.panel-titulo {
+  font-size: clamp(56px, 6vw, 80px);
+}
+
+.cursiva {
+  font-style: italic;
+}
+
+.panel-lista {
+  color: var(--color-texto-suave);
+}
+
+.auth-caja .btn-bloque + .btn-bloque {
+  margin-top: 12px;
+}

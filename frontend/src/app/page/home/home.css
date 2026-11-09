@@ -96,28 +96,115 @@
   position: relative;
 }
 
-.hero-precio {
-  position: absolute;
-  right: 4%;
-  bottom: 40px;
-  display: flex;
-  flex-direction: column;
-  padding: var(--espacio-3) var(--espacio-4);
-  background: var(--color-negro);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
+.hero-foto {
+  position: relative;
+  max-width: 70%;
+  max-height: 360px;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 40px rgb(0 0 0 / 0.45));
 }
 
-.hero-precio span {
+.hero-esqueleto {
+  position: relative;
+  width: 140px;
+  height: 180px;
+  border-radius: var(--radio-grande);
+  background: rgb(6 17 10 / 0.25);
+}
+
+/*
+ * Con oferta: el pote (más chico) arriba a la izquierda y la tarjeta abajo a la derecha.
+ * Solo se pisan las bases, así se lee la etiqueta del pote.
+ */
+.hero-visual.con-oferta {
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 36px 0 0 12%;
+}
+
+.con-oferta .hero-pote {
+  transform: scale(0.8);
+  transform-origin: top left;
+}
+
+.con-oferta .hero-foto {
+  max-width: 55%;
+  max-height: 300px;
+}
+
+/* Tarjeta de la oferta, apoyada sobre la franja verde. */
+.hero-oferta {
+  position: absolute;
+  right: 4%;
+  bottom: 28px;
+  width: min(270px, 64%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-4);
+  background: var(--color-negro);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+}
+
+.hero-oferta-volanta {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
   font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-texto-secundario);
 }
 
-.hero-precio strong {
+.hero-descuento {
+  padding: 3px 8px;
+  border-radius: var(--radio-chico);
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.hero-oferta-nombre {
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--color-texto);
+}
+
+.hero-oferta-precios {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-precio-lista {
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+  text-decoration: line-through;
+}
+
+.hero-precio-final {
   font-family: var(--fuente-titulos);
   font-weight: 800;
-  font-size: 32px;
+  font-size: 34px;
   line-height: 1;
+  color: var(--color-texto);
+}
+
+.hero-precio-final .desde {
+  font-family: var(--fuente-texto);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.hero-oferta-btn {
+  margin-top: var(--espacio-1);
+  min-height: 48px;
+  font-size: 14px;
 }
 
 /* ── Beneficios ─────────────────────────────────────────── */
@@ -169,6 +256,11 @@
 
 .seccion-categorias {
   padding-top: 96px;
+}
+
+/* Columnas más angostas que las de productos: así entran 5 categorías en una fila. */
+.seccion-categorias .grilla-tarjetas {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 .seccion-encabezado {
@@ -223,9 +315,11 @@
   color: var(--color-texto);
   text-align: left;
   cursor: pointer;
+  transition: border-color 150ms ease, transform 150ms ease;
 }
 
 .categoria:hover {
+  transform: translateY(-2px);
   border-color: var(--color-verde);
 }
 
@@ -273,93 +367,79 @@
   font-weight: 500;
 }
 
-/* ── Productos ──────────────────────────────────────────── */
-.producto {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
+/* ── Filas de productos (app-tarjeta-producto) ─────────── */
+/* Una fila de 4; con menos, cada tarjeta mantiene su ancho. */
+.fila-productos {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * 20px) / 4);
+  gap: 20px;
+}
+
+.fila-productos > * {
+  min-width: 0;
+}
+
+/* ── Esqueletos ─────────────────────────────────────────── */
+.esqueleto {
   border-radius: var(--radio-grande);
-  overflow: hidden;
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
 }
 
-.producto-imagen {
-  position: relative;
-  height: 240px;
-  background: var(--color-superficie-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.esqueleto-categoria {
+  height: 280px;
 }
 
-.producto-etiqueta {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  background: var(--color-verde);
-  color: var(--color-texto-sobre-verde);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 4px 10px;
-  border-radius: var(--radio-chico);
-  text-transform: uppercase;
+.esqueleto-producto {
+  aspect-ratio: 3 / 4.6;
 }
 
-.producto-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--espacio-2);
-  padding: 20px;
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
-.producto-categoria {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-verde);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+
+  .categoria {
+    transition: none;
+  }
+
+  .categoria:hover {
+    transform: none;
+  }
 }
 
-.producto-nombre {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
-}
+/* Tablet: las filas se deslizan en horizontal y llegan hasta el borde de la pantalla. */
+@media (max-width: 960px) {
+  .fila-productos {
+    grid-auto-columns: minmax(240px, 42%);
+    gap: var(--espacio-4);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--espacio-6);
+    margin-inline: calc(var(--espacio-6) * -1);
+    padding: 0 var(--espacio-6) var(--espacio-3);
+    scrollbar-width: none;
+  }
 
-.producto-variante {
-  font-size: 14px;
-  color: var(--color-texto-secundario);
-}
+  .fila-productos::-webkit-scrollbar {
+    display: none;
+  }
 
-.producto-pie {
-  margin-top: auto;
-  padding-top: var(--espacio-3);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--espacio-3);
-}
-
-.producto-precio {
-  font-family: var(--fuente-titulos);
-  font-weight: 800;
-  font-size: 30px;
-  line-height: 1;
-}
-
-.btn-agregar {
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: var(--radio);
-  background: var(--color-verde);
-  color: var(--color-texto-sobre-verde);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  .fila-productos > * {
+    scroll-snap-align: start;
+  }
 }
 
 /* ── Banner ─────────────────────────────────────────────── */
@@ -451,9 +531,39 @@
     order: 2;
   }
 
-  .hero-precio,
   .hero-marca-agua {
     display: none;
+  }
+
+  /* Con oferta: el pote arriba sobre la franja y la tarjeta de la oferta abajo, a lo ancho. */
+  .hero-visual.con-oferta {
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--espacio-4);
+    padding: var(--espacio-5) 0 0;
+  }
+
+  .con-oferta .hero-pote {
+    transform: scale(0.6);
+    transform-origin: top center;
+    margin-bottom: -140px;
+  }
+
+  .hero-visual.con-oferta .hero-franja {
+    inset: 0 0 auto 0;
+    height: 240px;
+  }
+
+  .hero-foto {
+    max-height: 200px;
+  }
+
+  .hero-oferta {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
   }
 
   .beneficios-grilla {
@@ -508,21 +618,16 @@
     display: none;
   }
 
-  .productos {
-    display: flex;
-    overflow-x: auto;
+  .fila-productos {
+    grid-auto-columns: 72%;
     gap: var(--espacio-3);
-    margin: 0 calc(var(--espacio-4) * -1);
-    padding: 0 var(--espacio-4);
+    scroll-padding-inline: var(--espacio-4);
+    margin-inline: calc(var(--espacio-4) * -1);
+    padding-inline: var(--espacio-4);
   }
 
-  .producto {
-    flex: none;
-    width: 220px;
-  }
-
-  .producto-imagen {
-    height: 180px;
+  .esqueleto-categoria {
+    height: 150px;
   }
 
   .banner {

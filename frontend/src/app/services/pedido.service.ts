@@ -1,23 +1,27 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Pagina } from '../models/pagina';
 import { Envio, EnvioRequest, EstadoEnvio, EstadoManual, EstadoPedido, Pedido } from '../models/pedido';
 
-/** Gestión de pedidos y envíos del panel (SCRUM-138 y 139). Todos los endpoints de escritura son solo ADMIN. */
+/**
+ * Pedidos del cliente logueado o, para ADMIN, de todos (GET /pedido), y la gestión de
+ * pedidos y envíos del panel (SCRUM-138 y 139). Los endpoints de escritura son solo ADMIN.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class PedidoService {
   private readonly API_URL = `${environment.apiUrl}/pedido`;
-  private readonly http = inject(HttpClient);
+
+  constructor(private http: HttpClient) {}
 
   /** Página de pedidos, del más nuevo al más viejo. Sin estado trae todos. */
-  listar(estado: EstadoPedido | null, pagina: number, tamanio: number): Observable<Pagina<Pedido>> {
-    let params = new HttpParams().set('page', pagina).set('size', tamanio);
-    if (estado) {
-      params = params.set('estado', estado);
+  listar(filtros: { estado?: EstadoPedido | null; page: number; size: number }): Observable<Pagina<Pedido>> {
+    let params = new HttpParams().set('page', filtros.page).set('size', filtros.size);
+    if (filtros.estado) {
+      params = params.set('estado', filtros.estado);
     }
     return this.http.get<Pagina<Pedido>>(this.API_URL, { params });
   }
@@ -50,6 +54,12 @@ export class PedidoService {
     const params = estado ? new HttpParams().set('estado', estado) : undefined;
     return this.http
       .get<Envio[]>(`${environment.apiUrl}/envio`, { params })
-      .pipe(map((envios) => [...envios].sort((a, b) => (a.fechaLlegada ?? '').localeCompare(b.fechaLlegada ?? '') || b.idPedido - a.idPedido)));
+      .pipe(
+        map((envios) =>
+          [...envios].sort(
+            (a, b) => (a.fechaLlegada ?? '').localeCompare(b.fechaLlegada ?? '') || b.idPedido - a.idPedido
+          )
+        )
+      );
   }
 }

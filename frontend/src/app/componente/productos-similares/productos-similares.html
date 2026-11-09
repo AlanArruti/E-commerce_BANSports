@@ -1,0 +1,45 @@
+@let s = similares();
+
+@if (s.cargando || s.productos.length) {
+  <section class="similares" aria-labelledby="similares-titulo" [attr.aria-busy]="s.cargando">
+    <div class="encabezado">
+      <div>
+        <h2 id="similares-titulo" class="titulo-display titulo">
+          @if (s.origen === 'ofertas') {
+            Ofertas <span class="acento">destacadas</span>
+          } @else {
+            También te puede <span class="acento">interesar</span>
+          }
+        </h2>
+        <p class="bajada">
+          @if (s.cargando) {
+            Buscando productos parecidos…
+          } @else if (s.origen === 'ofertas') {
+            No hay otros productos en esta categoría. Mirá las mejores ofertas de hoy.
+          } @else if (s.categoria) {
+            Más opciones de {{ s.categoria.nombre }}.
+          }
+        </p>
+      </div>
+      @if (!s.cargando) {
+        @if (s.origen === 'ofertas') {
+          <a routerLink="/ofertas" class="ver-todo">Ver todas las ofertas →</a>
+        } @else if (s.categoria; as categoria) {
+          <a routerLink="/productos" [queryParams]="{ categoria: categoria.id }" class="ver-todo">Ver todo en {{ categoria.nombre }} →</a>
+        }
+      }
+    </div>
+
+    <div class="fila" (click)="alElegir($event)">
+      @if (s.cargando) {
+        @for (i of esqueletos; track i) {
+          <div class="esqueleto" aria-hidden="true"></div>
+        }
+      } @else {
+        @for (producto of s.productos; track producto.id) {
+          <app-tarjeta-producto [producto]="producto" />
+        }
+      }
+    </div>
+  </section>
+}

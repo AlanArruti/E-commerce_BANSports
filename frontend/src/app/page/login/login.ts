@@ -9,14 +9,16 @@ import { CarritoService } from '../../services/carrito.service';
 import {
   ErrorTraducido,
   MSJ_SOLO_CLIENTES,
-  traducirErrorLogin
+  traducirErrorLogin,
+  traducirErrorSocial
 } from '../../validaciones/errores-api';
+import { BotonesSociales } from '../../componente/botones-sociales/botones-sociales';
 import { mensajeDeError } from '../../validaciones/mensajes';
 import { emailValido, requerido } from '../../validaciones/validadores';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, NgClass, PanelAuth],
+  imports: [ReactiveFormsModule, RouterLink, NgClass, PanelAuth, BotonesSociales],
   templateUrl: './login.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './login.css'
@@ -76,6 +78,12 @@ export class Login implements OnInit {
 
     const redirect = this.route.snapshot.queryParamMap.get('redirect');
     this.paramsRegistro.set({ ...(redirect ? { redirect } : {}), ...(motivo ? { motivo } : {}) });
+
+    // Volvió de GitHub/Google sin poder entrar (canceló, email sin verificar, etc.).
+    const errorSocial = this.route.snapshot.queryParamMap.get('errorSocial');
+    if (errorSocial) {
+      this.errorServidor.set(traducirErrorSocial(errorSocial));
+    }
   }
 
   /** Mensaje de error del campo, solo si el usuario ya lo tocó o intentó enviar. */
@@ -129,7 +137,7 @@ export class Login implements OnInit {
   }
 
   /** Solo redirige a rutas internas, para evitar que un link lleve a otro sitio. */
-  private destinoSeguro(): string {
+  protected destinoSeguro(): string {
     const redirect = this.route.snapshot.queryParamMap.get('redirect');
     return redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
   }

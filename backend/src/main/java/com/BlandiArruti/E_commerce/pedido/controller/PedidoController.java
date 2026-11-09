@@ -5,8 +5,8 @@ import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EstadoEnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
+import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
-import com.BlandiArruti.E_commerce.mercadopago.dto.response.PreferenciaResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
@@ -19,7 +19,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -68,15 +71,9 @@ public class PedidoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Iniciar pago con MercadoPago", description = "Devuelve el initPoint para redirigir al cliente a la página de pago.")
-    @PostMapping("/{id}/iniciar-pago")
-    public ResponseEntity<PreferenciaResponse> iniciarPago(@PathVariable Long id,
-                                                           @Valid @RequestBody PagoRequest request) {
-        return ResponseEntity.ok(pedidoService.iniciarPagoMercadoPago(id, request));
-    }
-
+    // El cliente paga con una pasarela: ver PagoController (/api/v1/pago).
     // Solo ADMIN: marca el pedido como pagado sin cobrar. Si lo pudiera llamar el cliente,
-    // se saltearía MercadoPago y se llevaría la compra gratis. El cliente paga con iniciar-pago.
+    // se saltearía la pasarela y se llevaría la compra gratis.
     @Operation(summary = "Marcar pedido como pagado sin MercadoPago (solo ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/pagar")
@@ -97,6 +94,17 @@ public class PedidoController {
     @GetMapping("/{id}/factura")
     public ResponseEntity<FacturaResponse> obtenerFactura(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.obtenerFactura(id));
+    }
+
+    @Operation(summary = "Descargar la factura del pedido en PDF")
+    @GetMapping(value = "/{id}/factura/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> descargarFacturaPdf(@PathVariable Long id) {
+        FacturaPdfResponse pdf = pedidoService.obtenerFacturaPdf(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(pdf.nombreArchivo()).build().toString())
+                .body(pdf.contenido());
     }
 
     @Operation(summary = "Obtener envío del pedido")

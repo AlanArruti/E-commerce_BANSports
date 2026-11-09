@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/layout :: layout(~{::contenido})}">
+<body>
+<th:block th:fragment="contenido">
+  <p th:replace="~{mail/componentes :: etiqueta(${'Pago confirmado · Pedido #' + idPedido})}"></p>
+
+  <h1 class="titulo" style="margin:0 0 20px; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-weight:800; font-size:42px; line-height:0.95; text-transform:uppercase; color:#f2f5f3;">
+    ¡Gracias por tu <span style="color:#2be37a;">compra</span>!
+  </h1>
+
+  <p style="margin:0 0 28px;">
+    Hola <strong style="color:#f2f5f3;" th:text="${nombre}">Juan</strong>, acreditamos el pago de tu pedido
+    y generamos la <strong style="color:#f2f5f3;" th:text="${'factura ' + tipoFactura}">factura B</strong>.
+    <span th:if="${facturaAdjunta}">Te la adjuntamos en PDF.</span>
+    Te avisamos por acá cuando salga para tu casa.
+  </p>
+
+  <!-- ── Productos ── -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td colspan="2" style="padding:0 0 10px; border-bottom:1px solid #26302a; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;">
+        Tu pedido
+      </td>
+    </tr>
+    <tr th:each="linea : ${lineas}">
+      <td valign="top" style="padding:14px 12px 14px 0; border-bottom:1px solid #26302a;">
+        <span style="display:block; font-weight:600; color:#f2f5f3;">
+          <span style="color:#2be37a;" th:text="${linea.cantidad() + ' ×'}">2 ×</span>
+          <span th:text="${linea.nombre()}">Whey Protein</span>
+        </span>
+        <span th:if="${linea.detalle() != null}" style="display:block; margin-top:2px; font-size:14px; color:#9ba8a0;"
+              th:text="${linea.detalle()}">Chocolate · 1 kg</span>
+      </td>
+      <td valign="top" align="right" style="padding:14px 0; border-bottom:1px solid #26302a; white-space:nowrap; font-weight:600; color:#f2f5f3;"
+          th:text="${linea.importe()}">$ 30.000</td>
+    </tr>
+  </table>
+
+  <!-- ── Cuentas ── -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px; font-size:15px;">
+    <tr>
+      <td style="padding:5px 0; color:#c9d2cc;">Productos</td>
+      <td align="right" style="padding:5px 0; color:#f2f5f3;" th:text="${subtotal}">$ 60.000</td>
+    </tr>
+    <tr th:if="${descuento != null}">
+      <td style="padding:5px 0; color:#c9d2cc;">
+        Cupón <span style="display:inline-block; padding:1px 8px; border:1px solid #2be37a; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:0.06em; color:#2be37a;"
+                    th:text="${codigoCupon}">VERANO</span>
+      </td>
+      <td align="right" style="padding:5px 0; color:#2be37a; font-weight:600;" th:text="${'− ' + descuento}">− $ 6.000</td>
+    </tr>
+    <tr>
+      <td style="padding:5px 0; color:#c9d2cc;">Envío</td>
+      <td align="right" style="padding:5px 0; color:#f2f5f3;" th:text="${envio}">$ 4.500</td>
+    </tr>
+    <tr>
+      <td style="padding:16px 0 0; border-top:1px solid #26302a; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:#f2f5f3;">Total</td>
+      <td align="right" style="padding:16px 0 0; border-top:1px solid #26302a; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-size:30px; font-weight:800; color:#2be37a; white-space:nowrap;"
+          th:text="${total}">$ 58.500</td>
+    </tr>
+  </table>
+
+  <!-- ── Dirección ── -->
+  <table th:if="${direccion != null}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a211d"
+         style="margin-top:28px; background-color:#1a211d; border:1px solid #26302a; border-radius:10px;">
+    <tr>
+      <td style="padding:16px 20px;">
+        <span style="display:block; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;">Se envía a</span>
+        <span style="display:block; margin-top:4px; font-weight:600; color:#f2f5f3;" th:text="${direccion}">Calle 13 567, La Plata (CP 1900)</span>
+      </td>
+    </tr>
+  </table>
+
+  <table th:replace="~{mail/componentes :: boton('Ver mis pedidos', ${frontUrl + '/perfil'})}"></table>
+</th:block>
+</body>
+</html>

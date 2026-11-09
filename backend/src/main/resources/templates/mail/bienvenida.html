@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/layout :: layout(~{::contenido})}">
+<body>
+<th:block th:fragment="contenido">
+  <p th:replace="~{mail/componentes :: etiqueta('Cuenta creada')}"></p>
+
+  <h1 class="titulo" style="margin:0 0 20px; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-weight:800; font-size:42px; line-height:0.95; text-transform:uppercase; color:#f2f5f3;">
+    ¡Bienvenido/a, <span style="color:#2be37a;" th:text="${nombre}">Juan</span>!
+  </h1>
+
+  <p style="margin:0 0 24px;">
+    Tu cuenta en BAN Sports ya está lista. Desde ahora podés guardar tus direcciones, marcar favoritos
+    y seguir tus pedidos desde tu perfil.
+  </p>
+
+  <!-- Datos de la cuenta -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a211d"
+         style="background-color:#1a211d; border:1px solid #26302a; border-radius:10px;">
+    <tr>
+      <td style="padding:16px 20px;">
+        <span style="display:block; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;">Te registraste con</span>
+        <span style="display:block; margin-top:4px; font-size:16px; font-weight:600; color:#f2f5f3;" th:text="${email}">juan@mail.com</span>
+      </td>
+    </tr>
+  </table>
+
+  <table th:replace="~{mail/componentes :: boton('Ver productos', ${frontUrl + '/productos'})}"></table>
+</th:block>
+</body>
+</html>

@@ -16,16 +16,18 @@ Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angu
 
 ## Descripción del proyecto
 
-El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea mediante **MercadoPago Checkout Pro** y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
+El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
 
 ### Reglas de negocio principales
 
 - Un pedido se crea en estado `PENDIENTE_PAGO`. El stock **no** se descuenta hasta que el pago es confirmado.
-- El pago puede realizarse de forma directa (endpoint propio) o a través de MercadoPago (flujo de dos pasos con webhook de confirmación).
+- El cliente paga con una pasarela (MercadoPago). Cada intento queda registrado como un `Pago`. El pedido pasa a `PAGADO` cuando la pasarela confirma el cobro, ya sea al volver el cliente a la tienda o por el webhook. Un admin también puede marcarlo pagado a mano.
 - Al confirmar el pago se genera automáticamente una **Factura** (tipo A, B o C) y el pedido pasa a `PAGADO`.
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
-- Las bajas de clientes y productos son **lógicas** (soft-delete mediante campo `activo`).
+- Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
+- Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
+- Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
 ---
@@ -40,7 +42,8 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 | Spring Data JPA | Hibernate 7.x |
 | PostgreSQL | 17+ |
 | MapStruct | 1.6.3 |
-| MercadoPago SDK | 3.2.1 |
+| Thymeleaf | (plantillas HTML de los mails) |
+| MercadoPago | API de Orders (REST, con `RestClient`) |
 | SpringDoc OpenAPI | 3.0.2 |
 | Spring AOP | (transversal) |
 | Maven | 3.9+ |
@@ -91,8 +94,12 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
-├── mercadopago/          ← Checkout Pro + Webhook
-├── notificacion/         ← Envío de emails (JavaMailSender)
+├── notificacion/         ← Envío de emails (JavaMailSender + plantillas Thymeleaf)
+├── pago/                 ← Pagos con pasarelas (ver "Pasarelas de pago")
+│   ├── pasarela/         ← PasarelaPago, PasarelaPagoBase, RegistroPasarelas
+│   │   └── mercadopago/  ← MercadoPagoPasarela (hija) + cliente de la API de Orders
+│   ├── service/          ← PagoService
+│   └── controller/       ← PagoController, WebhookController
 ├── pedido/               ← Pedidos e ítems
 ├── producto/             ← Productos y variantes con JSONB
 └── shared/               ← PageResponse<T> genérico
@@ -109,6 +116,10 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/auth/login` | Autenticación — devuelve JWT | Público |
 | `POST` | `/auth/register` | Registro de cliente | Público |
 | `GET` | `/auth/me` | Usuario detrás del token (id, username, rol) | Autenticado |
+| `GET` | `/auth/proveedores` | Proveedores de login social con credenciales cargadas (`github`, `google`) | Público |
+| `GET` | `/oauth2/authorization/{github\|google}` | Inicia el login con GitHub o Google (lo abre el navegador) | Público |
+| `POST` | `/auth/recuperar` | Manda por mail un enlace para elegir contraseña nueva (responde igual exista o no la cuenta) | Público |
+| `POST` | `/auth/restablecer` | Guarda la contraseña nueva con el token del enlace (un solo uso, vence a los 30 min) | Público |
 | `GET` | `/producto` | Listar productos (filtros: categoría, precio, búsqueda; orden por `sortBy`/`sortDir`) | Público |
 | `GET` | `/producto/{id}` | Detalle de producto | Público |
 | `POST` | `/producto` | Crear producto | ADMIN |
@@ -124,10 +135,16 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/cliente/{id}/pedido` | Historial de pedidos del cliente | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
-| `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito | CLIENTE / ADMIN |
-| `PATCH` | `/pedido/{id}/pagar` | Pagar directamente (genera factura) | CLIENTE / ADMIN |
-| `POST` | `/pedido/{id}/iniciar-pago` | Iniciar pago con MercadoPago | CLIENTE / ADMIN |
-| `POST` | `/webhook/mercadopago` | Confirmación de pago MP | Público |
+| `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito `{ idDireccion, opcionEnvio, codigoCupon? }` | CLIENTE / ADMIN |
+| `GET` | `/cupones/validar?codigo=` | ¿Sirve el cupón para mi carrito? Devuelve el descuento o 400 con el motivo (vencido, agotado, compra mínima) | CLIENTE |
+| `GET` `POST` `PUT` `DELETE` | `/cupones`, `/cupones/{id}` | Cupones de descuento (la baja es lógica) | ADMIN |
+| `PATCH` | `/pedido/{id}/pagar` | Marcar pagado sin pasarela (genera factura) | ADMIN |
+| `GET` | `/pedido/{id}/factura/pdf` | Descargar la factura en PDF (la misma que va adjunta al mail de compra) | CLIENTE dueño / ADMIN |
+| `GET` | `/pago/pasarelas` | Pasarelas de pago disponibles (con credenciales cargadas) | CLIENTE / ADMIN |
+| `POST` | `/pago/pedido/{pedidoId}` | Iniciar el pago `{ pasarela, tipoFactura }` → `{ pagoId, urlPago }` | CLIENTE / ADMIN |
+| `POST` | `/pago/{pagoId}/confirmar` | Confirmar el pago al volver de la pasarela (consulta el estado real) | CLIENTE / ADMIN |
+| `GET` | `/pago/pedido/{pedidoId}` | Intentos de pago de un pedido | CLIENTE / ADMIN |
+| `POST` | `/webhook/{pasarela}` | Aviso de una pasarela (ej. `/webhook/mercadopago`) | Público |
 | `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido | CLIENTE / ADMIN |
 | `PATCH` | `/pedido/{id}/estado` | Cambiar estado manualmente (no permite saltar a `PAGADO`) | ADMIN |
 | `POST` | `/pedido/{id}/envio` | Crear envío para pedido PAGADO | ADMIN |
@@ -173,9 +190,13 @@ la app); después arranca en segundos.
 La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
 
 - **Clientes:** se crean desde "Registrarse" en el front (o `POST /api/v1/auth/register`).
-- **Administradores:** no tienen registro público. El primero se crea a mano con
-  un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
-  siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
+  Desde el panel, en **Clientes** (`/admin/clientes`), se buscan por nombre o email,
+  se ven sus pedidos y se dan de baja (baja lógica: sus pedidos y facturas quedan).
+- **Administradores:** no tienen registro público. Solo el **primero** se crea a mano
+  con un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt. Los
+  siguientes se dan de alta desde el panel, en **Administradores**
+  (`/admin/administradores`), donde también se dan de baja. Nadie puede darse de
+  baja a sí mismo, así que siempre queda al menos un administrador.
 - **Catálogo:** categorías y productos se cargan desde el panel de administración.
 - **Provincias y ciudades:** no se precargan. El formulario de dirección busca la
   localidad en [Georef](https://www.argentina.gob.ar/datos-abiertos/georef), la API
@@ -194,39 +215,180 @@ docker compose --profile front up -d    # suma el front de Progra 4
 docker compose --profile all up -d      # todo junto
 ```
 
+### Pasarelas de pago
+
+El pago no está atado a MercadoPago. El paquete `pago/` define una **pasarela de pago**
+abstracta, y MercadoPago es su primera implementación.
+
+```
+PasarelaPago (interfaz)
+  └── PasarelaPagoBase (clase abstracta: algoritmo común, Template Method)
+        └── MercadoPagoPasarela (hija: adapta la API de Orders de MercadoPago)
+RegistroPasarelas   → todas las pasarelas, inyectadas por Spring, por código
+PagoService         → caso de uso: iniciar, confirmar al volver, procesar el webhook
+Pago (entidad)      → cada intento: pasarela, id externo, estado, monto
+```
+
+**Flujo**
+1. El cliente elige la pasarela → `POST /pago/pedido/{id}` registra un `Pago` y devuelve la URL de la pasarela.
+2. Paga allá y vuelve a `/pago/resultado?pago={id}` del front.
+3. Esa pantalla llama a `POST /pago/{id}/confirmar`. El back **consulta el cobro en la pasarela**,
+   no confía en la URL, y si está aprobado y cubre el total el pedido pasa a `PAGADO`.
+4. El webhook `POST /webhook/{pasarela}` hace lo mismo cuando la pasarela avisa. Es opcional:
+   sin él, el paso 3 alcanza.
+
+**Sumar una pasarela nueva** (Stripe, MODO…): crear una clase `@Component` que extienda
+`PasarelaPagoBase` e implemente `codigo()`, `nombre()`, `estaDisponible()`, `crearCobro()`,
+`buscarCobro()` y `extraerIdDeNotificacion()`. No hay que tocar nada más, ni en el back ni en el front:
+el front muestra un botón por cada pasarela disponible.
+
+| Patrón / principio | Dónde |
+|---|---|
+| Template Method | `PasarelaPagoBase`: los métodos públicos son `final` y llaman a los pasos que completa cada hija |
+| Strategy + Polimorfismo (GRASP) | Cada pasarela es intercambiable detrás de `PasarelaPago` |
+| Adapter | `MercadoPagoPasarela` traduce los estados de MercadoPago a `EstadoPago` |
+| Registry · Pure Fabrication (GRASP) | `RegistroPasarelas` |
+| Controller (GRASP) | `PagoService` coordina el caso de uso |
+| Experto en Información (GRASP) | El pedido decide cuándo puede pasar a `PAGADO` (`registrarPagoAprobado`) |
+| Variaciones Protegidas · Bajo Acoplamiento | Pedido, front y webhook no conocen ninguna pasarela concreta |
+| SOLID | **S**: una responsabilidad por clase · **O**: pasarela nueva = clase nueva · **L**: cualquier hija reemplaza a la base · **D**: todo depende de la interfaz |
+
 ### Pagos con MercadoPago
 
-MP avisa que un pago se aprobó pegándole a un webhook, y para eso necesita una
-URL pública: `localhost` no le sirve. El profile `mp` levanta **ngrok**, que
-publica el backend en internet mientras el stack está corriendo.
+Se usa **Checkout Pro con la API de Orders** (la que recomienda MercadoPago; la de
+Preferences quedó como legacy).
 
-Hace falta una cuenta gratuita en [ngrok](https://dashboard.ngrok.com):
+**Credenciales de prueba.** Para probar no se usa la cuenta real (los pagos serían
+reales y las tarjetas de prueba fallan):
 
-1. Copiá tu [authtoken](https://dashboard.ngrok.com/get-started/your-authtoken).
-2. Reclamá tu [dominio estático](https://dashboard.ngrok.com/domains) (gratis, uno por cuenta).
-3. Ponelos en el `.env`:
+1. En [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) → tu
+   aplicación → **Cuentas de prueba**, creá un **Vendedor** y un **Comprador**.
+2. En una ventana de incógnito, entrá al panel con el usuario del **vendedor de prueba**,
+   creá una aplicación (Checkout Pro → **API de Orders**) y copiá su **Access Token de
+   producción** (`APP_USR-...`; es de una cuenta ficticia).
+3. En el `.env`: `MP_ACCESS_TOKEN=APP_USR-...` y `docker compose up -d app`.
+4. Para pagar, entrá en MercadoPago con el **comprador de prueba** y usá una
+   [tarjeta de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/integration-test/test-purchases)
+   (Mastercard `5031 7557 3453 0604`, CVV `123`, vto. `11/30`, DNI `12345678`).
+   Titular `APRO` → aprobado; `OTHE` → rechazado.
+
+**Webhook (opcional).** MercadoPago tiene que poder llegar al backend, y `localhost` no
+le sirve. El profile `mp` levanta **ngrok** con tu dominio estático gratuito:
 
 ```bash
 NGROK_AUTHTOKEN=tu_token
 NGROK_DOMAIN=tu-dominio.ngrok-free.dev
-MP_ACCESS_TOKEN=APP_USR-...
 ```
 
 ```bash
 docker compose --profile mp up -d
 ```
 
-`MP_NOTIFICATION_URL` y `MP_BACK_URL` se arman solas a partir de
-`NGROK_DOMAIN` — no hace falta escribirlas. Si les ponés un valor a mano, ese
-gana y el dominio se ignora.
+Después, en el panel de MercadoPago → tu aplicación → **Webhooks**, cargá
+`https://tu-dominio.ngrok-free.dev/api/v1/webhook/mercadopago` con el evento **Order**.
+El inspector de ngrok (**http://localhost:4040**) muestra cada aviso que llega.
 
-> **El dominio estático no es opcional en la práctica.** Sin él ngrok da una URL
-> distinta en cada arranque, y la app lee `MP_NOTIFICATION_URL` una sola vez al
-> iniciar: habría que reconfigurar y reiniciar antes de cada demo.
+### Diseño de los mails
 
-Para ver si MP está llamando al webhook, abrí el inspector de ngrok en
-**http://localhost:4040**: muestra cada request que entra por el túnel con su
-body y su respuesta.
+Los mails (bienvenida, recuperar contraseña, pago confirmado y cada cambio del
+envío) salen en HTML con la paleta y la tipografía del sitio, y también en
+texto plano para los clientes de correo que no muestran HTML. Las plantillas
+están en `backend/src/main/resources/templates/mail/`:
+
+- `layout.html`: logo, tarjeta y pie, compartidos por todos.
+- `componentes.html`: el botón verde y la etiqueta de arriba del título.
+- `bienvenida.html`, `recuperar-password.html`, `pago-confirmado.html`, `envio.html`.
+
+Los clientes de correo no entienden CSS moderno (variables, flex, grid), así que
+van con tablas y estilos inline, y los colores están escritos a mano: si cambia
+la paleta de `frontend/src/styles/variables.css`, hay que cambiarla también acá.
+Para ver cómo quedan, disparalos desde la app (registrarse, pedir recuperar la
+contraseña, pagar un pedido, despachar un envío) y abrilos en Mailpit
+(http://localhost:8025); su pestaña **HTML Check** dice qué clientes de correo
+soportan cada cosa.
+
+### Mails reales con Gmail
+
+Por defecto todos los mails caen en Mailpit y no salen a internet. Para que
+lleguen a casillas reales se usa el SMTP de Gmail, que es gratis (unos 500
+destinatarios por día).
+
+1. En la cuenta de Gmail del proyecto, activá la
+   [verificación en 2 pasos](https://myaccount.google.com/signinoptions/twosv).
+2. Creá una [contraseña de aplicación](https://myaccount.google.com/apppasswords)
+   (nombre: "BAN Sports"). Google muestra 16 letras **una sola vez**.
+3. Agregá esto a tu `.env` (nunca al repo: es público):
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=la-casilla@gmail.com
+SMTP_PASSWORD=las16letrassinespacios
+```
+
+```bash
+docker compose up -d app
+```
+
+Con `SMTP_HOST` definido se activan solos la autenticación y STARTTLS, y el
+remitente pasa a ser `SMTP_USERNAME` (Gmail reescribe cualquier otro). Para
+volver a Mailpit, borrá esas líneas y repetí el `up`.
+
+> Dentro de Docker se usan `SMTP_*` y no `MAIL_*` a propósito: las `MAIL_*` del
+> `.env` son para correr fuera de Docker (Mailtrap), y si se colaran al
+> contenedor los mails se perderían en silencio.
+
+Si Gmail rechaza el login (`535 Username and Password not accepted`), revisá
+que la verificación en 2 pasos esté activa y que la contraseña sea la de
+aplicación, no la de la cuenta.
+
+`FRONT_URL` (default `http://localhost:4200`) es la base de los enlaces que van
+en los mails, como el de recuperar la contraseña. En un deploy tiene que ser la
+URL pública del front.
+
+### Login con GitHub y Google
+
+Los botones "Continuar con GitHub / Google" aparecen solo si el `.env` tiene las
+credenciales de ese proveedor. Las dos son gratis.
+
+**GitHub** — https://github.com/settings/developers → OAuth Apps → New OAuth App:
+
+| Campo | Valor |
+|---|---|
+| Homepage URL | `http://localhost:4200` |
+| Authorization callback URL | `http://localhost:4200/login/oauth2/code/github` |
+
+**Google** — https://console.cloud.google.com → Google Auth Platform (no pide tarjeta):
+
+1. **Información de la marca:** nombre `BAN Sports` y tu mail.
+2. **Público:** Externo, **en prueba**. Agregá como usuarios de prueba los Gmail que
+   van a entrar (solo esos pueden mientras la app no se publique).
+3. **Clientes → Crear cliente**, aplicación web:
+   - Orígenes autorizados: `http://localhost:4200`
+   - URI de redireccionamiento: `http://localhost:4200/login/oauth2/code/google`
+
+Después, en el `.env` (nunca en el repo):
+
+```bash
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+```
+
+```bash
+docker compose up -d app
+```
+
+Cómo funciona: el botón lleva a `/oauth2/authorization/{proveedor}` (nginx lo pasa
+al back), el proveedor vuelve a `/login/oauth2/code/{proveedor}` y el back redirige
+a `/ingreso-social?token=...` del front, que guarda la sesión. La cuenta se busca por
+email: si existe se usa esa, si no se crea. Si el usuario cancela o algo falla, vuelve
+al login con un mensaje.
+
+> Las URLs de vuelta tienen que coincidir **exactamente** con las registradas
+> (`http`, puerto `4200`, sin `/` final). En un deploy hay que agregar las de la URL
+> pública y poner `FRONT_URL` con esa dirección.
 
 ### Comandos del día a día
 
@@ -289,17 +451,20 @@ Hibernate genera el esquema correcto de cero.
 | `DB_PASSWORD` | Contraseña de PostgreSQL | `secreto` |
 | `JWT_SECRET` | Clave secreta para firmar tokens (mín. 32 chars) | `clave-super-secreta-de-64-caracteres...` |
 | `MP_ACCESS_TOKEN` | Access token de MercadoPago | `APP_USR-...` |
-| `MP_NOTIFICATION_URL` | URL pública para webhook de MP | `https://tu-dominio.com/api/v1/webhook/mercadopago` |
-| `MP_BACK_URL` | URL de retorno tras el pago | `http://localhost:8080` |
 | `MAIL_HOST` | Host SMTP | `smtp.gmail.com` |
 | `MAIL_PORT` | Puerto SMTP | `587` |
 | `MAIL_USERNAME` | Cuenta de correo | `tu@gmail.com` |
 | `MAIL_PASSWORD` | Contraseña / app password | `xxxx xxxx xxxx xxxx` |
+| `MAIL_FROM` | Remitente de los mails (con Gmail, la misma casilla) | `tu@gmail.com` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Solo Docker: SMTP real. Sin `SMTP_HOST` los mails van a Mailpit (ver "Mails reales con Gmail") | `smtp.gmail.com` |
+| `FRONT_URL` | URL del front, para armar los enlaces de los mails | `http://localhost:4200` |
 | `CORREO_ARGENTINO_USER_TOKEN` | Token API Correo Argentino | `...` |
 | `GITHUB_CLIENT_ID` | Client ID de GitHub OAuth2 | `Ov23li...` |
 | `GITHUB_CLIENT_SECRET` | Client Secret de GitHub OAuth2 | `...` |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google | `...apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Secreto del cliente OAuth de Google | `GOCSPX-...` |
 | `FRONT_ORIGINS` | Orígenes del front habilitados por CORS (separados por coma) | `http://localhost:5173` |
-| `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub (vacío = responde JSON) | `http://localhost:5173/oauth2/callback` |
+| `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub/Google. En Docker por defecto `${FRONT_URL}/ingreso-social`; fuera de Docker vacío = responde JSON (Postman) | `http://localhost:4200/ingreso-social` |
 
 Copiar `.env.example` como `.env` y completar con los valores reales.
 
@@ -307,7 +472,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **129 tests** (128 unitarios en 13 clases + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **258 tests** (257 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -324,17 +489,64 @@ cd backend
 
 Cobertura de tests unitarios:
 - `AuthServiceTest` — 5 tests (login OK, credenciales inválidas, cuenta bloqueada, cuenta desactivada, registro)
+- `OAuth2ClienteServiceTest` — 10 tests (GitHub y Google: alta, vinculación por email, email privado de GitHub, email sin verificar, cuenta desactivada)
+- `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
 - `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
 - `CategoriaServiceTest` — 12 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
-- `WebhookControllerTest` — 7 tests (tipos inválidos, pago aprobado/rechazado, reference malformada)
-- `PedidoServiceTest` — 14 tests (cancelación, pago, envío, estado, confirmación MP)
+- `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
+- `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
+- `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
+- `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
+- `PedidoServiceTest` — 31 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
+- `CuponServiceTest` — 22 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 11 tests (variantes, stock, ownership)
-- `ClienteServiceTest` — 12 tests (CRUD, owner-check, acceso)
+- `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
-- `AdministradorServiceTest` — 11 tests (CRUD, duplicados)
+- `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
-- `NotificacionServiceTest` — 4 tests (emails, fallo de conexión)
+- `NotificacionServiceTest` — 8 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
+
+### Tests del front
+
+El front tiene **74 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
+
+**Con Docker (recomendado, no hace falta instalar nada):**
+
+```bash
+# Desde la raíz del repo. Corre los tests en un Chromium sin ventana;
+# si alguno falla, el comando termina con error y muestra cuál.
+docker build --target test --progress=plain ./frontend
+```
+
+**Sin Docker** (Angular 22 pide Node 22.22.3+ o 24.15+, y Chrome instalado):
+
+```bash
+cd frontend
+npm install
+
+# Una sola corrida, sin ventana (igual que en Docker):
+npm run test:ci
+
+# Modo desarrollo: abre Chrome y vuelve a correr los tests al guardar un archivo
+npm test
+
+# Con cobertura (queda en frontend/coverage/frontend/index.html):
+npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+```
+
+Qué cubren (lo que más se rompe):
+- `guards.spec.ts` — 11 tests: `rolGuard` (sin sesión va al login con `redirect`, un CLIENTE en `/admin` vuelve a la tienda, un ADMIN en pantallas de cliente vuelve al panel), `sinAdminGuard` y `guestGuard`
+- `auth.interceptor.spec.ts` — 9 tests: agrega el token solo a nuestra API (no al login ni a otros sitios); un 401 cierra la sesión y manda al login que corresponde; el 401 del login o de "contraseña actual incorrecta" no la cierra
+- `auth.service.spec.ts` — 16 tests: login (recordarme o solo la pestaña, rol equivocado en cada login), logout, y validación de la sesión guardada (vencida, no es un JWT, token editado a mano, 401, sin conexión)
+- `validadores.spec.ts` — 13 tests: validadores propios (DNI, precio argentino, descuento, email…) y los mensajes de `mensajes.ts`
+- `errores-api.spec.ts` — 18 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente), de checkout y de cupones
+- `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
+
+Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
+tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario
+hubiera iniciado sesión (`guardarToken`).
 
 ---
 

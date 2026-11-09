@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PanelAuth } from '../../componente/panel-auth/panel-auth';
+import { BotonesSociales } from '../../componente/botones-sociales/botones-sociales';
 import { RegistroRequest } from '../../models/registro-request';
 import { AuthService } from '../../services/auth.service';
 import { ErrorTraducido, traducirErrorRegistro } from '../../validaciones/errores-api';
@@ -19,7 +20,7 @@ interface Requisito {
 
 @Component({
   selector: 'app-registro',
-  imports: [ReactiveFormsModule, RouterLink, NgClass, PanelAuth],
+  imports: [ReactiveFormsModule, RouterLink, NgClass, PanelAuth, BotonesSociales],
   templateUrl: './registro.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './registro.css'

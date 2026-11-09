@@ -1,32 +1,199 @@
-/* Lo común (tabla, paginado, migas, encabezado) viene de admin-productos.css. */
-.tabla {
-  min-width: 680px;
-}
-
-.fila-pedido {
-  cursor: pointer;
-}
-
-.cliente {
-  display: block;
-  color: var(--color-texto);
-}
-
-.col-fecha {
-  white-space: nowrap;
-}
-
-.filtro-estado {
+.admin-pagina {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  padding-bottom: var(--espacio-8);
+}
+
+/* ── Encabezado ─────────────────────────────────────────── */
+.migas {
+  display: flex;
   gap: var(--espacio-2);
-  font-size: 14px;
+  padding-top: var(--espacio-5);
+  font-size: 13px;
   color: var(--color-texto-secundario);
 }
 
-.filtro-estado select {
-  min-width: 200px;
+.migas a:hover {
+  color: var(--color-verde);
+}
+
+.migas [aria-current] {
+  color: var(--color-texto);
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+}
+
+.titulo {
+  font-size: clamp(40px, 6vw, 60px);
+  line-height: 1;
+}
+
+.cuenta {
+  margin: var(--espacio-1) 0 0;
+  color: var(--color-texto-secundario);
+}
+
+.filtro-estado .input {
+  min-width: 220px;
+}
+
+/* ── Tabla ──────────────────────────────────────────────── */
+.tabla-contenedor {
+  overflow-x: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th {
+  padding: var(--espacio-3) var(--espacio-5);
+  border-bottom: 1px solid var(--color-borde);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-texto-secundario);
+}
+
+.tabla td {
+  padding: var(--espacio-2) var(--espacio-5);
+  border-bottom: 1px solid var(--color-superficie-2);
+  height: 56px;
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla tbody tr:hover {
+  background: var(--color-superficie-2);
+}
+
+.numero {
+  font-weight: 600;
+  color: var(--color-verde);
+}
+
+.col-total {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.sin-resultados {
+  text-align: center;
+  color: var(--color-texto-secundario);
+}
+
+/* ── Estados ────────────────────────────────────────────── */
+.estado {
+  padding: 3px 9px;
+  border: 1px solid var(--color-borde-input);
+  border-radius: 999px;
+  color: var(--color-texto-secundario);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.estado-pagado,
+.estado-despachado,
+.estado-entregado {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.estado-cancelado {
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}
+
+.estado-pendiente_pago,
+.estado-en_preparacion {
+  border-color: var(--color-aviso);
+  color: var(--color-aviso);
+}
+
+/* ── Paginado ───────────────────────────────────────────── */
+.pie-tabla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.rango {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.pag {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
   cursor: pointer;
+}
+
+.pag:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagina-actual {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+/* ── Estados de carga ───────────────────────────────────── */
+.esqueleto {
+  height: 360px;
+  border-radius: var(--radio-grande);
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
 }
 
 .alerta-error {
@@ -50,5 +217,15 @@
 
 .btn-texto:hover {
   border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.numero a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.numero a:hover {
   color: var(--color-verde);
 }

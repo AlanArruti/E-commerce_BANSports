@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiError } from '../models/api-error';
+import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido } from '../models/pedido';
 
 // Traduce los errores HTTP del back a mensajes claros para el usuario.
 
@@ -49,6 +50,56 @@ function errorGeneral(error: HttpErrorResponse): ErrorTraducido | null {
     };
   }
   return null;
+}
+
+/** Errores del login con GitHub o Google. El back vuelve al login con ?errorSocial=código. */
+export function traducirErrorSocial(codigo: string): ErrorTraducido {
+  switch (codigo) {
+    case 'access_denied':
+      return {
+        titulo: 'Cancelaste el ingreso',
+        detalle: 'No se compartió tu cuenta. Podés intentarlo de nuevo o entrar con tu email.'
+      };
+    case 'sin_email':
+      return {
+        titulo: 'No recibimos tu email',
+        detalle: 'Tu cuenta tiene que tener un email principal verificado. Revisalo o entrá con tu email y contraseña.'
+      };
+    case 'email_no_verificado':
+      return {
+        titulo: 'Tu email no está verificado',
+        detalle: 'Verificalo en tu cuenta de Google y volvé a intentar, o entrá con tu email y contraseña.'
+      };
+    case 'cuenta_desactivada':
+      return {
+        titulo: 'Tu cuenta está desactivada',
+        detalle: 'Escribinos para reactivarla.'
+      };
+    default:
+      return {
+        titulo: 'No pudimos iniciar sesión',
+        detalle: 'Algo falló al conectar con GitHub o Google. Intentá de nuevo o entrá con tu email.'
+      };
+  }
+}
+
+/** Errores de "¿Olvidaste tu contraseña?" (pedir el enlace o guardar la contraseña nueva). */
+export function traducirErrorRecuperacion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje.toLowerCase().includes('enlace')) {
+    return {
+      titulo: 'El enlace ya no sirve',
+      detalle: 'Venció (dura 30 minutos), ya se usó o pediste uno más nuevo. Pedí otro desde "¿Olvidaste tu contraseña?".'
+    };
+  }
+  return {
+    titulo: 'No pudimos completar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
 }
 
 /** @param credencial cómo se llama el dato de ingreso en ese login (email para clientes, usuario para admins). */
@@ -242,6 +293,56 @@ export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
+export function traducirErrorCotizacion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos calcular el costo de envío',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/**
+ * Errores al iniciar o confirmar un pago. Se muestra el motivo puntual que manda el back
+ * (pasarela sin credenciales, rechazo de la pasarela, pasarela caída…). La excepción es el 403:
+ * no se le confirma a nadie si un pedido ajeno existe.
+ */
+export function traducirErrorPago(error: HttpErrorResponse): ErrorTraducido {
+  if (error.status === 0) {
+    return errorGeneral(error)!;
+  }
+  if (error.status === 403) {
+    return {
+      titulo: 'No tenés permiso para pagar este pedido',
+      detalle: 'Solo se pueden pagar los pedidos de la cuenta con la que iniciaste sesión.'
+    };
+  }
+
+  const mensaje = mensajeDelBack(error);
+  const estado = /está en estado: ([A-Z_]+)/.exec(mensaje)?.[1] as EstadoPedido | undefined;
+  if (error.status === 400 && estado) {
+    return {
+      titulo: 'Este pedido ya no se puede pagar',
+      detalle: `Está "${ETIQUETAS_ESTADO_PEDIDO[estado] ?? estado}". Solo se pagan los pedidos pendientes de pago.`
+    };
+  }
+
+  const titulo =
+    error.status === 404
+      ? 'No encontramos el pago'
+      : error.status === 503
+        ? 'No se pudo iniciar el pago'
+        : error.status >= 500
+          ? 'Ocurrió un error al procesar el pago'
+          : 'No se pudo completar el pago';
+  return {
+    titulo,
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);
   if (general) {
@@ -254,6 +355,17 @@ export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido 
     return {
       titulo: 'No hay stock suficiente',
       detalle: `De uno de los productos quedan ${disponible} unidades. Ajustá el carrito y volvé a confirmar.`
+    };
+  }
+  // El back vuelve a validar el cupón al confirmar: pudo vencerse o agotarse mientras tanto.
+  if (error.status === 400 && /^El cupón|^No existe un cupón/.test(mensaje)) {
+    return { titulo: 'No pudimos aplicar el cupón', detalle: `${mensaje} Quitalo para confirmar sin descuento.` };
+  }
+  // El back recotiza el envío al confirmar: si la opción elegida ya no aparece, hay que elegir de nuevo.
+  if (error.status === 400 && /opción de envío/i.test(mensaje)) {
+    return {
+      titulo: 'Cambiaron las opciones de envío',
+      detalle: 'Actualizá la página, elegí el envío de nuevo y volvé a confirmar.'
     };
   }
   if (error.status === 409) {
@@ -380,7 +492,7 @@ export function traducirErrorFavoritos(error: HttpErrorResponse): ErrorTraducido
 }
 
 /** Para "Mis pedidos". En el detalle, el 403 y el 404 los muestra la página como "Pedido no encontrado". */
-export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
+export function traducirErrorMisPedidos(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {
       titulo: 'No pudimos cargar tus pedidos',
@@ -486,4 +598,183 @@ export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido 
       detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
     }
   );
+}
+
+export function traducirErrorResumen(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el resumen',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorStock(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el stock',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorClientes(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los clientes',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidosCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya no está activo',
+      detalle: 'Puede que lo haya dado de baja otro administrador. Actualizá la lista.'
+    };
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos del cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya estaba dado de baja',
+      detalle: 'Puede que lo haya dado de baja otro administrador. La lista se actualizó.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorAdministradores(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los administradores',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta de administrador. El 409 (usuario repetido) se muestra en el campo, no acá. */
+export function traducirErrorCrearAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 400) {
+    return {
+      titulo: 'Revisá los datos del administrador',
+      detalle: mensajeDelBack(error) || 'El usuario o la contraseña no cumplen las reglas.'
+    };
+  }
+  return {
+    titulo: 'No pudimos crear el administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese administrador ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if (error.status === 409) {
+    return {
+      titulo: 'No podés darte de baja a vos mismo',
+      detalle: mensajeDelBack(error) || 'Pedile a otro administrador que lo haga.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Al tocar "Aplicar" en el checkout. El 400 trae el motivo listo para mostrar (vencido, agotado, compra mínima). */
+export function traducirErrorCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'No se puede usar este cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos validar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorCupones(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los cupones',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta, edición o baja de un cupón en el panel. El 409 por código repetido va pegado al campo. */
+export function traducirErrorGuardarCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cupón ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if ((error.status === 400 || error.status === 409) && mensaje) {
+    return { titulo: 'Revisá los datos del cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
 }

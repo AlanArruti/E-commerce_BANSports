@@ -26,7 +26,8 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
 - Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
-- Las bajas de clientes y productos son **lógicas** (soft-delete mediante campo `activo`).
+- Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
+- Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
 ---
@@ -133,7 +134,9 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/cliente/{id}/pedido` | Historial de pedidos del cliente | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
-| `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito | CLIENTE / ADMIN |
+| `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito `{ idDireccion, opcionEnvio, codigoCupon? }` | CLIENTE / ADMIN |
+| `GET` | `/cupones/validar?codigo=` | ¿Sirve el cupón para mi carrito? Devuelve el descuento o 400 con el motivo (vencido, agotado, compra mínima) | CLIENTE |
+| `GET` `POST` `PUT` `DELETE` | `/cupones`, `/cupones/{id}` | Cupones de descuento (la baja es lógica) | ADMIN |
 | `PATCH` | `/pedido/{id}/pagar` | Pagar directamente (genera factura) | CLIENTE / ADMIN |
 | `GET` | `/pago/pasarelas` | Pasarelas de pago disponibles (con credenciales cargadas) | CLIENTE / ADMIN |
 | `POST` | `/pago/pedido/{pedidoId}` | Iniciar el pago `{ pasarela, tipoFactura }` → `{ pagoId, urlPago }` | CLIENTE / ADMIN |
@@ -185,9 +188,13 @@ la app); después arranca en segundos.
 La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
 
 - **Clientes:** se crean desde "Registrarse" en el front (o `POST /api/v1/auth/register`).
-- **Administradores:** no tienen registro público. El primero se crea a mano con
-  un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
-  siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
+  Desde el panel, en **Clientes** (`/admin/clientes`), se buscan por nombre o email,
+  se ven sus pedidos y se dan de baja (baja lógica: sus pedidos y facturas quedan).
+- **Administradores:** no tienen registro público. Solo el **primero** se crea a mano
+  con un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt. Los
+  siguientes se dan de alta desde el panel, en **Administradores**
+  (`/admin/administradores`), donde también se dan de baja. Nadie puede darse de
+  baja a sí mismo, así que siempre queda al menos un administrador.
 - **Catálogo:** categorías y productos se cargan desde el panel de administración.
 - **Provincias y ciudades:** no se precargan. El formulario de dirección busca la
   localidad en [Georef](https://www.argentina.gob.ar/datos-abiertos/georef), la API
@@ -444,7 +451,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **208 tests** (207 unitarios en 22 clases + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **261 tests** (260 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -466,17 +473,59 @@ Cobertura de tests unitarios:
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
 - `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
 - `CategoriaServiceTest` — 12 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
-- `PagoServiceTest` — 9 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook)
+- `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 22 tests (cancelación, pago, envío, estado, acreditación de pagos)
+- `PedidoServiceTest` — 31 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
+- `CuponServiceTest` — 22 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 11 tests (variantes, stock, ownership)
-- `ClienteServiceTest` — 12 tests (CRUD, owner-check, acceso)
+- `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
-- `AdministradorServiceTest` — 11 tests (CRUD, duplicados)
+- `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
 - `NotificacionServiceTest` — 4 tests (emails, fallo de conexión)
+
+### Tests del front
+
+El front tiene **74 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
+
+**Con Docker (recomendado, no hace falta instalar nada):**
+
+```bash
+# Desde la raíz del repo. Corre los tests en un Chromium sin ventana;
+# si alguno falla, el comando termina con error y muestra cuál.
+docker build --target test --progress=plain ./frontend
+```
+
+**Sin Docker** (Angular 22 pide Node 22.22.3+ o 24.15+, y Chrome instalado):
+
+```bash
+cd frontend
+npm install
+
+# Una sola corrida, sin ventana (igual que en Docker):
+npm run test:ci
+
+# Modo desarrollo: abre Chrome y vuelve a correr los tests al guardar un archivo
+npm test
+
+# Con cobertura (queda en frontend/coverage/frontend/index.html):
+npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+```
+
+Qué cubren (lo que más se rompe):
+- `guards.spec.ts` — 11 tests: `rolGuard` (sin sesión va al login con `redirect`, un CLIENTE en `/admin` vuelve a la tienda, un ADMIN en pantallas de cliente vuelve al panel), `sinAdminGuard` y `guestGuard`
+- `auth.interceptor.spec.ts` — 9 tests: agrega el token solo a nuestra API (no al login ni a otros sitios); un 401 cierra la sesión y manda al login que corresponde; el 401 del login o de "contraseña actual incorrecta" no la cierra
+- `auth.service.spec.ts` — 16 tests: login (recordarme o solo la pestaña, rol equivocado en cada login), logout, y validación de la sesión guardada (vencida, no es un JWT, token editado a mano, 401, sin conexión)
+- `validadores.spec.ts` — 13 tests: validadores propios (DNI, precio argentino, descuento, email…) y los mensajes de `mensajes.ts`
+- `errores-api.spec.ts` — 18 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente), de checkout y de cupones
+- `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
+
+Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
+tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario
+hubiera iniciado sesión (`guardarToken`).
 
 ---
 

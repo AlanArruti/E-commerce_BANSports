@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,13 +31,16 @@ public class ClienteController {
 
     private final IClienteService clienteService;
 
-    @Operation(summary = "Listar todos los clientes (solo ADMIN)")
+    @Operation(summary = "Listar los clientes activos (solo ADMIN)",
+               description = "Más nuevos primero. `buscar` filtra por nombre, apellido o email.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<PageResponse<ClienteResponse>> listarTodos(
+            @RequestParam(required = false) String buscar,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(clienteService.listarTodos(PageRequest.of(page, size)));
+        var orden = Sort.by(Sort.Direction.DESC, "fechaAlta").and(Sort.by(Sort.Direction.DESC, "id"));
+        return ResponseEntity.ok(clienteService.listarTodos(buscar, PageRequest.of(page, size, orden)));
     }
 
     @Operation(summary = "Buscar cliente por ID")

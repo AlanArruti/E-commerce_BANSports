@@ -25,6 +25,9 @@
           <span class="tarjeta-titulo">Total</span>
           <span class="tarjeta-total">{{ pedidoConfirmado.total | precio }}</span>
           <span class="tarjeta-secundaria">{{ unidadesDelPedido() }} {{ unidadesDelPedido() === 1 ? 'producto' : 'productos' }}</span>
+          @if (pedidoConfirmado.descuentoCupon && pedidoConfirmado.codigoCupon) {
+            <span class="tarjeta-ahorro">Ahorraste {{ pedidoConfirmado.descuentoCupon | precio }} con el cupón {{ pedidoConfirmado.codigoCupon }}</span>
+          }
         </div>
       </div>
 
@@ -143,9 +146,98 @@
             }
           </ul>
           <a routerLink="/carrito" class="link link-chico">Editar carrito</a>
+
+          @if (direccionElegida()) {
+            <div class="resumen-envio-bloque">
+              <span class="resumen-envio-titulo">Envío</span>
+              @if (cargandoEnvio()) {
+                <p class="resumen-envio-mensaje">Calculando envío…</p>
+              } @else if (errorEnvio(); as error) {
+                <p class="resumen-envio-mensaje resumen-envio-error">{{ error.detalle }}</p>
+                <button type="button" class="link link-chico" (click)="cargarCotizacion(idDireccionElegida())">Reintentar</button>
+              } @else if (cotizaciones().length) {
+                <div class="envio-opciones" role="radiogroup" aria-label="Opciones de envío">
+                  @for (opcion of cotizaciones(); track $index) {
+                    <label class="envio-opcion" [ngClass]="{ elegida: $index === idOpcionElegida() }">
+                      <input
+                        type="radio"
+                        name="envio"
+                        [checked]="$index === idOpcionElegida()"
+                        (change)="elegirOpcion($index)"
+                      />
+                      <span class="envio-opcion-texto">
+                        <span class="envio-opcion-nombre">{{ opcion.servicio }}</span>
+                        <span class="envio-opcion-plazo">{{ plazoDeEnvio(opcion) }}</span>
+                      </span>
+                      <span class="envio-opcion-precio">{{ opcion.precio | precio }}</span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <p class="resumen-envio-mensaje">No hay opciones de envío para esta dirección.</p>
+              }
+            </div>
+          }
+
+          <!-- Cupón de descuento: descuenta sobre los productos, no sobre el envío. -->
+          <div class="cupon-bloque">
+            <span class="resumen-envio-titulo" id="cupon-titulo">Cupón de descuento</span>
+            @if (cupon(); as aplicado) {
+              <div class="cupon-aplicado">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                <span class="cupon-aplicado-texto">
+                  <strong>{{ aplicado.codigo }}</strong>
+                  <span>{{ beneficio(aplicado) }} en productos</span>
+                </span>
+                <button type="button" class="link link-chico" (click)="quitarCupon()" [attr.aria-label]="'Quitar el cupón ' + aplicado.codigo">Quitar</button>
+              </div>
+            } @else {
+              <form class="cupon-form" (submit)="aplicarCupon($event)" novalidate>
+                <label for="cupon-codigo" class="solo-lectores">Código de cupón</label>
+                <input
+                  id="cupon-codigo"
+                  class="input cupon-input"
+                  [ngClass]="{ 'input-error': errorCupon() }"
+                  [value]="codigoCupon()"
+                  (input)="codigoCupon.set($any($event.target).value)"
+                  placeholder="Código de cupón"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  maxlength="30"
+                  [attr.aria-invalid]="errorCupon() ? true : null"
+                  [attr.aria-describedby]="errorCupon() ? 'cupon-error' : null"
+                />
+                <button type="submit" class="btn btn-secundario cupon-btn" [disabled]="validandoCupon()">
+                  {{ validandoCupon() ? 'Validando…' : 'Aplicar' }}
+                </button>
+              </form>
+              @if (errorCupon(); as error) {
+                <p class="cupon-error" id="cupon-error" role="alert">{{ error.detalle }}</p>
+              }
+            }
+          </div>
+
+          <dl class="resumen-cuentas">
+            <div>
+              <dt>Productos</dt>
+              <dd>{{ subtotal() | precio }}</dd>
+            </div>
+            @if (cupon(); as aplicado) {
+              <div class="cuenta-descuento">
+                <dt>Cupón {{ aplicado.codigo }}</dt>
+                <dd>− {{ descuento() | precio }}</dd>
+              </div>
+            }
+            <div>
+              <dt>Envío</dt>
+              <dd>{{ opcionElegida() ? (costoEnvio() | precio) : '—' }}</dd>
+            </div>
+          </dl>
+
           <div class="resumen-total">
             <span>Total</span>
-            <strong>{{ carritoService.carrito()?.total | precio }}</strong>
+            <strong>{{ totalConEnvio() | precio }}</strong>
           </div>
           @if (direccionElegida(); as direccion) {
             <p class="resumen-envio">Se envía a <strong>{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</strong></p>

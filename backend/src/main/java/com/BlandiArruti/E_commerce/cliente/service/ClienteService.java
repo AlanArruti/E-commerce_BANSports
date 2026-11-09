@@ -27,6 +27,8 @@ import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+
+import java.util.Locale;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -62,10 +64,17 @@ public class ClienteService implements IClienteService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ClienteResponse> listarTodos(Pageable pageable) {
-        return PageResponse.from(
-                clienteRepository.findAllByActivoTrue(pageable).map(clienteMapper::toResponse)
-        );
+    public PageResponse<ClienteResponse> listarTodos(String buscar, Pageable pageable) {
+        String texto = buscar == null ? "" : buscar.trim().toLowerCase(Locale.ROOT);
+        var pagina = texto.isEmpty()
+                ? clienteRepository.findAllByActivoTrue(pageable)
+                : clienteRepository.buscarActivos("%" + escaparComodines(texto) + "%", pageable);
+        return PageResponse.from(pagina.map(clienteMapper::toResponse));
+    }
+
+    /** Escapa \, % y _ para que se busquen como texto y no como comodines del LIKE. */
+    private static String escaparComodines(String texto) {
+        return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @Transactional(readOnly = true)

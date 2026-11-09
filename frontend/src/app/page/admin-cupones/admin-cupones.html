@@ -1,0 +1,261 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Cupones</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Cupones</h1>
+      <p class="cuenta">Descuentan sobre los productos del pedido, no sobre el envío.</p>
+    </div>
+    <button type="button" class="btn btn-primario btn-nuevo" [disabled]="cargando()" (click)="abrirFormulario(null, $event)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Nuevo cupón
+    </button>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+
+  @if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor" [attr.aria-busy]="cargando()">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Descuento</th>
+            <th scope="col">Vigencia</th>
+            <th scope="col">Compra mínima</th>
+            <th scope="col">Usos</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            @for (fila of [1, 2, 3]; track fila) {
+              <tr class="fila-esqueleto">
+                <td colspan="7"><span class="esqueleto"></span></td>
+              </tr>
+            }
+          } @else {
+            @for (cupon of cupones(); track cupon.id) {
+              <tr [class.inactivo]="!cupon.activo">
+                <td><span class="codigo">{{ cupon.codigo }}</span></td>
+                <td class="beneficio">
+                  {{ beneficio(cupon) }}
+                  <span class="secundario">{{ cupon.tipo === 'PORCENTAJE' ? 'del subtotal' : 'fijo' }}</span>
+                </td>
+                <td class="vigencia">
+                  @if (cupon.vigenteDesde || cupon.vigenteHasta) {
+                    {{ cupon.vigenteDesde ? (cupon.vigenteDesde | date: 'dd/MM/yy') : 'Hoy' }} →
+                    {{ cupon.vigenteHasta ? (cupon.vigenteHasta | date: 'dd/MM/yy') : 'Sin fin' }}
+                  } @else {
+                    <span class="secundario">Siempre</span>
+                  }
+                </td>
+                <td class="numero">
+                  @if (cupon.montoMinimo > 0) {
+                    {{ cupon.montoMinimo | precio }}
+                  } @else {
+                    <span class="secundario">Sin mínimo</span>
+                  }
+                </td>
+                <td class="numero">
+                  {{ cupon.usos }}
+                  <span class="secundario">/ {{ cupon.usosMaximos ?? '∞' }}</span>
+                </td>
+                <td>
+                  <span class="estado" [ngClass]="'estado-' + cupon.estado.toLowerCase()">{{ etiquetasEstado[cupon.estado] }}</span>
+                </td>
+                <td class="col-acciones">
+                  <button type="button" class="btn-accion" [attr.aria-label]="'Editar ' + cupon.codigo" title="Editar" (click)="abrirFormulario(cupon, $event)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+                  </button>
+                  @if (cupon.activo) {
+                    <button type="button" class="btn-accion borrar" [attr.aria-label]="'Dar de baja ' + cupon.codigo" title="Dar de baja" (click)="pedirBaja(cupon, $event)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="sin-resultados">
+                  Todavía no hay cupones. Creá el primero con "Nuevo cupón".
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (modal(); as m) {
+  <div class="fondo-modal" (click)="cerrarModal()"></div>
+
+  @if (m.tipo === 'formulario') {
+    <div class="modal modal-ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-form">
+      <h2 class="titulo-display titulo-modal" id="titulo-form">{{ m.cupon ? 'Editar cupón' : 'Nuevo cupón' }}</h2>
+
+      @if (errorModal(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
+
+      <form class="formulario" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+        <div class="campo">
+          <label for="cupon-codigo">Código</label>
+          <input #campoCodigo id="cupon-codigo" class="input input-codigo" formControlName="codigo" autocomplete="off"
+            autocapitalize="characters" spellcheck="false" placeholder="VERANO10"
+            [ngClass]="{ 'input-error': error('codigo') }" [attr.aria-invalid]="error('codigo') ? true : null"
+            aria-describedby="cupon-codigo-ayuda" />
+          <span class="ayuda-campo" id="cupon-codigo-ayuda">
+            @if (error('codigo'); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            } @else {
+              <span class="pista">Es lo que escribe el cliente. Se guarda en mayúsculas.</span>
+            }
+          </span>
+        </div>
+
+        <fieldset class="campo tipo">
+          <legend>Tipo de descuento</legend>
+          <div class="segmentado">
+            <label [class.elegido]="esPorcentaje()">
+              <input type="radio" formControlName="tipo" value="PORCENTAJE" />
+              Porcentaje
+            </label>
+            <label [class.elegido]="!esPorcentaje()">
+              <input type="radio" formControlName="tipo" value="MONTO_FIJO" />
+              Monto fijo
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="campo">
+          <label for="cupon-valor">{{ esPorcentaje() ? 'Porcentaje' : 'Monto' }}</label>
+          <div class="con-afijo" [class.sufijo]="esPorcentaje()">
+            <span class="afijo" aria-hidden="true">{{ esPorcentaje() ? '%' : '$' }}</span>
+            <input id="cupon-valor" class="input" formControlName="valor" inputmode="decimal" autocomplete="off"
+              [placeholder]="esPorcentaje() ? '10' : '5000'"
+              [ngClass]="{ 'input-error': error('valor') }" [attr.aria-invalid]="error('valor') ? true : null"
+              aria-describedby="cupon-valor-ayuda" />
+          </div>
+          <span class="ayuda-campo" id="cupon-valor-ayuda">
+            @if (error('valor'); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            } @else {
+              <span class="pista">{{ esPorcentaje() ? 'Del subtotal de productos, de 1 a 100.' : 'Nunca descuenta más que el subtotal de productos.' }}</span>
+            }
+          </span>
+        </div>
+
+        <div class="fila-campos">
+          <div class="campo">
+            <label for="cupon-desde">Desde <span class="opcional">(opcional)</span></label>
+            <input id="cupon-desde" class="input" type="date" formControlName="vigenteDesde" />
+          </div>
+          <div class="campo">
+            <label for="cupon-hasta">Hasta <span class="opcional">(opcional)</span></label>
+            <input id="cupon-hasta" class="input" type="date" formControlName="vigenteHasta"
+              [ngClass]="{ 'input-error': error('fechas') }" [attr.aria-invalid]="error('fechas') ? true : null"
+              aria-describedby="cupon-fechas-ayuda" />
+          </div>
+        </div>
+        <span class="ayuda-campo" id="cupon-fechas-ayuda">
+          @if (error('fechas'); as mensaje) {
+            <span class="msj-error">{{ mensaje }}</span>
+          } @else {
+            <span class="pista">El último día se puede usar. Vacío = sin fecha.</span>
+          }
+        </span>
+
+        <div class="fila-campos">
+          <div class="campo">
+            <label for="cupon-minimo">Compra mínima <span class="opcional">(opcional)</span></label>
+            <div class="con-afijo">
+              <span class="afijo" aria-hidden="true">$</span>
+              <input id="cupon-minimo" class="input" formControlName="montoMinimo" inputmode="decimal" autocomplete="off" placeholder="Sin mínimo"
+                [ngClass]="{ 'input-error': error('montoMinimo') }" [attr.aria-invalid]="error('montoMinimo') ? true : null"
+                aria-describedby="cupon-minimo-error" />
+            </div>
+            @if (error('montoMinimo'); as mensaje) {
+              <span class="msj-error" id="cupon-minimo-error">{{ mensaje }}</span>
+            }
+          </div>
+          <div class="campo">
+            <label for="cupon-usos">Usos máximos <span class="opcional">(opcional)</span></label>
+            <input id="cupon-usos" class="input" formControlName="usosMaximos" inputmode="numeric" autocomplete="off" placeholder="Sin límite"
+              [ngClass]="{ 'input-error': error('usosMaximos') }" [attr.aria-invalid]="error('usosMaximos') ? true : null"
+              aria-describedby="cupon-usos-error" />
+            @if (error('usosMaximos'); as mensaje) {
+              <span class="msj-error" id="cupon-usos-error">{{ mensaje }}</span>
+            }
+          </div>
+        </div>
+
+        @if (m.cupon) {
+          <label class="check">
+            <input type="checkbox" formControlName="activo" />
+            <span>Activo (si lo destildás, deja de aceptarse en el checkout)</span>
+          </label>
+          @if (m.cupon.usos > 0) {
+            <p class="pista">Ya se usó en {{ m.cupon.usos }} {{ m.cupon.usos === 1 ? 'pedido' : 'pedidos' }}: el código no se puede cambiar.</p>
+          }
+        }
+
+        <div class="acciones-modal">
+          <button type="button" class="btn btn-secundario" [disabled]="enviando()" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primario" [disabled]="enviando()">
+            {{ enviando() ? 'Guardando…' : m.cupon ? 'Guardar cambios' : 'Crear cupón' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  } @else {
+    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="titulo-baja" aria-describedby="texto-baja">
+      @if (errorModal(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
+      <h2 class="titulo-display titulo-modal" id="titulo-baja">¿Dar de baja {{ m.cupon.codigo }}?</h2>
+      <p class="texto-modal" id="texto-baja">
+        Deja de aceptarse en el checkout. Los pedidos que ya lo usaron conservan su descuento. Lo podés volver a activar editándolo.
+      </p>
+      <div class="acciones-modal">
+        <button #cancelarBajaBtn type="button" class="btn btn-secundario" [disabled]="enviando()" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-peligro" [disabled]="enviando()" (click)="confirmarBaja()">
+          {{ enviando() ? 'Dando de baja…' : 'Sí, dar de baja' }}
+        </button>
+      </div>
+    </div>
+  }
+}

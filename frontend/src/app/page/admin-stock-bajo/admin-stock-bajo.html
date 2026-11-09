@@ -1,0 +1,74 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Stock bajo</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Stock bajo</h1>
+      @if (!cargando() && !errorCarga()) {
+        <p class="cuenta">{{ variantes().length }} {{ variantes().length === 1 ? 'variante' : 'variantes' }}</p>
+      }
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="esqueleto" aria-busy="true"></div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Variante</th>
+            <th scope="col" class="col-stock">Stock</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (variante of variantes(); track variante.idVariante) {
+            <tr>
+              <td>
+                <a class="nombre" [routerLink]="['/admin/productos', variante.idProducto, 'variantes']">{{ variante.nombreProducto }}</a>
+                <span class="id">#{{ variante.idProducto }}</span>
+              </td>
+              <td>{{ descripcion(variante) }}</td>
+              <td class="col-stock">
+                <span class="stock" [ngClass]="nivel(variante.stock)">
+                  <span class="punto" aria-hidden="true"></span>
+                  @if (variante.stock === 0) {
+                    Sin stock
+                  } @else {
+                    {{ variante.stock }} u.
+                  }
+                </span>
+              </td>
+              <td class="col-acciones">
+                <a class="btn-accion" [routerLink]="['/admin/productos', variante.idProducto, 'variantes']" [attr.aria-label]="'Ver stock de ' + variante.nombreProducto" title="Ver stock">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4" class="sin-resultados">
+                No hay variantes con stock bajo. Todo en orden.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

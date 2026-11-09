@@ -4,7 +4,9 @@ import com.BlandiArruti.E_commerce.carrito.entity.Carrito;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +47,13 @@ public class Cliente {
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre clientes
+    // que ya estaban cargados (les queda la fecha de la migración).
+    @CreationTimestamp
+    @Column(name = "fecha_alta", nullable = false, updatable = false,
+            columnDefinition = "timestamp default now() not null")
+    private LocalDateTime fechaAlta;
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Direccion> direcciones = new ArrayList<>();

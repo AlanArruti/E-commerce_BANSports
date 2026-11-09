@@ -1,0 +1,97 @@
+<form class="formulario" role="search" (submit)="alEnviar($event)">
+  <svg class="icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  <label for="buscar" class="solo-lectores">Buscar productos</label>
+  <input
+    #campo
+    id="buscar"
+    type="search"
+    role="combobox"
+    autocomplete="off"
+    placeholder="Buscá proteína, creatina…"
+    enterkeyhint="search"
+    [formControl]="busqueda"
+    aria-autocomplete="list"
+    aria-controls="buscar-sugerencias"
+    [attr.aria-expanded]="abierta()"
+    [attr.aria-activedescendant]="abierta() && activa() >= 0 ? 'buscar-opcion-' + activa() : null"
+    (keydown)="alTeclear($event)"
+    (focus)="alEnfocar()"
+    (blur)="alSalir()"
+  />
+  @if (buscando()) {
+    <span class="indicador" aria-hidden="true"></span>
+  }
+</form>
+
+@if (abierta() && resultado(); as r) {
+  <div class="panel">
+    <ul class="opciones" id="buscar-sugerencias" role="listbox" aria-label="Productos sugeridos">
+      @for (producto of r.productos; track producto.id; let i = $index) {
+        <li
+          class="opcion"
+          role="option"
+          [id]="'buscar-opcion-' + i"
+          [class.activa]="i === activa()"
+          [attr.aria-selected]="i === activa()"
+          (mousedown)="alApretarProducto($event, producto)"
+          (mouseenter)="activa.set(i)"
+        >
+          <span class="miniatura" aria-hidden="true">
+            @if (producto.imagenUrl; as imagen) {
+              <img [src]="imagen" alt="" loading="lazy" />
+            } @else {
+              <app-pote-producto class="mini-pote" [nombre]="abreviatura(producto)" />
+            }
+          </span>
+          <span class="datos">
+            <!-- En una línea: cualquier espacio entre los tramos partiría la palabra resaltada. -->
+            <span class="nombre">@for (tramo of tramos(producto.nombre); track $index) {@if (tramo.coincide) {<mark>{{ tramo.texto }}</mark>} @else {{{ tramo.texto }}}}</span>
+            @if (producto.categoria; as categoria) {
+              <span class="categoria">{{ categoria.nombre }}</span>
+            }
+          </span>
+          @let p = precios(producto);
+          <span class="precios">
+            @if (producto.descuento) {
+              <span class="descuento">-{{ producto.descuento }}%</span>
+            }
+            @if (p.lista !== null) {
+              <span class="precio-lista">{{ p.lista | precio }}</span>
+            }
+            <span class="precio">
+              @if (p.desde) {
+                <span class="desde">Desde</span>
+              }
+              {{ p.vigente | precio }}
+            </span>
+          </span>
+        </li>
+      } @empty {
+        <li class="sin-resultados" role="option" aria-disabled="true">
+          <strong>No encontramos "{{ r.texto }}"</strong>
+          <span>Probá con otra palabra, por ejemplo la marca o el tipo de suplemento.</span>
+        </li>
+      }
+
+      @if (r.productos.length) {
+        <li
+          class="opcion ver-todos"
+          role="option"
+          [id]="'buscar-opcion-' + indiceVerTodos()"
+          [class.activa]="indiceVerTodos() === activa()"
+          [attr.aria-selected]="indiceVerTodos() === activa()"
+          (mousedown)="alApretarVerTodos($event)"
+          (mouseenter)="activa.set(indiceVerTodos())"
+        >
+          Ver todos los resultados
+          @if (r.total > r.productos.length) {
+            <span class="cantidad">({{ r.total }})</span>
+          }
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+<p class="solo-lectores" aria-live="polite">{{ anuncio() }}</p>

@@ -11,4 +11,10 @@ public class ConflictoException extends EcommerceException {
             "No se puede eliminar la categoría con id " + idCategoria + " porque tiene productos asociados."
         );
     }
+
+    public static ConflictoException adminSeBorraASiMismo() {
+        return new ConflictoException(
+            "No podés dar de baja el administrador con el que iniciaste sesión. Pedile a otro administrador que lo haga."
+        );
+    }
 }

@@ -95,8 +95,13 @@ public class SecurityConfig {
 
                 // ── Solo ADMIN ───────────────────────────────────────────────
                 .requestMatchers("/api/v1/administrador/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/envio/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/factura/**").hasRole("ADMIN")
+
+                // Cupones: el cliente solo los valida contra su carrito; el resto es del panel.
+                .requestMatchers(HttpMethod.GET, "/api/v1/cupones/validar").hasRole("CLIENTE")
+                .requestMatchers("/api/v1/cupones/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.POST,   "/api/v1/producto/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/producto/**").hasRole("ADMIN")
@@ -106,6 +111,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,   "/api/v1/categorias/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/v1/categorias/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/categorias/**").hasRole("ADMIN")
+
+                .requestMatchers("/api/v1/cotizacion/tarifas/**").hasRole("ADMIN")
 
                 // ── ADMIN o CLIENTE ──────────────────────────────────────────
                 .requestMatchers("/api/v1/pedido/**").hasAnyRole("ADMIN", "CLIENTE")

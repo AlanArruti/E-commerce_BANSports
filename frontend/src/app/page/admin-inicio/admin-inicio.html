@@ -1,16 +1,208 @@
 <section class="contenedor seccion">
-  <h1 class="titulo-display titulo">Panel de <span class="acento">administración</span></h1>
-  <p class="bajada">Sesión iniciada como {{ authService.usuario()?.sub }}.</p>
+  <header class="encabezado">
+    <div class="encabezado-texto">
+      <h1 class="titulo-display titulo">Panel de <span class="acento">administración</span></h1>
+      <p class="bajada">Sesión iniciada como {{ authService.usuario()?.sub }}.</p>
+    </div>
 
-  <!-- Accesos provisorios hasta que llegue la navegación del panel (SCRUM-111). -->
-  <nav class="accesos" aria-label="Secciones del panel">
-    <a routerLink="/admin/categorias" class="acceso">
-      <span class="acceso-titulo">Categorías</span>
-      <span class="acceso-detalle">Crear, renombrar y eliminar</span>
-    </a>
-    <a routerLink="/admin/productos" class="acceso">
-      <span class="acceso-titulo">Productos</span>
-      <span class="acceso-detalle">Listar, cargar, editar y dar de baja</span>
-    </a>
-  </nav>
+    <div class="periodo" role="group" aria-label="Período de las métricas">
+      @for (opcion of periodos; track opcion) {
+        <button
+          type="button"
+          class="periodo-opcion"
+          [class.activa]="dias() === opcion"
+          [attr.aria-pressed]="dias() === opcion"
+          [disabled]="cargando()"
+          (click)="cambiarPeriodo(opcion)"
+        >
+          {{ opcion }} días
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <div class="kpis" aria-busy="true">
+      @for (tarjeta of [1, 2, 3]; track tarjeta) {
+        <div class="esqueleto esqueleto-kpi"></div>
+      }
+    </div>
+    <div class="paneles" aria-hidden="true">
+      <div class="esqueleto esqueleto-panel panel-ancho"></div>
+      <div class="esqueleto esqueleto-panel"></div>
+    </div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (metricas(); as m) {
+    <div class="metricas" [class.actualizando]="actualizando()" [attr.aria-busy]="actualizando()">
+      <!-- ── Números del período ── -->
+      <div class="kpis">
+        @for (kpi of kpis(); track kpi.titulo) {
+          <div class="kpi">
+            <span class="kpi-titulo">{{ kpi.titulo }}</span>
+            <span class="kpi-numero">
+              @if (kpi.esPrecio) {
+                {{ kpi.valor | precio }}
+              } @else {
+                {{ kpi.valor }}
+              }
+            </span>
+            @if (kpi.variacion; as v) {
+              <span class="variacion" [class]="'variacion-' + v.tendencia">
+                @switch (v.tendencia) {
+                  @case ('sube') {
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+                  }
+                  @case ('baja') {
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7l10 10M17 9v8H9"/></svg>
+                  }
+                  @default {
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                  }
+                }
+                {{ v.texto }}
+              </span>
+            } @else {
+              <span class="kpi-detalle">Sin datos de los {{ m.dias }} días anteriores</span>
+            }
+            <span class="kpi-detalle">{{ kpi.detalle }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="paneles">
+        <!-- ── Ventas por día ── -->
+        <article class="panel panel-ancho">
+          <header class="panel-encabezado">
+            <h2 class="panel-titulo">Ventas por día</h2>
+            <p class="panel-bajada">Últimos {{ m.dias }} días · pasá el mouse para ver cada día</p>
+          </header>
+          <app-grafico-ventas [ventas]="m.ventasPorDia" />
+        </article>
+
+        <!-- ── Pedidos por estado ── -->
+        <article class="panel">
+          <header class="panel-encabezado">
+            <h2 class="panel-titulo">Pedidos por estado</h2>
+            <p class="panel-bajada">{{ totalPedidos() }} pedidos en total, hoy</p>
+          </header>
+          <ul class="barras">
+            @for (e of estados(); track e.estado) {
+              <li>
+                <a
+                  routerLink="/admin/pedidos"
+                  [queryParams]="{ estado: e.estado }"
+                  class="barra-fila"
+                  [class.barra-cancelado]="e.estado === 'CANCELADO'"
+                >
+                  <span class="barra-texto">
+                    <span>{{ e.etiqueta }}</span>
+                    <strong>{{ e.cantidad }}</strong>
+                  </span>
+                  <span class="barra-pista" aria-hidden="true">
+                    <span class="barra-relleno" [style.width.%]="e.porcentaje"></span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        </article>
+
+        <!-- ── Más vendidos ── -->
+        <article class="panel panel-ancho">
+          <header class="panel-encabezado">
+            <h2 class="panel-titulo">Más vendidos</h2>
+            <p class="panel-bajada">Por unidades, en pedidos cobrados de los últimos {{ m.dias }} días</p>
+          </header>
+          @if (masVendidos().length === 0) {
+            <p class="panel-vacio">Todavía no hay ventas cobradas en este período.</p>
+          } @else {
+            <ol class="ranking">
+              @for (p of masVendidos(); track p.idProducto; let i = $index) {
+                <li class="ranking-fila">
+                  <span class="ranking-puesto" aria-hidden="true">{{ i + 1 }}</span>
+                  <div class="ranking-cuerpo">
+                    <div class="ranking-texto">
+                      <a [routerLink]="['/admin/productos', p.idProducto, 'editar']" class="ranking-nombre">{{ p.nombre }}</a>
+                      <span class="ranking-valores">
+                        <strong>{{ p.unidades }} u.</strong>
+                        <span>{{ p.total | precio }}</span>
+                      </span>
+                    </div>
+                    <span class="barra-pista" aria-hidden="true">
+                      <span class="barra-relleno" [style.width.%]="p.porcentaje"></span>
+                    </span>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </article>
+
+        <!-- ── Inventario ── -->
+        @if (resumen(); as r) {
+          <article class="panel">
+            <header class="panel-encabezado">
+              <h2 class="panel-titulo">Inventario</h2>
+              <p class="panel-bajada">Variantes activas y ofertas, hoy</p>
+            </header>
+            <div class="inventario">
+              <a routerLink="/admin/stock-bajo" class="inventario-fila" [class.alerta]="r.sinStock > 0">
+                @if (r.sinStock > 0) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                }
+                <span class="inventario-etiqueta">Sin stock</span>
+                <strong>{{ r.sinStock }}</strong>
+              </a>
+              <a routerLink="/admin/stock-bajo" class="inventario-fila" [class.aviso]="r.stockBajo > 0">
+                @if (r.stockBajo > 0) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-aviso)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4M12 17v.5"/></svg>
+                }
+                <span class="inventario-etiqueta">Stock bajo (≤ 5)</span>
+                <strong>{{ r.stockBajo }}</strong>
+              </a>
+              <a routerLink="/admin/productos" class="inventario-fila">
+                <span class="inventario-etiqueta">Ofertas activas</span>
+                <strong>{{ r.ofertasActivas }}</strong>
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+
+    <nav class="accesos" aria-label="Gestionar catálogo">
+      <a routerLink="/admin/categorias" class="acceso">
+        <span class="acceso-titulo">Categorías</span>
+        <span class="acceso-detalle">Crear, renombrar y eliminar</span>
+      </a>
+      <a routerLink="/admin/productos" class="acceso">
+        <span class="acceso-titulo">Productos</span>
+        <span class="acceso-detalle">Listar, cargar, editar y dar de baja</span>
+      </a>
+      <a routerLink="/admin/pedidos" class="acceso">
+        <span class="acceso-titulo">Pedidos</span>
+        <span class="acceso-detalle">Ver, filtrar y cambiar de estado</span>
+      </a>
+      <a routerLink="/admin/cupones" class="acceso">
+        <span class="acceso-titulo">Cupones</span>
+        <span class="acceso-detalle">Crear promociones para el checkout</span>
+      </a>
+      <a routerLink="/admin/clientes" class="acceso">
+        <span class="acceso-titulo">Clientes</span>
+        <span class="acceso-detalle">Buscar, ver sus pedidos y dar de baja</span>
+      </a>
+      <a routerLink="/admin/administradores" class="acceso">
+        <span class="acceso-titulo">Administradores</span>
+        <span class="acceso-detalle">Dar de alta y de baja accesos al panel</span>
+      </a>
+    </nav>
+  }
 </section>

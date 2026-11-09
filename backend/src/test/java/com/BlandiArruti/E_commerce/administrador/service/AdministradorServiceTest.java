@@ -5,13 +5,18 @@ import com.BlandiArruti.E_commerce.administrador.dto.response.AdministradorRespo
 import com.BlandiArruti.E_commerce.administrador.entity.Administrador;
 import com.BlandiArruti.E_commerce.administrador.mapper.AdministradorMapper;
 import com.BlandiArruti.E_commerce.administrador.repository.AdministradorRepository;
+import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
+import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -31,6 +36,18 @@ class AdministradorServiceTest {
 
     @InjectMocks
     AdministradorService administradorService;
+
+    @AfterEach
+    void limpiarContexto() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void autenticarComoAdmin(Long id) {
+        UsuarioDetails admin = UsuarioDetails.fromAdmin(
+                Administrador.builder().id(id).username("admin").contrasenia("x").build());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()));
+    }
 
     // ─── crear ───────────────────────────────────────────────────────────────
 
@@ -140,6 +157,28 @@ class AdministradorServiceTest {
         administradorService.eliminar(1L);
 
         verify(administradorRepository).delete(admin);
+    }
+
+    @Test
+    void eliminar_elAdminLogueado_lanzaConflictoYNoBorra() {
+        autenticarComoAdmin(1L);
+        when(administradorRepository.findById(1L))
+                .thenReturn(Optional.of(Administrador.builder().id(1L).build()));
+
+        assertThatThrownBy(() -> administradorService.eliminar(1L))
+                .isInstanceOf(ConflictoException.class);
+        verify(administradorRepository, never()).delete(any());
+    }
+
+    @Test
+    void eliminar_otroAdmin_estandoLogueado_loBorra() {
+        autenticarComoAdmin(1L);
+        Administrador otro = Administrador.builder().id(2L).build();
+        when(administradorRepository.findById(2L)).thenReturn(Optional.of(otro));
+
+        administradorService.eliminar(2L);
+
+        verify(administradorRepository).delete(otro);
     }
 
     @Test

@@ -4,7 +4,6 @@ import { Login } from './page/login/login';
 import { Registro } from './page/registro/registro';
 import { Perfil } from './page/perfil/perfil';
 import { AdminLogin } from './page/admin-login/admin-login';
-import { AdminInicio } from './page/admin-inicio/admin-inicio';
 import { guestGuard } from './guards/guest.guard';
 import { rolGuard, sinAdminGuard } from './guards/rol.guard';
 
@@ -102,7 +101,37 @@ export const routes: Routes = [
     canActivate: [rolGuard('ADMIN')],
     canActivateChild: [rolGuard('ADMIN')],
     children: [
-      { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
+      {
+        path: '',
+        loadComponent: () => import('./page/admin-inicio/admin-inicio').then((m) => m.AdminInicio),
+        title: 'Panel | BAN Sports'
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () => import('./page/admin-pedidos/admin-pedidos').then((m) => m.AdminPedidos),
+        title: 'Pedidos | Panel BAN Sports'
+      },
+      {
+        path: 'clientes',
+        loadComponent: () => import('./page/admin-clientes/admin-clientes').then((m) => m.AdminClientes),
+        title: 'Clientes | Panel BAN Sports'
+      },
+      {
+        path: 'administradores',
+        loadComponent: () =>
+          import('./page/admin-administradores/admin-administradores').then((m) => m.AdminAdministradores),
+        title: 'Administradores | Panel BAN Sports'
+      },
+      {
+        path: 'cupones',
+        loadComponent: () => import('./page/admin-cupones/admin-cupones').then((m) => m.AdminCupones),
+        title: 'Cupones | Panel BAN Sports'
+      },
+      {
+        path: 'stock-bajo',
+        loadComponent: () => import('./page/admin-stock-bajo/admin-stock-bajo').then((m) => m.AdminStockBajo),
+        title: 'Stock bajo | Panel BAN Sports'
+      },
       {
         path: 'categorias',
         loadComponent: () => import('./page/admin-categorias/admin-categorias').then((m) => m.AdminCategorias),

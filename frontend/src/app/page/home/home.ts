@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { PoteProducto } from '../../componente/pote-producto/pote-producto';
 import { CategoriaDestacada } from '../../models/categoria-destacada';
 import { ProductoDestacado } from '../../models/producto-destacado';
+import { AuthService } from '../../services/auth.service';
 
 interface Beneficio {
   titulo: string;
@@ -19,6 +20,8 @@ interface Beneficio {
   styleUrl: './home.css'
 })
 export class Home {
+  constructor(protected authService: AuthService) {}
+
   // Por ahora son datos de ejemplo del mockup. Más adelante vendrán del back.
   protected readonly beneficios: Beneficio[] = [
     { titulo: 'Envío a todo el país', detalle: 'Seguimiento con Correo Argentino', icono: 'envio' },

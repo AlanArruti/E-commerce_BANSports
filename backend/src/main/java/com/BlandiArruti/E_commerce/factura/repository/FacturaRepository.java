@@ -27,4 +27,19 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     Double sumarVentasEntre(@Param("estados") List<EstadoPedido> estados,
                             @Param("desde") LocalDateTime desde,
                             @Param("hasta") LocalDateTime hasta);
+
+    @Query("SELECT COUNT(f) FROM Factura f " +
+           "WHERE f.pedido.estadoPedido IN :estados " +
+           "AND f.pedido.fechaCreacion >= :desde AND f.pedido.fechaCreacion < :hasta")
+    long contarVentasEntre(@Param("estados") List<EstadoPedido> estados,
+                           @Param("desde") LocalDateTime desde,
+                           @Param("hasta") LocalDateTime hasta);
+
+    /** Una fila por venta: [fechaCreacion del pedido, precioTotal de la factura]. */
+    @Query("SELECT f.pedido.fechaCreacion, f.precioTotal FROM Factura f " +
+           "WHERE f.pedido.estadoPedido IN :estados " +
+           "AND f.pedido.fechaCreacion >= :desde AND f.pedido.fechaCreacion < :hasta")
+    List<Object[]> ventasEntre(@Param("estados") List<EstadoPedido> estados,
+                               @Param("desde") LocalDateTime desde,
+                               @Param("hasta") LocalDateTime hasta);
 }

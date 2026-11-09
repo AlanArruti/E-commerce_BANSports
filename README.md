@@ -42,6 +42,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 | Spring Data JPA | Hibernate 7.x |
 | PostgreSQL | 17+ |
 | MapStruct | 1.6.3 |
+| Thymeleaf | (plantillas HTML de los mails) |
 | MercadoPago | API de Orders (REST, con `RestClient`) |
 | SpringDoc OpenAPI | 3.0.2 |
 | Spring AOP | (transversal) |
@@ -93,7 +94,7 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
-├── notificacion/         ← Envío de emails (JavaMailSender)
+├── notificacion/         ← Envío de emails (JavaMailSender + plantillas Thymeleaf)
 ├── pago/                 ← Pagos con pasarelas (ver "Pasarelas de pago")
 │   ├── pasarela/         ← PasarelaPago, PasarelaPagoBase, RegistroPasarelas
 │   │   └── mercadopago/  ← MercadoPagoPasarela (hija) + cliente de la API de Orders
@@ -287,6 +288,25 @@ Después, en el panel de MercadoPago → tu aplicación → **Webhooks**, cargá
 `https://tu-dominio.ngrok-free.dev/api/v1/webhook/mercadopago` con el evento **Order**.
 El inspector de ngrok (**http://localhost:4040**) muestra cada aviso que llega.
 
+### Diseño de los mails
+
+Los mails (bienvenida, recuperar contraseña, pago confirmado y cada cambio del
+envío) salen en HTML con la paleta y la tipografía del sitio, y también en
+texto plano para los clientes de correo que no muestran HTML. Las plantillas
+están en `backend/src/main/resources/templates/mail/`:
+
+- `layout.html`: logo, tarjeta y pie, compartidos por todos.
+- `componentes.html`: el botón verde y la etiqueta de arriba del título.
+- `bienvenida.html`, `recuperar-password.html`, `pago-confirmado.html`, `envio.html`.
+
+Los clientes de correo no entienden CSS moderno (variables, flex, grid), así que
+van con tablas y estilos inline, y los colores están escritos a mano: si cambia
+la paleta de `frontend/src/styles/variables.css`, hay que cambiarla también acá.
+Para ver cómo quedan, disparalos desde la app (registrarse, pedir recuperar la
+contraseña, pagar un pedido, despachar un envío) y abrilos en Mailpit
+(http://localhost:8025); su pestaña **HTML Check** dice qué clientes de correo
+soportan cada cosa.
+
 ### Mails reales con Gmail
 
 Por defecto todos los mails caen en Mailpit y no salen a internet. Para que
@@ -452,7 +472,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **261 tests** (260 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **258 tests** (257 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -485,7 +505,7 @@ Cobertura de tests unitarios:
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
-- `NotificacionServiceTest` — 4 tests (emails, fallo de conexión)
+- `NotificacionServiceTest` — 8 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
 
 ### Tests del front
 

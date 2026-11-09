@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,7 +48,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UsuarioDetails userDetails = (UsuarioDetails) usuarioDetailsService.loadUserByUsername(username);
 
-                if (jwtUtil.esTokenValido(token, userDetails)) {
+                // Una cuenta dada de baja deja de entrar aunque su token todavía no venció.
+                if (userDetails.isEnabled() && jwtUtil.esTokenValido(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -58,8 +60,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (JwtException | IllegalArgumentException e) {
-            // Token inválido o expirado — Spring Security se encarga de devolver 401
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
+            // Token inválido o vencido, o de una cuenta que ya no existe (se borró o cambió el email):
+            // la request sigue sin usuario y Spring Security responde 401.
         }
 
         chain.doFilter(request, response);

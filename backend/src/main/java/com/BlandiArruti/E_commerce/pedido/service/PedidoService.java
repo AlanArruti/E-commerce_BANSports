@@ -125,6 +125,9 @@ public class PedidoService implements IPedidoService {
         for (ItemPedidoRequest itemReq : request.items()) {
             Producto producto = productoRepository.findById(itemReq.idProducto())
                     .orElseThrow(() -> EntidadNoEncontradaException.producto(itemReq.idProducto()));
+            if (!producto.isActivo()) {
+                throw new EcommerceException("El producto '" + producto.getNombre() + "' ya no está a la venta.");
+            }
             Variante variante = null;
             if (itemReq.idVariante() != null) {
                 variante = varianteRepository.findById(itemReq.idVariante())
@@ -142,6 +145,10 @@ public class PedidoService implements IPedidoService {
                     throw StockInsuficienteException.stockInsuficiente(
                             itemReq.idVariante(), variante.getStock(), itemReq.cantidad());
                 }
+            } else if (!varianteRepository.findByProductoIdAndActivoTrue(producto.getId()).isEmpty()) {
+                // Sin variante se cobraría el precio base y no se controlaría ni descontaría stock.
+                throw new EcommerceException("El producto '" + producto.getNombre()
+                        + "' tiene variantes: indicá cuál querés (idVariante).");
             }
             productos.add(producto);
             variantes.add(variante);
@@ -339,6 +346,8 @@ public class PedidoService implements IPedidoService {
         for (ItemPedido item : pedido.getItems()) {
             Variante variante = item.getVariante();
             if (variante != null) {
+                // Bloquea la fila: dos pagos simultáneos de la última unidad no pueden venderla dos veces.
+                variante = varianteRepository.findByIdParaActualizar(variante.getId()).orElse(variante);
                 if (variante.getStock() < item.getCantidad()) {
                     throw StockInsuficienteException.stockInsuficiente(
                             variante.getId(), variante.getStock(), item.getCantidad());

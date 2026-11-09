@@ -30,7 +30,7 @@ public class ResenaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
         return ResponseEntity.ok(resenaService.listar(
-                idProducto, PageRequest.of(page, Math.min(size, 50), Sort.by(Sort.Direction.DESC, "fecha"))));
+                idProducto, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50), Sort.by(Sort.Direction.DESC, "fecha"))));
     }
 
     @Operation(summary = "¿Puedo opinar?",

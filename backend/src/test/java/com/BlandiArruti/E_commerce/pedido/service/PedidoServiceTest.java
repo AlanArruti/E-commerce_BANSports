@@ -20,6 +20,7 @@ import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
+import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
 import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
@@ -299,6 +300,23 @@ class PedidoServiceTest {
     }
 
     @Test
+    void pagar_usaElStockLeidoConBloqueo_noElQueQuedoEnMemoria() {
+        // Otro pago ya se llevó unidades: el stock real (bloqueado) es menor al que tenía el pedido en memoria.
+        Variante enMemoria = Variante.builder().id(1L).stock(10).build();
+        Variante real = Variante.builder().id(1L).stock(2).build();
+        ItemPedido item = ItemPedido.builder().variante(enMemoria).cantidad(3).precioProducto(300.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.EN_PREPARACION, item);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(varianteRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(real));
+
+        assertThatThrownBy(() -> pedidoService.pagar(1L, new PagoRequest(TipoFactura.B)))
+                .isInstanceOf(StockInsuficienteException.class);
+        verify(facturaRepository, never()).save(any());
+    }
+
+    @Test
     void pagar_pedidoYaPagado_lanzaNoModificable() {
         Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO);
 
@@ -488,6 +506,53 @@ class PedidoServiceTest {
                 UsuarioDetails.fromCliente(clienteCrear)))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("no pertenece al producto");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    // ─── crear: huecos encontrados en la auditoría ────────────────────────────
+
+    @Test
+    void crear_sinVarianteDeUnProductoConVariantes_rechaza() {
+        Producto producto = proteina();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findByProductoIdAndActivoTrue(2L))
+                .thenReturn(List.of(Variante.builder().id(7L).producto(producto).stock(10).precio(80000.0).build()));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, null, 1)), null),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("tiene variantes");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_productoSinVariantes_seCompraSinIndicarVariante() {
+        Producto producto = proteina();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findByProductoIdAndActivoTrue(2L)).thenReturn(List.of());
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, null, 2)), null),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        verify(pedidoRepository).save(any());
+    }
+
+    @Test
+    void crear_productoDadoDeBaja_rechaza() {
+        Producto producto = proteina();
+        producto.setActivo(false);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, null, 1)), null),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("ya no está a la venta");
         verify(pedidoRepository, never()).save(any());
     }
 

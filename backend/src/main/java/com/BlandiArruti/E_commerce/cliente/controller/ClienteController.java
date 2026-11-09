@@ -40,7 +40,7 @@ public class ClienteController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         var orden = Sort.by(Sort.Direction.DESC, "fechaAlta").and(Sort.by(Sort.Direction.DESC, "id"));
-        return ResponseEntity.ok(clienteService.listarTodos(buscar, PageRequest.of(page, size, orden)));
+        return ResponseEntity.ok(clienteService.listarTodos(buscar, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100), orden)));
     }
 
     @Operation(summary = "Buscar cliente por ID")

@@ -47,7 +47,7 @@ public class PedidoController {
             @RequestParam(defaultValue = "10") int size) {
         // Los más nuevos primero; el id desempata pedidos creados en el mismo instante.
         Sort orden = Sort.by(Sort.Direction.DESC, "fechaCreacion").and(Sort.by(Sort.Direction.DESC, "id"));
-        return ResponseEntity.ok(pedidoService.listarTodos(estado, clienteId, PageRequest.of(page, size, orden)));
+        return ResponseEntity.ok(pedidoService.listarTodos(estado, clienteId, PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100), orden)));
     }
 
     @Operation(summary = "Buscar pedido por ID")

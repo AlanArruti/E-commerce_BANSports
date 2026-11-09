@@ -427,19 +427,16 @@ cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-### Si ya tenías una base de una versión anterior
+### Esquema de la base
 
-`ddl-auto: update` agrega tablas y columnas nuevas, pero **nunca afloja una
-restricción existente** y falla en silencio al agregar una columna `NOT NULL`
-sobre una tabla que ya tiene filas. Eso deja el esquema desfasado y produce
-errores 500 que aparecen recién en runtime. Para repararlo:
+No hay scripts de esquema: Hibernate crea todas las tablas al arrancar la app
+contra una base vacía (`ddl-auto: update`) y en cada arranque agrega lo que
+falte. Las columnas obligatorias nuevas llevan un `DEFAULT` en la entidad para
+poder agregarse sobre tablas con datos. Si querés empezar de cero:
 
 ```bash
-psql -U postgres -d ecommerce -f scripts/reparar-schema.sql
+docker compose down -v && docker compose up -d --build
 ```
-
-El script es idempotente. Si arrancás con una base vacía no hace falta:
-Hibernate genera el esquema correcto de cero.
 
 ---
 

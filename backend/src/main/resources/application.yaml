@@ -36,6 +36,10 @@ spring:
         format_sql: true
         jdbc:
           time_zone: America/Argentina/Buenos_Aires
+        # Por defecto, update borra cada UNIQUE antes de crearla ("drop constraint if exists") y
+        # Postgres llena el log de avisos "does not exist, skipping" al crear la base de cero.
+        schema_update:
+          unique_constraint_strategy: RECREATE_QUIETLY
     open-in-view: false
 
   servlet:

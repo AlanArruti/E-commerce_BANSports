@@ -38,8 +38,6 @@ services:
       # ahora guarda los datos en un subdirectorio por versión, y montar en
       # /data hace que el contenedor arranque en loop.
       - pgdata:/var/lib/postgresql
-      # Todo .sql que dejes acá se ejecuta SOLO al crear la base por primera vez.
-      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-ecommerce} -d ${DB_NAME:-ecommerce}"]
       interval: 10s

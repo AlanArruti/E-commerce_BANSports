@@ -184,12 +184,14 @@ export class CarritoService {
    * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock
    * y que la dirección sea del cliente, y vacía el carrito. Solo con sesión.
    */
-  checkout(idDireccion: number, opcion: CotizacionEnvio): Observable<Pedido> {
+  checkout(idDireccion: number, opcion: CotizacionEnvio, codigoCupon: string | null = null): Observable<Pedido> {
     return this.http
       .post<Pedido>(`${this.url()}/checkout`, {
         idDireccion,
         // Solo la opción elegida: el back vuelve a cotizar y pone el precio él.
-        opcionEnvio: { tipoEntrega: opcion.tipoEntrega, servicio: opcion.servicio }
+        opcionEnvio: { tipoEntrega: opcion.tipoEntrega, servicio: opcion.servicio },
+        // El back vuelve a validar el cupón y calcula el descuento él.
+        codigoCupon
       })
       .pipe(tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito))));
   }

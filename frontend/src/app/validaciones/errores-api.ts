@@ -357,6 +357,10 @@ export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido 
       detalle: `De uno de los productos quedan ${disponible} unidades. Ajustá el carrito y volvé a confirmar.`
     };
   }
+  // El back vuelve a validar el cupón al confirmar: pudo vencerse o agotarse mientras tanto.
+  if (error.status === 400 && /^El cupón|^No existe un cupón/.test(mensaje)) {
+    return { titulo: 'No pudimos aplicar el cupón', detalle: `${mensaje} Quitalo para confirmar sin descuento.` };
+  }
   // El back recotiza el envío al confirmar: si la opción elegida ya no aparece, hay que elegir de nuevo.
   if (error.status === 400 && /opción de envío/i.test(mensaje)) {
     return {
@@ -623,5 +627,54 @@ export function traducirErrorBajaAdministrador(error: HttpErrorResponse): ErrorT
   return {
     titulo: 'No pudimos dar de baja al administrador',
     detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Al tocar "Aplicar" en el checkout. El 400 trae el motivo listo para mostrar (vencido, agotado, compra mínima). */
+export function traducirErrorCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'No se puede usar este cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos validar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorCupones(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los cupones',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta, edición o baja de un cupón en el panel. El 409 por código repetido va pegado al campo. */
+export function traducirErrorGuardarCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cupón ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if ((error.status === 400 || error.status === 409) && mensaje) {
+    return { titulo: 'Revisá los datos del cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }

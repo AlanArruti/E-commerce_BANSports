@@ -16,7 +16,11 @@ public record PedidoResponse(
         List<ItemPedidoResponse> items,
         /** Costo de envío persistido al confirmar el checkout. */
         Double costoEnvio,
-        /** Suma de los ítems más el costo de envío. Se calcula al mapear, no está persistido. */
+        /** Lo que descontó el cupón sobre los productos (0 si no usó). */
+        Double descuentoCupon,
+        /** Código del cupón usado, o null. */
+        String codigoCupon,
+        /** Ítems menos el cupón, más el envío. Se calcula al mapear, no está persistido. */
         Double total,
         EstadoPedido estado,
         EnvioResponse envio,

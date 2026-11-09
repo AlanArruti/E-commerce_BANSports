@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   traducirErrorCarrito,
   traducirErrorCheckout,
+  traducirErrorCupon,
   traducirErrorDireccion,
   traducirErrorVariante
 } from './errores-api';
@@ -79,6 +80,23 @@ describe('traductores de errores del back', () => {
 
     it('404 en la dirección: la borraron', () => {
       expect(traducirErrorCheckout(errorDelBack(404)).titulo).toBe('No pudimos usar esa dirección');
+    });
+  });
+
+  describe('cupones', () => {
+    it('al aplicarlo muestra el motivo que manda el back', () => {
+      const motivo = 'El cupón VERANO es para compras desde $ 50.000 en productos. Te faltan $ 7.500.';
+      expect(traducirErrorCupon(errorDelBack(400, motivo))).toEqual({ titulo: 'No se puede usar este cupón', detalle: motivo });
+    });
+
+    it('si se venció entre que lo aplicó y confirmó, el checkout lo explica', () => {
+      const traducido = traducirErrorCheckout(errorDelBack(400, 'El cupón VERANO venció el 08/11/2026.'));
+      expect(traducido.titulo).toBe('No pudimos aplicar el cupón');
+      expect(traducido.detalle).toContain('venció el 08/11/2026');
+    });
+
+    it('un código inexistente también es un error del cupón en el checkout', () => {
+      expect(traducirErrorCheckout(errorDelBack(400, 'No existe un cupón con el código X.')).titulo).toBe('No pudimos aplicar el cupón');
     });
   });
 

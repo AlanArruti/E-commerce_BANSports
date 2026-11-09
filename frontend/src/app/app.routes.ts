@@ -9,24 +9,28 @@ import { rolGuard, sinAdminGuard } from './guards/rol.guard';
 
 export const routes: Routes = [
   // ── Públicas ───────────────────────────────────────────
-  { path: '', component: Home, title: 'BAN Sports | Suplementos deportivos' },
+  // La tienda es de invitados y clientes: el admin que entra acá va a su panel (sinAdminGuard).
+  { path: '', component: Home, canActivate: [sinAdminGuard], title: 'BAN Sports | Suplementos deportivos' },
 
   // Catálogo, detalle y carrito se cargan recién al entrar, para que la primera carga sea liviana.
   {
     path: 'productos',
     loadComponent: () => import('./page/catalogo/catalogo').then((m) => m.Catalogo),
+    canActivate: [sinAdminGuard],
     title: 'Catálogo | BAN Sports'
   },
   {
     path: 'ofertas',
     loadComponent: () => import('./page/catalogo/catalogo').then((m) => m.Catalogo),
     data: { ofertas: true },
+    canActivate: [sinAdminGuard],
     title: 'Ofertas | BAN Sports'
   },
   {
     // El título final lo pone la página con el nombre del producto.
     path: 'productos/:id',
     loadComponent: () => import('./page/detalle-producto/detalle-producto').then((m) => m.DetalleProducto),
+    canActivate: [sinAdminGuard],
     title: 'Producto | BAN Sports'
   },
   {

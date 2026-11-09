@@ -24,6 +24,7 @@ import { FavoritoService } from '../../services/favorito.service';
 import { ProductoService } from '../../services/producto.service';
 import { ErrorTraducido, traducirErrorCarrito, traducirErrorProducto } from '../../validaciones/errores-api';
 import { ErrorCarga } from '../../componente/error-carga/error-carga';
+import { ProductosSimilares } from '../../componente/productos-similares/productos-similares';
 
 interface EstadoDetalle {
   cargando: boolean;
@@ -76,7 +77,7 @@ function varianteInicial(variantes: Variante[], idDeLaUrl: string | null): Varia
 
 @Component({
   selector: 'app-detalle-producto',
-  imports: [ErrorCarga, NgClass, RouterLink, NoEncontrado, PoteProducto, PrecioPipe],
+  imports: [ErrorCarga, NgClass, RouterLink, NoEncontrado, PoteProducto, PrecioPipe, ProductosSimilares],
   templateUrl: './detalle-producto.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-producto.css'

@@ -1,0 +1,122 @@
+:host {
+  display: block;
+}
+
+.similares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  margin-top: var(--espacio-8);
+  padding-top: var(--espacio-7);
+  border-top: 1px solid var(--color-borde);
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espacio-3) var(--espacio-5);
+}
+
+.titulo {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1;
+}
+
+.bajada {
+  min-height: 21px;
+  margin: var(--espacio-2) 0 0;
+  font-size: 15px;
+  color: var(--color-texto-secundario);
+}
+
+.ver-todo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-texto);
+  white-space: nowrap;
+}
+
+.ver-todo:hover {
+  color: var(--color-verde);
+}
+
+/* Una sola fila: en escritorio entran las 4; con menos, cada tarjeta mantiene su ancho. */
+.fila {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * 20px) / 4);
+  gap: 20px;
+}
+
+.fila > * {
+  min-width: 0;
+}
+
+.esqueleto {
+  aspect-ratio: 3 / 4.6;
+  border-radius: var(--radio-grande);
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+/* ── Tablet y celular: la fila se desliza en horizontal ─────────── */
+@media (max-width: 960px) {
+  .fila {
+    grid-auto-columns: minmax(240px, 42%);
+    gap: var(--espacio-4);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--espacio-6);
+    /* La fila llega hasta los bordes de la pantalla; el contenido arranca alineado con la página. */
+    margin-inline: calc(var(--espacio-6) * -1);
+    padding: 0 var(--espacio-6) var(--espacio-3);
+    scrollbar-width: none;
+  }
+
+  .fila::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fila > * {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .similares {
+    margin-top: var(--espacio-7);
+    padding-top: var(--espacio-6);
+  }
+
+  .fila {
+    /* Se ve un pedazo de la siguiente tarjeta: así se nota que se puede deslizar. */
+    grid-auto-columns: 72%;
+    gap: var(--espacio-3);
+    scroll-padding-inline: var(--espacio-4);
+    margin-inline: calc(var(--espacio-4) * -1);
+    padding-inline: var(--espacio-4);
+  }
+}

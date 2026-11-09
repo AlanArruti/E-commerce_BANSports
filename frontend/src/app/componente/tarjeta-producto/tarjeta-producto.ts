@@ -1,17 +1,19 @@
 import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Estrellas } from '../estrellas/estrellas';
 import { PoteProducto, abreviarNombre } from '../pote-producto/pote-producto';
 import { Producto } from '../../models/producto';
 import { STOCK_BAJO, atributosOrdenados, rangoDePrecios } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
+import { PromedioPipe } from '../../pipes/promedio.pipe';
 import { AuthService } from '../../services/auth.service';
 import { FavoritoService } from '../../services/favorito.service';
 
 /** Tarjeta de un producto del catálogo: imagen, categoría, variantes, stock y precio. Toda la tarjeta lleva al detalle. */
 @Component({
   selector: 'app-tarjeta-producto',
-  imports: [NgClass, RouterLink, PoteProducto, PrecioPipe],
+  imports: [NgClass, RouterLink, PoteProducto, Estrellas, PrecioPipe, PromedioPipe],
   templateUrl: './tarjeta-producto.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './tarjeta-producto.css'

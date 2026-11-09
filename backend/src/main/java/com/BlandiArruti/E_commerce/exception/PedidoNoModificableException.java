@@ -15,6 +15,14 @@ public class PedidoNoModificableException extends EcommerceException {
         );
     }
 
+    // Un cliente solo cancela lo que todavía no pagó: lo cobrado lo cancela el admin (devuelve stock y gestiona el reintegro).
+    public static PedidoNoModificableException clienteNoPuedeCancelar(Long idPedido, EstadoPedido estado) {
+        return new PedidoNoModificableException(
+                "El pedido con id " + idPedido + " ya fue cobrado (estado: " + estado + "). "
+                + "Para cancelarlo, comunicate con la tienda."
+        );
+    }
+
     // Intento de cancelar un pedido ya cancelado o entregado
     public static PedidoNoModificableException noCancelable(Long idPedido, EstadoPedido estado) {
         return new PedidoNoModificableException(

@@ -1,0 +1,122 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Envíos</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Envíos</h1>
+      <p class="cuenta" aria-live="polite">
+        @if (estado().cargando) {
+          Buscando envíos…
+        } @else if (!estado().error) {
+          {{ cuenta() }}
+        }
+      </p>
+    </div>
+    <div class="chips" role="group" aria-label="Filtrar por estado">
+      @for (opcion of filtros; track opcion.valor) {
+        <button type="button" class="chip" [class.activo]="filtro() === opcion.valor"
+          [attr.aria-pressed]="filtro() === opcion.valor" (click)="elegirFiltro(opcion.valor)">{{ opcion.etiqueta }}</button>
+      }
+    </div>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+  @if (errorAccion(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+    </div>
+  }
+
+  @if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor" [attr.aria-busy]="estado().cargando">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Pedido</th>
+            <th scope="col">Cliente y destino</th>
+            <th scope="col">Empresa y seguimiento</th>
+            <th scope="col">Llega aprox.</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (estado().cargando) {
+            @for (fila of [1, 2, 3, 4]; track fila) {
+              <tr class="fila-esqueleto">
+                <td colspan="6"><span class="esqueleto"></span></td>
+              </tr>
+            }
+          } @else {
+            @for (envio of visibles(); track envio.id) {
+              <tr>
+                <td><a class="nombre" [routerLink]="['/admin/pedidos', envio.idPedido]">#{{ envio.idPedido }}</a></td>
+                <td>
+                  <span class="principal">{{ envio.cliente ?? 'Sin cliente' }}</span>
+                  @if (envio.direccion; as direccion) {
+                    <span class="id">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }} · {{ direccion.ciudad.nombreCiudad }}</span>
+                  }
+                </td>
+                <td>
+                  @if (envio.empresa) {
+                    <span class="principal">{{ envio.empresa }}</span>
+                    <span class="id">{{ envio.numeroSeguimiento }}</span>
+                  } @else {
+                    <span class="sin-dato">Sin cargar</span>
+                  }
+                </td>
+                <td class="col-fecha">{{ envio.fechaLlegada ? (envio.fechaLlegada | date: 'dd/MM/yyyy') : '—' }}</td>
+                <td>
+                  <span class="estado-envio" [class]="'estado-envio estado-' + envio.estado.toLowerCase()">{{ etiquetas[envio.estado] }}</span>
+                </td>
+                <td class="col-acciones">
+                  @if (siguiente(envio.estado); as proximo) {
+                    <button type="button" class="btn-avanzar" [disabled]="avanzando() !== null" (click)="avanzar(envio)"
+                      [attr.aria-label]="(proximo === 'EN_CAMINO' ? 'Marcar en camino' : 'Marcar entregado') + ' el pedido ' + envio.idPedido">
+                      {{ avanzando() === envio.idPedido ? 'Guardando…' : proximo === 'EN_CAMINO' ? 'En camino' : 'Entregado' }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="sin-resultados">
+                  @if (filtro() === 'ACTIVOS') {
+                    No hay envíos activos: todo lo despachado ya se entregó.
+                  } @else {
+                    No hay envíos en este estado.
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (!estado().cargando && visibles().length) {
+      <p class="rango">Ordenados por fecha de llegada, del más próximo al más lejano.</p>
+    }
+  }
+</div>

@@ -1,0 +1,238 @@
+<div class="contenedor pedido-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/">Inicio</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/perfil">Mi perfil</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/perfil/pedidos">Mis pedidos</a>
+    @if (estado().pedido; as pedido) {
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Pedido #{{ pedido.id }}</span>
+    }
+  </nav>
+
+  @if (estado().cargando) {
+    <div class="esqueleto esqueleto-titulo" aria-busy="true"></div>
+    <div class="esqueleto esqueleto-avance"></div>
+    <div class="cuerpo">
+      <div class="esqueleto esqueleto-items"></div>
+      <div class="esqueleto esqueleto-lateral"></div>
+    </div>
+  } @else if (estado().noEncontrado) {
+    <div class="vacio">
+      <h1>Pedido no encontrado</h1>
+      <p>Puede que el link esté mal escrito o que el pedido no sea de tu cuenta.</p>
+      <a routerLink="/perfil/pedidos" class="btn btn-primario">Ver mis pedidos</a>
+    </div>
+  } @else if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else if (estado().pedido; as pedido) {
+    @if (aviso(); as texto) {
+      <div class="alerta-ok" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        <span class="alerta-error-texto">{{ texto }}</span>
+      </div>
+    }
+    @if (errorCancelar(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+      </div>
+    }
+
+    @if (confirmando()) {
+      <div class="fondo-modal" (click)="cerrarCancelacion()"></div>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar">
+        <h2 class="titulo-display titulo-modal" id="titulo-cancelar">¿Cancelar el pedido #{{ pedido.id }}?</h2>
+        <p class="texto-modal">
+          Todavía no lo pagaste, así que no se te cobra nada. No se puede deshacer: si lo querés de nuevo, tenés que volver a comprarlo.
+        </p>
+        <div class="acciones-modal">
+          <button type="button" class="btn btn-secundario" [disabled]="cancelando()" (click)="cerrarCancelacion()">Volver</button>
+          <button type="button" class="btn btn-peligro" [disabled]="cancelando()" (click)="confirmarCancelacion(pedido)">
+            {{ cancelando() ? 'Cancelando…' : 'Sí, cancelar pedido' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="encabezado">
+      <h1 class="titulo-display titulo">Pedido #{{ pedido.id }}</h1>
+      <app-estado-pedido [estado]="pedido.estado" />
+    </div>
+    <p class="fecha">Hecho el {{ pedido.fechaCreacion | date: "dd/MM/yyyy 'a las' HH:mm" }}</p>
+
+    <!-- ── Avance ──────────────────────────────────────── -->
+    <section class="panel avance" aria-label="Avance del pedido">
+      @if (pedido.estado === 'CANCELADO') {
+        <p class="cancelado">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
+          Este pedido se canceló.
+        </p>
+      } @else {
+        <ol class="pasos">
+          @for (paso of pasos(); track paso.etiqueta) {
+            <li class="paso" [class.hecho]="paso.hecho" [class.actual]="paso.actual" [attr.aria-current]="paso.actual ? 'step' : null">
+              <span class="paso-barra" aria-hidden="true"></span>
+              <span class="paso-texto">{{ paso.etiqueta }}</span>
+            </li>
+          }
+        </ol>
+      }
+    </section>
+
+    <div class="cuerpo">
+      <!-- ── Productos ─────────────────────────────────── -->
+      <section class="panel" aria-labelledby="titulo-productos">
+        <h2 class="panel-titulo" id="titulo-productos">Productos</h2>
+        <ul class="items">
+          @for (item of pedido.items; track item.idItemPedido) {
+            <li class="item">
+              <div class="item-imagen" aria-hidden="true">
+                @if (item.producto.imagenUrl; as imagen) {
+                  <img [src]="imagen" alt="" loading="lazy" />
+                } @else {
+                  <app-pote-producto class="item-pote" [nombre]="abreviatura(item)" />
+                }
+              </div>
+              <div class="item-datos">
+                <a class="item-nombre" [routerLink]="['/productos', item.producto.id]">{{ item.producto.nombre }}</a>
+                <span class="item-detalle">
+                  @if (descripcionVariante(item)) {
+                    {{ descripcionVariante(item) }} ·
+                  }
+                  {{ item.cantidad }} × {{ precioUnitario(item) | precio }}
+                </span>
+              </div>
+              <span class="item-subtotal">{{ item.precioTotalProducto | precio }}</span>
+            </li>
+          }
+        </ul>
+        <div class="total">
+          <span>Total ({{ unidades() }} {{ unidades() === 1 ? 'producto' : 'productos' }})</span>
+          <strong>{{ pedido.total | precio }}</strong>
+        </div>
+      </section>
+
+      <!-- ── Entrega y acciones ───────────────────────── -->
+      <div class="lateral">
+        <section class="panel" aria-labelledby="titulo-entrega">
+          <h2 class="panel-titulo" id="titulo-entrega">Entrega en</h2>
+          <!-- Los pedidos viejos no guardaban la dirección en el pedido: se usa la del envío. -->
+          @if (pedido.direccionEnvio ?? pedido.envio?.direccion; as direccion) {
+            <p class="direccion">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</p>
+            <p class="direccion-localidad">{{ localidad(direccion) }}</p>
+          } @else {
+            <p class="direccion-localidad">Este pedido no tiene una dirección de entrega cargada.</p>
+          }
+
+          @if (!pedido.envio) {
+            <p class="envio">
+              @if (pedido.estado === 'PENDIENTE_PAGO') {
+                Se despacha cuando se confirme el pago.
+              } @else if (pedido.estado === 'PAGADO' || pedido.estado === 'EN_PREPARACION') {
+                Estamos preparando tu pedido.
+              }
+            </p>
+          }
+        </section>
+
+        <!-- ── Seguimiento del envío (SCRUM-140) ────────── -->
+        @if (pedido.envio; as envio) {
+          <section class="panel" aria-labelledby="titulo-seguimiento">
+            <h2 class="panel-titulo" id="titulo-seguimiento">Seguimiento del envío</h2>
+            <ol class="linea-tiempo">
+              <li class="hito hecho">
+                <span class="hito-punto" aria-hidden="true">✓</span>
+                <div>
+                  <span class="hito-titulo">Despachado</span>
+                  @if (envio.fechaSalida) {
+                    <span class="hito-detalle">Salió el {{ envio.fechaSalida | date: 'dd/MM/yyyy' }}</span>
+                  }
+                </div>
+              </li>
+              <li class="hito" [class.hecho]="envio.estado !== 'DESPACHADO'" [attr.aria-current]="envio.estado === 'EN_CAMINO' ? 'step' : null">
+                <span class="hito-punto" aria-hidden="true">{{ envio.estado !== 'DESPACHADO' ? '✓' : '' }}</span>
+                <div>
+                  <span class="hito-titulo">En camino</span>
+                  @if (envio.estado !== 'ENTREGADO' && envio.fechaLlegada) {
+                    <span class="hito-detalle">Llega aprox. el {{ envio.fechaLlegada | date: 'dd/MM/yyyy' }}</span>
+                  }
+                </div>
+              </li>
+              <li class="hito" [class.hecho]="envio.estado === 'ENTREGADO'" [attr.aria-current]="envio.estado === 'ENTREGADO' ? 'step' : null">
+                <span class="hito-punto" aria-hidden="true">{{ envio.estado === 'ENTREGADO' ? '✓' : '' }}</span>
+                <div>
+                  <span class="hito-titulo">Entregado</span>
+                  <span class="hito-detalle">{{ envio.estado === 'ENTREGADO' ? '¡Ya lo tenés!' : 'Pendiente' }}</span>
+                </div>
+              </li>
+            </ol>
+            <!-- Los envíos de antes de SCRUM-139 no tienen empresa ni número. -->
+            @if (envio.empresa && envio.numeroSeguimiento) {
+              <dl class="datos">
+                <dt>Empresa</dt>
+                <dd>{{ envio.empresa }}</dd>
+                <dt>Seguimiento</dt>
+                <dd class="dato-seguimiento">
+                  <strong>{{ envio.numeroSeguimiento }}</strong>
+                  <button type="button" class="btn-copiar" (click)="copiarSeguimiento(envio.numeroSeguimiento)">
+                    {{ copiado() ? '¡Copiado!' : 'Copiar' }}
+                  </button>
+                </dd>
+              </dl>
+            }
+          </section>
+        }
+
+        <!-- ── Factura (SCRUM-140) ──────────────────────── -->
+        @if (pedido.factura; as factura) {
+          <section class="panel" aria-labelledby="titulo-factura">
+            <h2 class="panel-titulo" id="titulo-factura">Factura</h2>
+            <dl class="datos">
+              <dt>Tipo</dt>
+              <dd>Factura {{ factura.tipo }}</dd>
+              <dt>Número</dt>
+              <dd>{{ numero(factura) }}</dd>
+              @if (factura.fechaEmision) {
+                <dt>Fecha</dt>
+                <dd>{{ factura.fechaEmision | date: 'dd/MM/yyyy' }}</dd>
+              }
+              <dt>Total</dt>
+              <dd class="dato-total">{{ factura.precioTotal | precio }}</dd>
+            </dl>
+            <a class="btn btn-secundario btn-bloque" [routerLink]="['/perfil/pedidos', pedido.id, 'factura']">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>
+              Ver e imprimir
+            </a>
+          </section>
+        }
+
+        @if (pedido.estado === 'PENDIENTE_PAGO') {
+          <!-- El pago llega con SCRUM-122. -->
+          <button type="button" class="btn btn-primario btn-bloque" title="Próximamente">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+            Pagar con Mercado Pago
+          </button>
+          <p class="nota">El stock se reserva cuando se confirma el pago.</p>
+        }
+
+        <!-- ── Cancelar (SCRUM-140): solo lo que todavía no se cobró ── -->
+        @if (puedeCancelar(pedido)) {
+          <button type="button" class="btn btn-peligro btn-bloque" (click)="pedirCancelacion()">Cancelar pedido</button>
+          <p class="nota">Podés cancelarlo mientras no esté pagado.</p>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -20,7 +20,9 @@ const PRODUCTO: Producto = {
   activo: true,
   imagenUrl: null,
   categoria: null,
-  variantes: []
+  variantes: [],
+  promedioResenas: 0,
+  cantidadResenas: 0
 };
 
 const CHOCOLATE: Variante = {

@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -44,7 +45,9 @@ public class PedidoController {
             @RequestParam(required = false) Long clienteId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(pedidoService.listarTodos(estado, clienteId, PageRequest.of(page, size)));
+        // Los más nuevos primero; el id desempata pedidos creados en el mismo instante.
+        Sort orden = Sort.by(Sort.Direction.DESC, "fechaCreacion").and(Sort.by(Sort.Direction.DESC, "id"));
+        return ResponseEntity.ok(pedidoService.listarTodos(estado, clienteId, PageRequest.of(page, size, orden)));
     }
 
     @Operation(summary = "Buscar pedido por ID")

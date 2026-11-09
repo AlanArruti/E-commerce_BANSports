@@ -1,0 +1,243 @@
+.factura-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  padding-bottom: var(--espacio-8);
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding-top: var(--espacio-5);
+}
+
+.migas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.migas a:hover {
+  color: var(--color-verde);
+}
+
+.migas [aria-current] {
+  color: var(--color-texto);
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.botones .btn {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  font-size: 14px;
+}
+
+/* ── La factura: papel blanco, también en pantalla ──────── */
+/* Colores fijos a propósito: imita el comprobante impreso, no el tema oscuro de la tienda. */
+.factura {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--espacio-6);
+  background: #ffffff;
+  color: #111111;
+  border-radius: var(--radio);
+  font-size: 14px;
+}
+
+.factura p {
+  margin: 0;
+}
+
+.factura-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+  padding-bottom: var(--espacio-4);
+  border-bottom: 2px solid #111111;
+}
+
+.marca {
+  font-family: var(--fuente-titulos);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.secundario {
+  color: #555555;
+}
+
+.factura-tipo {
+  text-align: right;
+}
+
+.letra {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--espacio-1);
+  border: 2px solid #111111;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.factura-cliente {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-1) var(--espacio-4);
+  padding: var(--espacio-4) 0;
+}
+
+.factura-cliente .ancho {
+  grid-column: 1 / -1;
+}
+
+.factura-items {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.factura-items th {
+  padding: var(--espacio-2);
+  border-bottom: 1px solid #bbbbbb;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  color: #555555;
+}
+
+.factura-items td {
+  padding: var(--espacio-2);
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.factura-items .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.factura-total {
+  padding-top: var(--espacio-4);
+  font-size: 18px;
+  text-align: right;
+}
+
+.factura-pie {
+  padding-top: var(--espacio-5);
+  font-size: 11px;
+  color: #777777;
+}
+
+/* ── Estados ────────────────────────────────────────────── */
+.esqueleto {
+  height: 520px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: var(--radio);
+  background: linear-gradient(90deg, var(--color-superficie-2) 25%, var(--color-borde) 50%, var(--color-superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+.alerta-error {
+  align-items: center;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sin-factura {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-4);
+  padding: 64px var(--espacio-5);
+  text-align: center;
+  border: 1px dashed var(--color-borde-input);
+  border-radius: var(--radio-grande);
+}
+
+.sin-factura h1 {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.sin-factura p {
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+@media (max-width: 600px) {
+  .factura {
+    padding: var(--espacio-4);
+    font-size: 13px;
+  }
+
+  .factura-cliente {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Impresión: solo la factura ─────────────────────────── */
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+
+  .factura-pagina {
+    padding: 0;
+  }
+
+  .factura {
+    max-width: none;
+    padding: 0;
+    border-radius: 0;
+  }
+}

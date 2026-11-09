@@ -1,0 +1,164 @@
+<section class="resenas" id="opiniones" aria-labelledby="titulo-opiniones">
+  <h2 class="titulo-display titulo" id="titulo-opiniones">Opiniones</h2>
+
+  <div class="cuerpo">
+    <!-- ── Resumen ────────────────────────────────────── -->
+    <div class="resumen">
+      @if (resumen().cantidad) {
+        <span class="resumen-promedio">{{ resumen().promedio | promedio }}</span>
+        <app-estrellas [valor]="resumen().promedio" tamanio="grande" />
+        <span class="resumen-cantidad">{{ resumen().cantidad }} {{ resumen().cantidad === 1 ? 'opinión' : 'opiniones' }}</span>
+      } @else {
+        <app-estrellas [valor]="0" tamanio="grande" />
+        <span class="resumen-cantidad">Todavía no hay opiniones</span>
+      }
+    </div>
+
+    <div class="contenido">
+      @if (cargando()) {
+        <div class="esqueleto" aria-busy="true"></div>
+      } @else if (error(); as errorActual) {
+        <app-error-carga [error]="errorActual" (reintentar)="cargar()" />
+      } @else {
+        <!-- ── Qué puede hacer quien mira ───────────────── -->
+        @if (permiso(); as p) {
+          @switch (p.motivo) {
+            @case ('OK') {
+              <form class="formulario" (submit)="$event.preventDefault(); publicar()" novalidate>
+                <h3 class="formulario-titulo">¿Qué te pareció?</h3>
+                <fieldset class="selector">
+                  <legend class="solo-lectores">Tu puntaje, de 1 a 5 estrellas</legend>
+                  @for (n of [1, 2, 3, 4, 5]; track n) {
+                    <label class="estrella-opcion" [class.llena]="n <= estrellasElegidas()">
+                      <input type="radio" class="solo-lectores" name="estrellas" [value]="n"
+                        [checked]="n === estrellasElegidas()" (change)="elegirEstrellas(n)" />
+                      <span aria-hidden="true">★</span>
+                      <span class="solo-lectores">{{ n }} {{ n === 1 ? 'estrella' : 'estrellas' }}</span>
+                    </label>
+                  }
+                  <span class="selector-texto" aria-live="polite">{{ etiquetas[estrellasElegidas()] }}</span>
+                </fieldset>
+                @if (intentoPublicar() && !estrellasElegidas()) {
+                  <p class="msj-error">Elegí cuántas estrellas le das (de 1 a 5).</p>
+                }
+
+                <div class="campo">
+                  <label for="resena-comentario">Comentario <span class="opcional">(opcional)</span></label>
+                  <textarea id="resena-comentario" class="input textarea" rows="4" [formControl]="comentario"
+                    placeholder="Contá cómo te fue: sabor, cómo se disuelve, resultados…"
+                    [class.input-error]="errorComentario()" [attr.aria-invalid]="errorComentario() ? true : null"
+                    aria-describedby="resena-comentario-ayuda"></textarea>
+                  <div class="ayuda-campo" id="resena-comentario-ayuda">
+                    <span class="msj-error">{{ errorComentario() }}</span>
+                    <span class="contador" [class.excedido]="comentario.value.trim().length > largoMaximo">
+                      {{ comentario.value.trim().length }}/{{ largoMaximo }}
+                    </span>
+                  </div>
+                </div>
+
+                @if (errorPublicar(); as errorActual) {
+                  <div class="alerta-error" role="alert">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+                    <div>
+                      <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+                      <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+                    </div>
+                  </div>
+                }
+
+                <button type="submit" class="btn btn-primario btn-publicar" [disabled]="publicando()">
+                  {{ publicando() ? 'Publicando…' : 'Publicar opinión' }}
+                </button>
+              </form>
+            }
+            @case ('YA_OPINO') {
+              @if (recienPublicada()) {
+                <p class="alerta-ok" role="status">¡Gracias! Tu opinión ya está publicada.</p>
+              }
+              @if (p.resenaPropia; as propia) {
+                <article class="resena propia">
+                  <div class="resena-cabecera">
+                    <app-estrellas [valor]="propia.estrellas" tamanio="chico" />
+                    <strong class="resena-autor">Tu opinión</strong>
+                    <span class="resena-fecha">{{ propia.fecha | date: 'dd/MM/yyyy' }}</span>
+                  </div>
+                  @if (propia.comentario) {
+                    <p class="resena-texto">{{ propia.comentario }}</p>
+                  }
+                </article>
+              }
+            }
+            @case ('NO_LO_COMPRO') {
+              <p class="aviso">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
+                Solo pueden opinar quienes compraron este producto y ya tienen el pedido pagado.
+              </p>
+            }
+            @case ('SIN_SESION') {
+              <p class="aviso">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                <span>¿Lo compraste? <a class="link" routerLink="/login" [queryParams]="{ redirect: router.url }">Iniciá sesión</a> para dejar tu opinión.</span>
+              </p>
+            }
+          }
+        }
+
+        <!-- ── Lista ───────────────────────────────────── -->
+        @if (resenasDeOtros().length) {
+          <ul class="lista">
+            @for (resena of resenasDeOtros(); track resena.id) {
+              <li class="resena">
+                <div class="resena-cabecera">
+                  <app-estrellas [valor]="resena.estrellas" tamanio="chico" />
+                  <strong class="resena-autor">{{ resena.autor }}</strong>
+                  <span class="resena-fecha">{{ resena.fecha | date: 'dd/MM/yyyy' }}</span>
+                  <span class="verificada">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+                    Compra verificada
+                  </span>
+                  @if (authService.esAdmin()) {
+                    <button type="button" class="btn-eliminar" (click)="pedirBorrado(resena)"
+                      [attr.aria-label]="'Eliminar la opinión de ' + resena.autor">Eliminar</button>
+                  }
+                </div>
+                @if (resena.comentario) {
+                  <p class="resena-texto">{{ resena.comentario }}</p>
+                }
+              </li>
+            }
+          </ul>
+          @if (hayMas()) {
+            <button type="button" class="btn-texto" [disabled]="cargandoMas()" (click)="verMas()">
+              {{ cargandoMas() ? 'Cargando…' : 'Ver más opiniones' }}
+            </button>
+          }
+        } @else if (!resenas().length && permiso()?.motivo !== 'OK') {
+          <p class="sin-resenas">Este producto todavía no tiene opiniones.</p>
+        }
+      }
+    </div>
+  </div>
+</section>
+
+@if (resenaABorrar(); as resena) {
+  <div class="fondo-modal" (click)="cerrarBorrado()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-borrar">
+    @if (errorBorrar(); as errorActual) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div>
+          <div class="alerta-error-titulo">{{ errorActual.titulo }}</div>
+          <div class="alerta-error-texto">{{ errorActual.detalle }}</div>
+        </div>
+      </div>
+    }
+    <h2 class="titulo-display titulo-modal" id="titulo-borrar">¿Eliminar la opinión de {{ resena.autor }}?</h2>
+    <p class="texto-modal">Deja de verse en el producto y se recalcula el promedio. No se puede deshacer.</p>
+    <div class="acciones-modal">
+      <button type="button" class="btn btn-secundario" [disabled]="borrando()" (click)="cerrarBorrado()">Cancelar</button>
+      <button type="button" class="btn btn-peligro" [disabled]="borrando()" (click)="confirmarBorrado()">
+        {{ borrando() ? 'Eliminando…' : 'Sí, eliminar' }}
+      </button>
+    </div>
+  </div>
+}

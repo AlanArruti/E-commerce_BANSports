@@ -33,6 +33,12 @@
       <!-- El link se estira sobre toda la tarjeta (ver .producto-link::after). -->
       <a class="producto-link" [routerLink]="['/productos', producto().id]">{{ producto().nombre }}</a>
     </h3>
+    @if (producto().cantidadResenas) {
+      <span class="producto-resenas">
+        <app-estrellas [valor]="producto().promedioResenas" tamanio="chico" />
+        {{ producto().promedioResenas | promedio }} ({{ producto().cantidadResenas }})
+      </span>
+    }
     @if (resumenVariantes()) {
       <span class="producto-variante">{{ resumenVariantes() }}</span>
     }

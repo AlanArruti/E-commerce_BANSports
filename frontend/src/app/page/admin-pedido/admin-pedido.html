@@ -1,0 +1,283 @@
+<div class="contenedor pedido-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/admin/pedidos">Pedidos</a>
+    @if (estado().pedido; as pedido) {
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Pedido #{{ pedido.id }}</span>
+    }
+  </nav>
+
+  @if (estado().cargando) {
+    <div class="esqueleto esqueleto-titulo" aria-busy="true"></div>
+    <div class="cuerpo">
+      <div class="esqueleto esqueleto-items"></div>
+      <div class="esqueleto esqueleto-lateral"></div>
+    </div>
+  } @else if (estado().noEncontrado) {
+    <app-no-encontrado titulo="Pedido no encontrado" texto="No hay ningún pedido con ese número. Volvé al listado y elegí otro." />
+  } @else if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else if (estado().pedido; as pedido) {
+    @if (aviso(); as texto) {
+      <div class="alerta-ok" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        <span class="alerta-error-texto">{{ texto }}</span>
+      </div>
+    }
+    @if (errorAccion(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+      </div>
+    }
+
+    <div class="encabezado">
+      <h1 class="titulo-display titulo">Pedido #{{ pedido.id }}</h1>
+      <app-estado-pedido [estado]="pedido.estado" />
+    </div>
+    <p class="fecha">
+      Hecho el {{ pedido.fechaCreacion | date: "dd/MM/yyyy 'a las' HH:mm" }}
+      @if (pedido.cliente; as cliente) {
+        · {{ cliente.nombre }} {{ cliente.apellido }}
+      }
+    </p>
+
+    <div class="cuerpo">
+      <div class="principal">
+        <!-- ── Productos ─────────────────────────────────── -->
+        <section class="panel" aria-labelledby="titulo-productos">
+          <h2 class="panel-titulo" id="titulo-productos">Productos</h2>
+          <ul class="items">
+            @for (item of pedido.items; track item.idItemPedido) {
+              <li class="item">
+                <div class="item-imagen" aria-hidden="true">
+                  @if (item.producto.imagenUrl; as imagen) {
+                    <img [src]="imagen" alt="" loading="lazy" />
+                  } @else {
+                    <app-pote-producto class="item-pote" [nombre]="abreviatura(item)" />
+                  }
+                </div>
+                <div class="item-datos">
+                  <a class="item-nombre" [routerLink]="['/admin/productos', item.producto.id, 'editar']">{{ item.producto.nombre }}</a>
+                  <span class="item-detalle">
+                    @if (descripcionVariante(item)) {
+                      {{ descripcionVariante(item) }} ·
+                    }
+                    {{ item.cantidad }} × {{ precioUnitario(item) | precio }}
+                  </span>
+                </div>
+                <span class="item-subtotal">{{ item.precioTotalProducto | precio }}</span>
+              </li>
+            }
+          </ul>
+          <div class="total">
+            <span>Total ({{ unidades() }} {{ unidades() === 1 ? 'producto' : 'productos' }})</span>
+            <strong>{{ pedido.total | precio }}</strong>
+          </div>
+        </section>
+
+        <div class="datos">
+          <!-- ── Cliente y entrega ───────────────────────── -->
+          <section class="panel" aria-labelledby="titulo-cliente">
+            <h2 class="panel-titulo" id="titulo-cliente">Cliente y entrega</h2>
+            @if (pedido.cliente; as cliente) {
+              <p class="dato-fuerte">{{ cliente.nombre }} {{ cliente.apellido }}</p>
+              <p class="dato">{{ cliente.email }} · DNI {{ cliente.dni }}</p>
+            }
+            <!-- Los pedidos viejos no guardaban la dirección en el pedido: se usa la del envío. -->
+            @if (pedido.direccionEnvio ?? pedido.envio?.direccion; as direccion) {
+              <p class="dato-fuerte separado">{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</p>
+              <p class="dato">{{ localidad(direccion) }}</p>
+            } @else {
+              <p class="dato separado sin-dato">Sin dirección de entrega cargada.</p>
+            }
+          </section>
+
+          <!-- ── Factura y envío ─────────────────────────── -->
+          <section class="panel" aria-labelledby="titulo-factura">
+            <h2 class="panel-titulo" id="titulo-factura">Factura y envío</h2>
+            <p class="linea">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg>
+              @if (pedido.factura; as factura) {
+                <span>Factura {{ factura.tipo }} · {{ factura.precioTotal | precio }}</span>
+              } @else {
+                <span class="sin-dato">Sin factura: se emite al cobrar.</span>
+              }
+            </p>
+            @if (pedido.envio; as envio) {
+              <ol class="pasos-envio" aria-label="Avance del envío">
+                @for (paso of pasosEnvio; track paso; let i = $index) {
+                  <li class="paso-envio" [class.hecho]="i <= pasosEnvio.indexOf(envio.estado)"
+                    [attr.aria-current]="paso === envio.estado ? 'step' : null">
+                    <span class="paso-barra" aria-hidden="true"></span>
+                    {{ etiquetasEnvio[paso] }}
+                  </li>
+                }
+              </ol>
+              <dl class="datos-envio">
+                <dt>Empresa</dt>
+                <dd>{{ envio.empresa ?? 'Sin cargar' }}</dd>
+                <dt>Seguimiento</dt>
+                <dd class="seguimiento">{{ envio.numeroSeguimiento ?? 'Sin cargar' }}</dd>
+                @if (envio.fechaSalida) {
+                  <dt>Salió</dt>
+                  <dd>{{ envio.fechaSalida | date: 'dd/MM/yyyy' }}</dd>
+                }
+                @if (envio.fechaLlegada) {
+                  <dt>Llega aprox.</dt>
+                  <dd>{{ envio.fechaLlegada | date: 'dd/MM/yyyy' }}</dd>
+                }
+              </dl>
+            } @else {
+              <p class="linea">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
+                <span class="sin-dato">Sin envío: se crea al despachar.</span>
+              </p>
+            }
+          </section>
+        </div>
+      </div>
+
+      <!-- ── Acciones ──────────────────────────────────── -->
+      <section class="panel acciones" aria-labelledby="titulo-acciones">
+        <h2 class="panel-titulo" id="titulo-acciones">Acciones</h2>
+        @switch (pedido.estado) {
+          @case ('PENDIENTE_PAGO') {
+            <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="pasarAPreparacion(pedido)">
+              {{ procesando() === 'preparar' ? 'Guardando…' : 'Pasar a En preparación' }}
+            </button>
+            <p class="nota">Pasa a Pagado solo cuando el cliente paga con Mercado Pago.</p>
+          }
+          @case ('EN_PREPARACION') {
+            <p class="nota">Esperando el pago del cliente. Pasa a Pagado solo cobrando.</p>
+          }
+          @case ('PAGADO') {
+            <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando() || !pedido.direccionEnvio" (click)="abrirDespacho()">
+              Despachar
+            </button>
+            @if (!pedido.direccionEnvio) {
+              <p class="nota aviso">No se puede despachar: el pedido no tiene dirección de entrega (es de antes de que el checkout la guardara).</p>
+            } @else {
+              <p class="nota">Crea el envío a la dirección del cliente.</p>
+            }
+          }
+          @case ('DESPACHADO') {
+            @if (siguienteEnvio(); as siguiente) {
+              <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="avanzarEnvio(pedido)">
+                {{ procesando() === 'avanzar' ? 'Guardando…' : siguiente === 'EN_CAMINO' ? 'Marcar en camino' : 'Marcar entregado' }}
+              </button>
+              @if (siguiente === 'ENTREGADO') {
+                <p class="nota">El pedido también pasa a Entregado.</p>
+              }
+            } @else if (!pedido.envio) {
+              <!-- Pedidos viejos despachados sin envío: no hay envío que avanzar. -->
+              <button type="button" class="btn btn-primario btn-bloque" [disabled]="procesando()" (click)="marcarEntregado(pedido)">
+                {{ procesando() === 'avanzar' ? 'Guardando…' : 'Marcar como entregado' }}
+              </button>
+            }
+          }
+          @case ('ENTREGADO') {
+            <p class="nota">Pedido terminado: no tiene más pasos.</p>
+          }
+          @case ('CANCELADO') {
+            <p class="nota">Pedido cancelado: ya no se puede modificar.</p>
+          }
+        }
+        @if (pedido.estado !== 'ENTREGADO' && pedido.estado !== 'CANCELADO') {
+          <button type="button" class="btn btn-peligro btn-bloque" [disabled]="procesando()" (click)="abrirCancelacion()">
+            Cancelar pedido
+          </button>
+        }
+      </section>
+    </div>
+
+    <!-- ── Modal: despachar ────────────────────────────── -->
+    @if (modal() === 'despachar') {
+      <div class="fondo-modal" (click)="cerrarModal()"></div>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-despachar">
+        <h2 class="titulo-display titulo-modal" id="titulo-despachar">Despachar pedido #{{ pedido.id }}</h2>
+        @if (pedido.direccionEnvio; as direccion) {
+          <p class="texto-modal">Se crea el envío a {{ direccion.nombreCalle }} {{ direccion.numeroCalle }} y el pedido pasa a Despachado.</p>
+        }
+        <form class="form-envio" [formGroup]="formEnvio" (ngSubmit)="confirmarDespacho(pedido)" novalidate>
+          <div class="campo">
+            <label for="empresa-envio">Empresa</label>
+            <input id="empresa-envio" class="input" formControlName="empresa" list="empresas-envio" autocomplete="off"
+              placeholder="Ej. Andreani"
+              [class.input-error]="errorCampo('empresa')" [attr.aria-invalid]="errorCampo('empresa') ? true : null"
+              aria-describedby="error-empresa" />
+            <datalist id="empresas-envio">
+              @for (empresa of empresas; track empresa) {
+                <option [value]="empresa"></option>
+              }
+            </datalist>
+            <span class="msj-error" id="error-empresa">{{ errorCampo('empresa') }}</span>
+          </div>
+          <div class="campo">
+            <label for="seguimiento-envio">N.º de seguimiento</label>
+            <input id="seguimiento-envio" class="input" formControlName="numeroSeguimiento" autocomplete="off"
+              placeholder="Ej. 360002541870"
+              [class.input-error]="errorCampo('numeroSeguimiento')" [attr.aria-invalid]="errorCampo('numeroSeguimiento') ? true : null"
+              aria-describedby="error-seguimiento" />
+            <span class="msj-error" id="error-seguimiento">{{ errorCampo('numeroSeguimiento') }}</span>
+          </div>
+          <div class="campo">
+            <label for="fecha-salida">Sale el</label>
+            <input id="fecha-salida" type="date" class="input" formControlName="fechaSalida" [min]="hoy"
+              [class.input-error]="errorCampo('fechaSalida')" [attr.aria-invalid]="errorCampo('fechaSalida') ? true : null"
+              aria-describedby="error-salida" />
+            <span class="msj-error" id="error-salida">{{ errorCampo('fechaSalida') }}</span>
+          </div>
+          <div class="campo">
+            <label for="fecha-llegada">Llega aprox. el</label>
+            <input id="fecha-llegada" type="date" class="input" formControlName="fechaLlegada" [min]="formEnvio.controls.fechaSalida.value || hoy"
+              [class.input-error]="errorCampo('fechaLlegada')" [attr.aria-invalid]="errorCampo('fechaLlegada') ? true : null"
+              aria-describedby="error-llegada" />
+            <span class="msj-error" id="error-llegada">{{ errorCampo('fechaLlegada') }}</span>
+          </div>
+          <div class="acciones-modal">
+            <button type="button" class="btn btn-secundario" [disabled]="procesando()" (click)="cerrarModal()">Volver</button>
+            <button type="submit" class="btn btn-primario" [disabled]="procesando()">
+              {{ procesando() === 'despachar' ? 'Despachando…' : 'Despachar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- ── Modal: cancelar ─────────────────────────────── -->
+    @if (modal() === 'cancelar') {
+      <div class="fondo-modal" (click)="cerrarModal()"></div>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar">
+        <h2 class="titulo-display titulo-modal" id="titulo-cancelar">¿Cancelar el pedido #{{ pedido.id }}?</h2>
+        <p class="texto-modal">
+          @if (devuelveStock()) {
+            <strong class="destacado">Ya estaba cobrado:</strong> el stock de sus productos vuelve al catálogo.
+            La devolución del dinero se gestiona aparte en Mercado Pago.
+          } @else {
+            Todavía no se cobró, así que no se mueve el stock.
+          }
+          No se puede deshacer.
+        </p>
+        <div class="acciones-modal">
+          <button type="button" class="btn btn-secundario" [disabled]="procesando()" (click)="cerrarModal()">Volver</button>
+          <button type="button" class="btn btn-peligro" [disabled]="procesando()" (click)="confirmarCancelacion(pedido)">
+            {{ procesando() === 'cancelar' ? 'Cancelando…' : 'Sí, cancelar pedido' }}
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

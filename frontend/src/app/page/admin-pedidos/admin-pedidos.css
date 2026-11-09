@@ -219,3 +219,13 @@
   border-color: var(--color-verde);
   color: var(--color-verde);
 }
+
+.numero a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.numero a:hover {
+  color: var(--color-verde);
+}

@@ -99,6 +99,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/envio/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/factura/**").hasRole("ADMIN")
 
+                // Dejar una reseña es del cliente: va antes de la regla general de POST /producto/**.
+                .requestMatchers(HttpMethod.POST,   "/api/v1/producto/*/resenas").hasRole("CLIENTE")
                 // Cupones: el cliente solo los valida contra su carrito; el resto es del panel.
                 .requestMatchers(HttpMethod.GET, "/api/v1/cupones/validar").hasRole("CLIENTE")
                 .requestMatchers("/api/v1/cupones/**").hasRole("ADMIN")

@@ -16,5 +16,8 @@ public record ProductoResponse(
         /** URL de la imagen, o null si el producto no tiene una cargada. */
         String imagenUrl,
         CategoriaResponse categoria,
-        List<VarianteResponse> variantes
+        List<VarianteResponse> variantes,
+        /** Promedio de estrellas con un decimal (0 si no tiene reseñas). */
+        Double promedioResenas,
+        Integer cantidadResenas
 ) {}

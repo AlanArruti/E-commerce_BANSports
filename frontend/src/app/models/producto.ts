@@ -17,4 +17,7 @@ export interface Producto {
   imagenUrl: string | null;
   categoria: Categoria | null;
   variantes: Variante[];
+  /** Promedio de estrellas con un decimal; 0 si no tiene reseñas. */
+  promedioResenas: number;
+  cantidadResenas: number;
 }

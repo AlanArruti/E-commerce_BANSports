@@ -1,0 +1,37 @@
+.estado {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--color-borde-input);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-texto-suave);
+}
+
+/* Falta que el cliente haga algo: pagar. */
+.estado-pendiente-pago {
+  border-color: var(--color-aviso);
+  color: var(--color-aviso);
+}
+
+.estado-pagado,
+.estado-en-preparacion,
+.estado-despachado {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.estado-entregado {
+  border-color: var(--color-verde);
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.estado-cancelado {
+  border-color: var(--color-error);
+  color: var(--color-error-texto);
+}

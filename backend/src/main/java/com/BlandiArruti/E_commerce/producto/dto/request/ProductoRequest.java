@@ -26,5 +26,8 @@ public record ProductoRequest(
         Integer descuento,
 
         @NotNull(message = "El id de categoría es obligatorio.")
-        Long categoriaId
+        Long categoriaId,
+
+        /** Mostrarlo en "Novedades" del inicio. null o ausente: false al crear, sin cambios al editar. */
+        Boolean novedad
 ) {}

@@ -113,6 +113,13 @@ public class Producto {
      */
     // El DEFAULT permite que ddl-auto=update agregue la columna sobre una tabla
     // que ya tiene filas cargadas.
+    // Lo elige el admin: se muestra en "Novedades" del inicio. Con DEFAULT para que
+    // ddl-auto=update pueda agregar la columna sobre una tabla con filas.
+    @Column(name = "novedad", nullable = false,
+            columnDefinition = "boolean default false not null")
+    @Builder.Default
+    private boolean novedad = false;
+
     @Column(name = "tiene_imagen", nullable = false,
             columnDefinition = "boolean default false not null")
     @Builder.Default

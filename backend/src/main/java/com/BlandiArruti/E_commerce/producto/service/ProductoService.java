@@ -117,11 +117,12 @@ public class ProductoService implements IProductoService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax,
-                                                      String search, Boolean soloOfertas, Pageable pageable) {
+                                                      String search, Boolean soloOfertas, Boolean soloNovedades,
+                                                      Pageable pageable) {
         String searchParam = normalizarBusqueda(search);
         return PageResponse.from(
                 productoRepository.buscarConFiltros(categoriaId, precioMin, precioMax, searchParam,
-                                Boolean.TRUE.equals(soloOfertas), pageable)
+                                Boolean.TRUE.equals(soloOfertas), Boolean.TRUE.equals(soloNovedades), pageable)
                         .map(productoMapper::toResponse)
         );
     }
@@ -162,6 +163,7 @@ public class ProductoService implements IProductoService {
 
         Producto producto = productoMapper.toEntity(request);
         producto.setCategoria(categoria);
+        producto.setNovedad(Boolean.TRUE.equals(request.novedad()));
         producto.recalcularPrecioFinal();
         return productoMapper.toResponse(productoRepository.save(producto));
     }
@@ -178,7 +180,17 @@ public class ProductoService implements IProductoService {
         producto.setPrecio(request.precioBase());
         producto.setDescuento(request.descuento());
         producto.setCategoria(categoria);
+        if (request.novedad() != null) {
+            producto.setNovedad(request.novedad());
+        }
         producto.recalcularPrecioFinal();
+        return productoMapper.toResponse(productoRepository.save(producto));
+    }
+
+    public ProductoResponse marcarNovedad(Long id, boolean novedad) {
+        Producto producto = productoRepository.findByIdAndActivoTrue(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.producto(id));
+        producto.setNovedad(novedad);
         return productoMapper.toResponse(productoRepository.save(producto));
     }
 

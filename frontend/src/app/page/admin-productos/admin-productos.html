@@ -61,6 +61,16 @@
     </select>
   </div>
 
+  @if (errorNovedad(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+    </div>
+  }
+
   <!-- ── Tabla ──────────────────────────────────────────── -->
   @if (estado().error; as error) {
     <div class="alerta-error" role="alert">
@@ -106,6 +116,9 @@
                 <td>
                   <a class="nombre" [routerLink]="['/admin/productos', producto.id, 'editar']">{{ producto.nombre }}</a>
                   <span class="id">#{{ producto.id }}</span>
+                  @if (producto.novedad) {
+                    <span class="etiqueta-novedad">Novedad</span>
+                  }
                 </td>
                 <td>
                   @if (producto.categoria; as categoriaProducto) {
@@ -137,6 +150,13 @@
                   }
                 </td>
                 <td class="col-acciones">
+                  <button type="button" class="btn-accion novedad" [ngClass]="{ activa: producto.novedad }"
+                    [attr.aria-pressed]="producto.novedad"
+                    [attr.aria-label]="(producto.novedad ? 'Sacar de Novedades a ' : 'Mostrar en Novedades a ') + producto.nombre"
+                    [title]="producto.novedad ? 'Sacar de Novedades del inicio' : 'Mostrar en Novedades del inicio'"
+                    [disabled]="cambiandoNovedad().has(producto.id)" (click)="alternarNovedad(producto)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" [attr.fill]="producto.novedad ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>
+                  </button>
                   <a class="btn-accion" [routerLink]="['/admin/productos', producto.id, 'editar']" [attr.aria-label]="'Editar ' + producto.nombre" title="Editar">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
                   </a>

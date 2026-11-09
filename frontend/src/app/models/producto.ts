@@ -20,4 +20,6 @@ export interface Producto {
   /** Promedio de estrellas con un decimal; 0 si no tiene reseñas. */
   promedioResenas: number;
   cantidadResenas: number;
+  /** El admin lo eligió para "Novedades" del inicio. */
+  novedad: boolean;
 }

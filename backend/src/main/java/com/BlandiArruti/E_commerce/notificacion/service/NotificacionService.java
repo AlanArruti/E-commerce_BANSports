@@ -5,12 +5,14 @@ import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
+import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.notificacion.config.NotificacionProperties;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -41,15 +43,18 @@ public class NotificacionService {
     private final JavaMailSender mailSender;
     private final NotificacionProperties notificacionProperties;
     private final ITemplateEngine templateEngine;
+    private final FacturaPdfGenerator facturaPdfGenerator;
     private final String frontUrl;
 
     public NotificacionService(JavaMailSender mailSender,
                                NotificacionProperties notificacionProperties,
                                ITemplateEngine templateEngine,
+                               FacturaPdfGenerator facturaPdfGenerator,
                                @Value("${app.front-url:http://localhost:4200}") String frontUrl) {
         this.mailSender = mailSender;
         this.notificacionProperties = notificacionProperties;
         this.templateEngine = templateEngine;
+        this.facturaPdfGenerator = facturaPdfGenerator;
         this.frontUrl = frontUrl.endsWith("/") ? frontUrl.substring(0, frontUrl.length() - 1) : frontUrl;
     }
 
@@ -59,6 +64,10 @@ public class NotificacionService {
 
     /** Una etapa del seguimiento del envío. */
     public record PasoEnvio(String etiqueta, boolean hecho, boolean actual) {
+    }
+
+    /** Archivo que viaja adjunto al mail (la factura en PDF). */
+    private record Adjunto(String nombre, byte[] contenido, String tipo) {
     }
 
     public void notificarFacturaGenerada(Factura factura) {
@@ -95,19 +104,35 @@ public class NotificacionService {
         contexto.setVariable("total", pesos(factura.getPrecioTotal()));
         contexto.setVariable("direccion", direccion);
 
+        // La factura va adjunta en PDF. Si no se pudo generar, el mail sale igual (se descarga desde el pedido).
+        Adjunto facturaPdf = facturaEnPdf(factura);
+        contexto.setVariable("facturaAdjunta", facturaPdf != null);
+
         String texto = """
                 Hola %s,
 
                 Acreditamos el pago de tu pedido #%d y generamos la factura tipo %s por un total de %s.
-                %s
+                %s%s
                 ¡Gracias por tu compra!
 
                 Ver mis pedidos: %s/perfil""".formatted(
                 cliente.getNombre(), pedido.getId(), factura.getTipoFactura(), pesos(factura.getPrecioTotal()),
+                facturaPdf != null ? "Te adjuntamos la factura en PDF.\n" : "",
                 direccion != null ? "Se envía a: " + direccion + "\n" : "",
                 frontUrl);
 
-        enviar(cliente.getEmail(), asunto, "mail/pago-confirmado", contexto, texto);
+        enviar(cliente.getEmail(), asunto, "mail/pago-confirmado", contexto, texto, facturaPdf);
+    }
+
+    private Adjunto facturaEnPdf(Factura factura) {
+        try {
+            return new Adjunto(facturaPdfGenerator.nombreArchivo(factura), facturaPdfGenerator.generar(factura),
+                    "application/pdf");
+        } catch (Exception e) {
+            log.error("No se pudo generar el PDF de la factura del pedido {}: {}",
+                    factura.getPedido().getId(), e.getMessage(), e);
+            return null;
+        }
     }
 
     public void notificarRegistroExitoso(Cliente cliente) {
@@ -207,6 +232,11 @@ public class NotificacionService {
     }
 
     private void enviar(String destinatario, String asunto, String plantilla, Context contexto, String texto) {
+        enviar(destinatario, asunto, plantilla, contexto, texto, null);
+    }
+
+    private void enviar(String destinatario, String asunto, String plantilla, Context contexto, String texto,
+                        Adjunto adjunto) {
         try {
             String html = templateEngine.process(plantilla, contexto);
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -215,6 +245,9 @@ public class NotificacionService {
             helper.setTo(destinatario);
             helper.setSubject(asunto);
             helper.setText(texto, html);
+            if (adjunto != null) {
+                helper.addAttachment(adjunto.nombre(), new ByteArrayResource(adjunto.contenido()), adjunto.tipo());
+            }
             mailSender.send(mensaje);
         } catch (Exception e) {
             // El mail es un aviso: si falla no tiene que romper el registro, el pago ni el envío.

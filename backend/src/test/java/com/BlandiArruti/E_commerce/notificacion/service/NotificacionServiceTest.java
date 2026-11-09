@@ -7,6 +7,7 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
+import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.geo.entity.Ciudad;
 import com.BlandiArruti.E_commerce.notificacion.config.NotificacionProperties;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +58,8 @@ class NotificacionServiceTest {
     private JavaMailSender mailSender;
 
     private NotificacionService service;
+    private NotificacionProperties properties;
+    private SpringTemplateEngine templateEngine;
 
     @BeforeEach
     void setUp() {
@@ -70,7 +74,10 @@ class NotificacionServiceTest {
         SpringTemplateEngine templateEngine = new SpringTemplateEngine();
         templateEngine.setTemplateResolver(resolver);
 
-        service = new NotificacionService(mailSender, properties, templateEngine, "http://localhost:4200/");
+        service = new NotificacionService(mailSender, properties, templateEngine, new FacturaPdfGenerator(),
+                "http://localhost:4200/");
+        this.properties = properties;
+        this.templateEngine = templateEngine;
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage(Session.getInstance(new Properties())));
     }
 
@@ -90,6 +97,18 @@ class NotificacionServiceTest {
         assertThat(textos).as("versión en texto plano").hasSize(1);
         assertThat(htmls).as("versión HTML").hasSize(1);
         return new MailEnviado(mensaje, textos.getFirst(), htmls.getFirst());
+    }
+
+    /** El adjunto del mail (la factura en PDF), o null si no tiene. */
+    private static Part adjunto(MimeMessage mensaje) throws Exception {
+        Multipart raiz = (Multipart) mensaje.getContent();
+        for (int i = 0; i < raiz.getCount(); i++) {
+            BodyPart parte = raiz.getBodyPart(i);
+            if (Part.ATTACHMENT.equalsIgnoreCase(parte.getDisposition())) {
+                return parte;
+            }
+        }
+        return null;
     }
 
     private static void juntarPartes(Part parte, List<String> textos, List<String> htmls) throws Exception {
@@ -136,6 +155,7 @@ class NotificacionServiceTest {
                 .precioProducto(60000.0)
                 .build());
         Factura factura = Factura.builder()
+                .id(3L)
                 .pedido(pedido)
                 .tipoFactura(TipoFactura.B)
                 .precioTotal(58500.0)
@@ -155,7 +175,32 @@ class NotificacionServiceTest {
                 .contains("http://localhost:4200/perfil")
                 // La paleta del sitio: fondo, tarjeta y verde de acento.
                 .contains("#0a0d0b", "#121714", "#2be37a");
-        assertThat(mail.texto()).contains("Juan", "#10", "B", "$ 58.500");
+        assertThat(mail.texto()).contains("Juan", "#10", "B", "$ 58.500", "adjuntamos la factura en PDF");
+
+        Part pdf = adjunto(mail.mensaje());
+        assertThat(pdf).as("factura adjunta").isNotNull();
+        assertThat(pdf.getFileName()).isEqualTo("factura-B-0001-00000003.pdf");
+        assertThat(pdf.getContentType()).startsWith("application/pdf");
+        assertThat(pdf.getInputStream().readNBytes(5)).isEqualTo("%PDF-".getBytes());
+        assertThat(mail.html()).contains("Te la adjuntamos en PDF.");
+    }
+
+    @Test
+    void notificarFacturaGenerada_siFallaElPdf_mandaElMailSinAdjunto() throws Exception {
+        FacturaPdfGenerator generadorRoto = mock(FacturaPdfGenerator.class);
+        when(generadorRoto.generar(any())).thenThrow(new IllegalStateException("fuente rota"));
+        NotificacionService conPdfRoto = new NotificacionService(mailSender, properties, templateEngine,
+                generadorRoto, "http://localhost:4200/");
+        Cliente cliente = Cliente.builder().nombre("Juan").email("juan@mail.com").build();
+        Pedido pedido = Pedido.builder().id(12L).cliente(cliente).build();
+        Factura factura = Factura.builder().id(4L).pedido(pedido).tipoFactura(TipoFactura.B).precioTotal(100.0).build();
+
+        conPdfRoto.notificarFacturaGenerada(factura);
+
+        MailEnviado mail = mailEnviado();
+        assertThat(adjunto(mail.mensaje())).isNull();
+        assertThat(mail.html()).doesNotContain("adjuntamos");
+        assertThat(mail.texto()).doesNotContain("adjuntamos");
     }
 
     @Test

@@ -1,0 +1,95 @@
+.header-admin {
+  background: var(--color-negro);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  padding-top: var(--espacio-4);
+  padding-bottom: var(--espacio-3);
+}
+
+.marca .logo-marca {
+  font-size: 24px;
+}
+
+.marca .logo-texto {
+  font-size: 20px;
+}
+
+.etiqueta-panel {
+  margin-left: var(--espacio-2);
+  padding: 3px 8px;
+  border: 1px solid var(--color-verde);
+  border-radius: 999px;
+  color: var(--color-verde);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  font-size: 14px;
+}
+
+.usuario {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  color: var(--color-texto-secundario);
+}
+
+.btn-salir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+/* Las secciones se desplazan de costado si no entran (celular). */
+.secciones {
+  border-top: 1px solid var(--color-borde);
+}
+
+.secciones-fila {
+  display: flex;
+  gap: var(--espacio-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.secciones-fila::-webkit-scrollbar {
+  display: none;
+}
+
+.secciones a {
+  padding: var(--espacio-3) 0;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-texto-secundario);
+}
+
+.secciones a:hover {
+  color: var(--color-texto);
+}
+
+.secciones a.activa {
+  color: var(--color-verde);
+  border-bottom-color: var(--color-verde);
+}
+
+@media (max-width: 640px) {
+  .usuario {
+    display: none;
+  }
+}

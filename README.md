@@ -185,9 +185,13 @@ la app); después arranca en segundos.
 La base arranca vacía: la app crea las tablas, pero no carga datos de prueba.
 
 - **Clientes:** se crean desde "Registrarse" en el front (o `POST /api/v1/auth/register`).
-- **Administradores:** no tienen registro público. El primero se crea a mano con
-  un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt; los
-  siguientes, desde la API (`POST /api/v1/administrador`, solo ADMIN).
+  Desde el panel, en **Clientes** (`/admin/clientes`), se buscan por nombre o email,
+  se ven sus pedidos y se dan de baja (baja lógica: sus pedidos y facturas quedan).
+- **Administradores:** no tienen registro público. Solo el **primero** se crea a mano
+  con un `INSERT` en `administradores`, con la contraseña hasheada en BCrypt. Los
+  siguientes se dan de alta desde el panel, en **Administradores**
+  (`/admin/administradores`), donde también se dan de baja. Nadie puede darse de
+  baja a sí mismo, así que siempre queda al menos un administrador.
 - **Catálogo:** categorías y productos se cargan desde el panel de administración.
 - **Provincias y ciudades:** no se precargan. El formulario de dirección busca la
   localidad en [Georef](https://www.argentina.gob.ar/datos-abiertos/georef), la API
@@ -472,9 +476,9 @@ Cobertura de tests unitarios:
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
 - `PedidoServiceTest` — 22 tests (cancelación, pago, envío, estado, acreditación de pagos)
 - `ProductoServiceTest` — 11 tests (variantes, stock, ownership)
-- `ClienteServiceTest` — 12 tests (CRUD, owner-check, acceso)
+- `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
-- `AdministradorServiceTest` — 11 tests (CRUD, duplicados)
+- `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
 - `NotificacionServiceTest` — 4 tests (emails, fallo de conexión)
 

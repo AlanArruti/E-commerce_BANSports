@@ -112,6 +112,17 @@ export const routes: Routes = [
         title: 'Pedidos | Panel BAN Sports'
       },
       {
+        path: 'clientes',
+        loadComponent: () => import('./page/admin-clientes/admin-clientes').then((m) => m.AdminClientes),
+        title: 'Clientes | Panel BAN Sports'
+      },
+      {
+        path: 'administradores',
+        loadComponent: () =>
+          import('./page/admin-administradores/admin-administradores').then((m) => m.AdminAdministradores),
+        title: 'Administradores | Panel BAN Sports'
+      },
+      {
         path: 'stock-bajo',
         loadComponent: () => import('./page/admin-stock-bajo/admin-stock-bajo').then((m) => m.AdminStockBajo),
         title: 'Stock bajo | Panel BAN Sports'

@@ -528,3 +528,100 @@ export function traducirErrorStock(error: HttpErrorResponse): ErrorTraducido {
     detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
   };
 }
+
+export function traducirErrorClientes(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los clientes',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidosCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya no está activo',
+      detalle: 'Puede que lo haya dado de baja otro administrador. Actualizá la lista.'
+    };
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos del cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya estaba dado de baja',
+      detalle: 'Puede que lo haya dado de baja otro administrador. La lista se actualizó.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorAdministradores(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los administradores',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta de administrador. El 409 (usuario repetido) se muestra en el campo, no acá. */
+export function traducirErrorCrearAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 400) {
+    return {
+      titulo: 'Revisá los datos del administrador',
+      detalle: mensajeDelBack(error) || 'El usuario o la contraseña no cumplen las reglas.'
+    };
+  }
+  return {
+    titulo: 'No pudimos crear el administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese administrador ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if (error.status === 409) {
+    return {
+      titulo: 'No podés darte de baja a vos mismo',
+      detalle: mensajeDelBack(error) || 'Pedile a otro administrador que lo haga.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}

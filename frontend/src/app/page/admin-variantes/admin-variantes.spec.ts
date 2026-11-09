@@ -22,7 +22,8 @@ const PRODUCTO: Producto = {
   categoria: null,
   variantes: [],
   promedioResenas: 0,
-  cantidadResenas: 0
+  cantidadResenas: 0,
+  novedad: false
 };
 
 const CHOCOLATE: Variante = {

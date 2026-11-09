@@ -15,10 +15,13 @@ import java.util.List;
 
 public interface IProductoService {
     PageResponse<ProductoResponse> listarTodos(Long categoriaId, Double precioMin, Double precioMax,
-                                               String search, Boolean soloOfertas, Pageable pageable);
+                                               String search, Boolean soloOfertas, Boolean soloNovedades,
+                                               Pageable pageable);
     ProductoResponse buscarPorId(Long id);
     ProductoResponse crear(ProductoRequest request);
     ProductoResponse actualizar(Long id, ProductoRequest request);
+    /** Lo pone o lo saca de "Novedades" del inicio, sin tocar el resto del producto. */
+    ProductoResponse marcarNovedad(Long id, boolean novedad);
     void eliminar(Long id);
     List<VarianteResponse> listarVariantes(Long idProducto);
     VarianteResponse agregarVariante(Long idProducto, VarianteRequest request);

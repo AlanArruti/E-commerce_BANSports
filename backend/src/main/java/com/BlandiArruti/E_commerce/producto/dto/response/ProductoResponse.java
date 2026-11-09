@@ -19,5 +19,7 @@ public record ProductoResponse(
         List<VarianteResponse> variantes,
         /** Promedio de estrellas con un decimal (0 si no tiene reseñas). */
         Double promedioResenas,
-        Integer cantidadResenas
+        Integer cantidadResenas,
+        /** Si el admin lo eligió para "Novedades" del inicio. */
+        boolean novedad
 ) {}

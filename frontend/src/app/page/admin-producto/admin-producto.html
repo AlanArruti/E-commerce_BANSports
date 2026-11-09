@@ -27,6 +27,12 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"/></svg>
         Todavía no se puede comprar: le falta al menos una variante con stock.
       </p>
+      @if (avisoFoto(); as aviso) {
+        <p class="creado-aviso" role="alert">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"/></svg>
+          {{ aviso }}
+        </p>
+      }
 
       <div class="pasos">
         <a class="paso destacado" [routerLink]="['/admin/productos', producto.id, 'variantes']">
@@ -36,8 +42,13 @@
         </a>
         <a class="paso" [routerLink]="['/admin/productos', producto.id, 'imagen']">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
-          <span class="paso-titulo">Cargar imagen</span>
-          <span class="paso-detalle">JPG, PNG o WEBP hasta 2 MB</span>
+          @if (producto.imagenUrl) {
+            <span class="paso-titulo">Imagen cargada</span>
+            <span class="paso-detalle">Podés cambiarla desde acá</span>
+          } @else {
+            <span class="paso-titulo">Cargar imagen</span>
+            <span class="paso-detalle">JPG, PNG o WEBP hasta 2 MB</span>
+          }
         </a>
         <a class="paso" [routerLink]="['/admin/productos', producto.id, 'editar']">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
@@ -146,6 +157,41 @@
             </div>
           </div>
 
+          @if (idEditado === null) {
+            <div class="campo">
+              <span class="etiqueta-campo" id="prod-foto-etiqueta">Foto <span class="etiqueta-opcional">Opcional</span></span>
+              @if (foto(); as archivo) {
+                <div class="foto-elegida">
+                  <img [src]="fotoUrl()" alt="Foto elegida" class="foto-miniatura" />
+                  <div class="foto-datos">
+                    <span class="foto-nombre">{{ archivo.name }}</span>
+                    <span class="ayuda">{{ tamanioFoto() }} · se sube al crear el producto</span>
+                  </div>
+                  <button type="button" class="btn-texto" (click)="quitarFoto()">Quitar</button>
+                </div>
+              } @else {
+                <label class="selector-foto" for="prod-foto">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
+                  <span>Elegir foto</span>
+                </label>
+              }
+              <input id="prod-foto" class="solo-lectores" type="file" [accept]="extensionesImagen"
+                aria-labelledby="prod-foto-etiqueta" aria-describedby="prod-foto-ayuda" (change)="elegirFoto($event)" />
+              <div class="ayuda-campo" id="prod-foto-ayuda">
+                @if (errorFoto(); as mensaje) {
+                  <span class="msj-error">{{ mensaje }}</span>
+                } @else {
+                  <span class="ayuda">JPG, PNG o WEBP hasta 2 MB. También la podés cargar o cambiar después.</span>
+                }
+              </div>
+            </div>
+          }
+
+          <label class="check">
+            <input type="checkbox" formControlName="novedad" />
+            <span>Mostrarlo en <strong>Novedades</strong> del inicio</span>
+          </label>
+
           <div class="acciones">
             <a routerLink="/admin/productos" class="btn btn-secundario">Cancelar</a>
             <button type="submit" class="btn btn-primario" [disabled]="guardando()">
@@ -162,7 +208,11 @@
           <span class="vista-previa-titulo">Así se va a ver en el catálogo</span>
           <div class="tarjeta" aria-hidden="true">
             <div class="tarjeta-imagen">
-              <app-pote-producto class="tarjeta-pote" [nombre]="vistaPrevia().abreviatura" />
+              @if (fotoUrl() ?? imagenActual(); as imagen) {
+                <img [src]="imagen" alt="" class="tarjeta-foto" />
+              } @else {
+                <app-pote-producto class="tarjeta-pote" [nombre]="vistaPrevia().abreviatura" />
+              }
             </div>
             <div class="tarjeta-info">
               <span class="tarjeta-categoria">{{ vistaPrevia().categoria ?? 'Categoría' }}</span>
@@ -178,7 +228,7 @@
             </div>
           </div>
           @if (idEditado === null) {
-            <p class="vista-previa-nota">La imagen y las variantes (sabor, presentación y stock) se cargan después de crearlo.</p>
+            <p class="vista-previa-nota">Las variantes (sabor, presentación y stock) se cargan después de crearlo.</p>
           }
         </aside>
       </div>

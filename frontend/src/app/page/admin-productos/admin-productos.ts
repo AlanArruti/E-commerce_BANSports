@@ -14,7 +14,12 @@ import { STOCK_BAJO } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { CategoriaService } from '../../services/categoria.service';
 import { ProductoService } from '../../services/producto.service';
-import { ErrorTraducido, traducirErrorBajaProducto, traducirErrorCatalogo } from '../../validaciones/errores-api';
+import {
+  ErrorTraducido,
+  traducirErrorBajaProducto,
+  traducirErrorCatalogo,
+  traducirErrorGuardarProducto
+} from '../../validaciones/errores-api';
 
 const TAMANIO_PAGINA = 10;
 /** Espera después de la última tecla antes de buscar. */
@@ -63,6 +68,9 @@ export class AdminProductos {
   protected readonly productoBaja = signal<Producto | null>(null);
   protected readonly dandoDeBaja = signal(false);
   protected readonly errorBaja = signal<ErrorTraducido | null>(null);
+  /** Productos a los que se les está cambiando la novedad (para deshabilitar la estrella). */
+  protected readonly cambiandoNovedad = signal<ReadonlySet<number>>(new Set());
+  protected readonly errorNovedad = signal<ErrorTraducido | null>(null);
 
   /** Emite para volver a pedir la página (después de una baja o con "Reintentar"). */
   private readonly recargar$ = new BehaviorSubject<void>(undefined);
@@ -174,6 +182,41 @@ export class AdminProductos {
 
   reintentar(): void {
     this.recargar$.next();
+  }
+
+  /** Lo pone o lo saca de "Novedades" del inicio desde la tabla, sin entrar al producto. */
+  alternarNovedad(producto: Producto): void {
+    const nuevo = !producto.novedad;
+    this.aviso.set(null);
+    this.errorNovedad.set(null);
+    this.cambiandoNovedad.update((ids) => new Set(ids).add(producto.id));
+    this.productoService.marcarNovedad(producto.id, nuevo).subscribe({
+      next: (actualizado) => {
+        producto.novedad = actualizado.novedad;
+        this.terminarNovedad(producto.id);
+        this.aviso.set(
+          actualizado.novedad
+            ? `"${producto.nombre}" ahora aparece en Novedades del inicio.`
+            : `"${producto.nombre}" ya no aparece en Novedades del inicio.`
+        );
+      },
+      error: (e: unknown) => {
+        this.terminarNovedad(producto.id);
+        this.errorNovedad.set(
+          e instanceof HttpErrorResponse
+            ? traducirErrorGuardarProducto(e)
+            : { titulo: 'No pudimos cambiar la novedad', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
+        );
+      }
+    });
+  }
+
+  private terminarNovedad(id: number): void {
+    this.cambiandoNovedad.update((ids) => {
+      const quedan = new Set(ids);
+      quedan.delete(id);
+      return quedan;
+    });
   }
 
   pedirBaja(producto: Producto): void {

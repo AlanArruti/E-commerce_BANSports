@@ -22,6 +22,7 @@ public interface ProductoMapper {
     @Mapping(target = "precioFinal", ignore = true)
     @Mapping(target = "categoria", ignore = true)
     @Mapping(target = "tieneImagen", ignore = true)
+    @Mapping(target = "novedad", ignore = true)
     // Un producto nuevo arranca sin reseñas (los defaults de la entidad).
     @Mapping(target = "cantidadResenas", ignore = true)
     @Mapping(target = "promedioResenas", ignore = true)

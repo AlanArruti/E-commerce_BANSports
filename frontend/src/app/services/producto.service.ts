@@ -18,7 +18,7 @@ export class ProductoService {
   constructor(private http: HttpClient) {}
 
   /** Catálogo paginado con búsqueda, filtros y orden (GET /producto). */
-  listar(filtros: FiltrosCatalogo, soloOfertas = false): Observable<Pagina<Producto>> {
+  listar(filtros: FiltrosCatalogo, soloOfertas = false, soloNovedades = false): Observable<Pagina<Producto>> {
     const orden = [...ORDENES, ORDEN_NUEVOS].find((opcion) => opcion.valor === filtros.orden) ?? ORDENES[0];
     let params = new HttpParams()
       .set('sortBy', orden.sortBy)
@@ -40,6 +40,9 @@ export class ProductoService {
     }
     if (soloOfertas) {
       params = params.set('soloOfertas', true);
+    }
+    if (soloNovedades) {
+      params = params.set('soloNovedades', true);
     }
 
     return this.http.get<Pagina<Producto>>(`${this.API_URL}/producto`, { params });
@@ -80,6 +83,11 @@ export class ProductoService {
   /** Solo ADMIN. Reemplaza nombre, descripción, precio, descuento y categoría. */
   actualizar(id: number, producto: ProductoRequest): Observable<Producto> {
     return this.http.put<Producto>(`${this.API_URL}/producto/${id}`, producto);
+  }
+
+  /** Solo ADMIN. Lo pone o lo saca de "Novedades" del inicio, sin tocar el resto. */
+  marcarNovedad(id: number, novedad: boolean): Observable<Producto> {
+    return this.http.patch<Producto>(`${this.API_URL}/producto/${id}/novedad`, { novedad });
   }
 
   /** Solo ADMIN. Baja lógica: deja de verse en la tienda, pero los pedidos que lo incluyen no cambian. */

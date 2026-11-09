@@ -6,6 +6,7 @@ import com.BlandiArruti.E_commerce.enums.OperacionStock;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
+import com.BlandiArruti.E_commerce.producto.dto.request.ProductoRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.StockRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.VarianteRequest;
 import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
@@ -279,51 +280,123 @@ class ProductoServiceTest {
                 .hasMessageContaining("2 MB");
     }
 
+    // ─── Novedades del inicio ────────────────────────────────────────────────
+
+    @Test
+    void crear_sinIndicarNovedad_noEsNovedad() {
+        ProductoRequest request = new ProductoRequest("Whey", "Proteína", 1000.0, null, 1L, null);
+        Producto mapeado = Producto.builder().nombre("Whey").precio(1000.0).build();
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(Categoria.builder().id(1L).build()));
+        when(productoMapper.toEntity(request)).thenReturn(mapeado);
+        when(productoRepository.save(mapeado)).thenReturn(mapeado);
+
+        productoService.crear(request);
+
+        assertThat(mapeado.isNovedad()).isFalse();
+    }
+
+    @Test
+    void crear_marcadoComoNovedad_loGuardaAsi() {
+        ProductoRequest request = new ProductoRequest("Whey", "Proteína", 1000.0, null, 1L, true);
+        Producto mapeado = Producto.builder().nombre("Whey").precio(1000.0).build();
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(Categoria.builder().id(1L).build()));
+        when(productoMapper.toEntity(request)).thenReturn(mapeado);
+        when(productoRepository.save(mapeado)).thenReturn(mapeado);
+
+        productoService.crear(request);
+
+        assertThat(mapeado.isNovedad()).isTrue();
+    }
+
+    @Test
+    void actualizar_sinIndicarNovedad_laDejaComoEstaba() {
+        Producto existente = Producto.builder().id(5L).nombre("Whey").precio(1000.0).novedad(true).build();
+        when(productoRepository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existente));
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(Categoria.builder().id(1L).build()));
+        when(productoRepository.save(existente)).thenReturn(existente);
+
+        productoService.actualizar(5L, new ProductoRequest("Whey 2", "Proteína", 1200.0, null, 1L, null));
+
+        assertThat(existente.isNovedad()).isTrue();
+        assertThat(existente.getNombre()).isEqualTo("Whey 2");
+    }
+
+    @Test
+    void marcarNovedad_cambiaSoloEsoYGuarda() {
+        Producto existente = Producto.builder().id(5L).nombre("Whey").precio(1000.0).build();
+        when(productoRepository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existente));
+        when(productoRepository.save(existente)).thenReturn(existente);
+
+        productoService.marcarNovedad(5L, true);
+
+        assertThat(existente.isNovedad()).isTrue();
+        assertThat(existente.getNombre()).isEqualTo("Whey");
+        verify(productoRepository).save(existente);
+    }
+
+    @Test
+    void marcarNovedad_productoInexistenteODadoDeBaja_lanzaNotFound() {
+        when(productoRepository.findByIdAndActivoTrue(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productoService.marcarNovedad(9L, true))
+                .isInstanceOf(EntidadNoEncontradaException.class);
+        verify(productoRepository, never()).save(any());
+    }
+
+    @Test
+    void listarTodos_soloNovedades_filtraEnElRepositorio() {
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        productoService.listarTodos(null, null, null, null, false, true, PageRequest.of(0, 4));
+
+        verify(productoRepository).buscarConFiltros(null, null, null, "", false, true, PageRequest.of(0, 4));
+    }
+
     // ─── listarTodos — búsqueda sin tildes ───────────────────────────────────
 
     @Test
     void listarTodos_busquedaConTildesYMayusculas_buscaNormalizado() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "  PROTEÍNA Óxido ", false, PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "  PROTEÍNA Óxido ", false, false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "proteina oxido", false, PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina oxido", false, false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_busquedaConEnie_laMantiene() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "Ñandú", false, PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "Ñandú", false, false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "ñandu", false, PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "ñandu", false, false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_busquedaEnPlural_buscaCadaPalabraEnSingular() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "Proteínas   Veganas", false, PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "Proteínas   Veganas", false, false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "proteina vegana", false, PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "proteina vegana", false, false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_palabraCortaTerminadaEnS_noLaCambia() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "mas BCAAs", false, PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "mas BCAAs", false, false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "mas bcaa", false, PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "mas bcaa", false, false, PageRequest.of(0, 10));
     }
 
     @Test
     void listarTodos_sinBusqueda_buscaTextoVacio() {
-        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(productoRepository.buscarConFiltros(any(), any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        productoService.listarTodos(null, null, null, "   ", false, PageRequest.of(0, 10));
+        productoService.listarTodos(null, null, null, "   ", false, false, PageRequest.of(0, 10));
 
-        verify(productoRepository).buscarConFiltros(null, null, null, "", false, PageRequest.of(0, 10));
+        verify(productoRepository).buscarConFiltros(null, null, null, "", false, false, PageRequest.of(0, 10));
     }
 
     @Test

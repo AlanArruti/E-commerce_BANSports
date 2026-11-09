@@ -6,6 +6,7 @@ import { JwtPayload } from '../models/jwt-payload';
 import { Rol } from '../models/rol';
 import { AuthService } from '../services/auth.service';
 import { guestGuard } from './guest.guard';
+import { routes } from '../app.routes';
 import { rolGuard, sinAdminGuard } from './rol.guard';
 
 /** AuthService falso: cada test define si la sesión es válida y con qué rol. */
@@ -70,6 +71,19 @@ describe('sinAdminGuard', () => {
   it('manda al admin a su panel', async () => {
     configurar(true, 'ADMIN');
     expect(await correr(sinAdminGuard, '/carrito')).toBe('/admin');
+  });
+
+  it('deja navegar la tienda al cliente', async () => {
+    configurar(true, 'CLIENTE');
+    expect(await correr(sinAdminGuard, '/productos/2')).toBeTrue();
+  });
+
+  it('el admin no navega la tienda: inicio, catálogo, ofertas, producto y carrito lo mandan al panel', () => {
+    const tienda = ['', 'productos', 'ofertas', 'productos/:id', 'carrito'];
+    for (const path of tienda) {
+      const ruta = routes.find((r) => r.path === path);
+      expect(ruta?.canActivate).withContext(path || '(inicio)').toContain(sinAdminGuard);
+    }
   });
 });
 

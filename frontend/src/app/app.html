@@ -1,12 +1,17 @@
 <div class="layout">
+  <!-- El admin no navega la tienda: tiene su propio header con las secciones del panel y no ve el footer. -->
   @if (mostrarLayout()) {
-    <app-header />
+    @if (authService.esAdmin()) {
+      <app-header-admin />
+    } @else {
+      <app-header />
+    }
   }
   <app-aviso-conexion />
   <main class="contenido">
     <router-outlet />
   </main>
-  @if (mostrarLayout()) {
+  @if (mostrarLayout() && !authService.esAdmin()) {
     <app-footer />
   }
 </div>

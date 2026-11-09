@@ -4,7 +4,9 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AvisoConexion } from './componente/aviso-conexion/aviso-conexion';
 import { Header } from './componente/header/header';
+import { HeaderAdmin } from './componente/header-admin/header-admin';
 import { Footer } from './componente/footer/footer';
+import { AuthService } from './services/auth.service';
 
 // Rutas que se muestran a pantalla completa, sin header ni footer.
 const RUTAS_SIN_LAYOUT = [
@@ -18,7 +20,7 @@ const RUTAS_SIN_LAYOUT = [
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AvisoConexion, Header, Footer],
+  imports: [RouterOutlet, AvisoConexion, Header, HeaderAdmin, Footer],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css'
@@ -26,7 +28,10 @@ const RUTAS_SIN_LAYOUT = [
 export class App {
   protected readonly mostrarLayout;
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    protected authService: AuthService
+  ) {
     this.mostrarLayout = toSignal(
       this.router.events.pipe(
         filter((evento) => evento instanceof NavigationEnd),

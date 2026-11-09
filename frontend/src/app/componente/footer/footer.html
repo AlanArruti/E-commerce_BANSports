@@ -19,9 +19,7 @@
 
     <nav class="columna" aria-label="Mi cuenta">
       <span class="columna-titulo">Mi cuenta</span>
-      @if (authService.esAdmin()) {
-        <a routerLink="/admin">Panel de administración</a>
-      } @else if (authService.esCliente()) {
+      @if (authService.esCliente()) {
         <a routerLink="/perfil">Mi perfil</a>
         <a routerLink="/perfil/favoritos">Favoritos</a>
         <a routerLink="/carrito">Carrito</a>

@@ -1,0 +1,116 @@
+:host {
+  display: block;
+}
+
+.grafico {
+  position: relative;
+  width: 100%;
+}
+
+svg {
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+  border-radius: var(--radio-chico);
+}
+
+svg:focus-visible {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 4px;
+}
+
+.grilla {
+  stroke: var(--color-borde);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.grilla.base {
+  stroke: var(--color-borde-input);
+}
+
+.eje {
+  fill: var(--color-texto-secundario);
+  font-family: var(--fuente-texto);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eje-y {
+  text-anchor: end;
+}
+
+.eje-x {
+  text-anchor: middle;
+}
+
+.linea {
+  fill: none;
+  stroke: var(--color-verde);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.guia {
+  stroke: var(--color-texto-secundario);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  shape-rendering: crispEdges;
+}
+
+.punto {
+  fill: var(--color-verde);
+  stroke: var(--color-superficie);
+  stroke-width: 2;
+}
+
+.vacio {
+  position: absolute;
+  inset: 0 0 32px 64px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+  pointer-events: none;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: var(--espacio-2) var(--espacio-3);
+  transform: translate(-50%, calc(-100% - 14px));
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.tooltip-fecha {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+}
+
+.tooltip-fecha::first-letter {
+  text-transform: uppercase;
+}
+
+.tooltip-total {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--color-texto);
+}
+
+.tooltip-pedidos {
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}

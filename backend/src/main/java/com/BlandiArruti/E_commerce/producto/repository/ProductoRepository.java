@@ -41,6 +41,9 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     List<Producto> findByActivoTrueAndNombreContainingIgnoreCaseAndCategoriaId(String texto, Long categoriaId);
 
+    @Query("SELECT COUNT(p) FROM Producto p WHERE p.activo = true AND p.descuento IS NOT NULL AND p.descuento > 0")
+    long countOfertasActivas();
+
     // La búsqueda mira el nombre del producto y el de su categoría ("proteinas" trae
     // todo lo de Proteínas). LEFT JOIN para no perder productos sin categoría.
     @Query("SELECT p FROM Producto p LEFT JOIN p.categoria c WHERE p.activo = true " +

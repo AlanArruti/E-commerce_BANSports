@@ -2,6 +2,7 @@ package com.BlandiArruti.E_commerce.pedido.entity;
 
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
+import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"cliente", "items", "envio", "factura", "direccionEnvio"})
+@ToString(exclude = {"cliente", "items", "envio", "factura", "direccionEnvio", "cupon"})
 
 @Entity
 @Table(name = "pedidos")
@@ -45,6 +46,26 @@ public class Pedido {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion_envio")
     private Direccion direccionEnvio;
+
+    // Costo de envío elegido en el checkout. Se persiste para cobrarlo bien
+    // (MercadoPago y la factura) aunque la cotización cambie después.
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre pedidos existentes.
+    @Column(name = "costo_envio", nullable = false,
+            columnDefinition = "double precision default 0 not null")
+    @Builder.Default
+    private Double costoEnvio = 0.0;
+
+    // Cupón cargado en el checkout y lo que descontó sobre el subtotal de productos.
+    // El descuento queda congelado: si después editan el cupón, el pedido no cambia.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cupon")
+    private Cupon cupon;
+
+    // El DEFAULT permite que ddl-auto=update agregue la columna sobre pedidos existentes.
+    @Column(name = "descuento_cupon", nullable = false,
+            columnDefinition = "double precision default 0 not null")
+    @Builder.Default
+    private Double descuentoCupon = 0.0;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -39,4 +39,10 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     Page<Pedido> findByEstadoPedido(EstadoPedido estado, Pageable pageable);
 
     Page<Pedido> findByClienteIdAndEstadoPedido(Long idCliente, EstadoPedido estado, Pageable pageable);
+
+    long countByEstadoPedido(EstadoPedido estado);
+
+    /** Una fila por estado que tenga pedidos: [estadoPedido, cantidad]. */
+    @Query("SELECT p.estadoPedido, COUNT(p) FROM Pedido p GROUP BY p.estadoPedido")
+    List<Object[]> contarPorEstado();
 }

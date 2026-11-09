@@ -243,6 +243,12 @@
     padding: 3px 8px;
   }
 
+  /* La de oferta va a la derecha: sin repetir el left: auto, el left de arriba la estira de borde a borde. */
+  .etiqueta-oferta {
+    left: auto;
+    right: 10px;
+  }
+
   .producto-pote {
     transform: scale(0.75);
   }

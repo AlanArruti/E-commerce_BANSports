@@ -1,11 +1,15 @@
 package com.BlandiArruti.E_commerce.pedido.service;
 
 import com.BlandiArruti.E_commerce.administrador.entity.Administrador;
+import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
+import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.cotizacion.dto.request.OpcionEnvioRequest;
+import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.envio.mapper.EnvioMapper;
 import com.BlandiArruti.E_commerce.envio.repository.EnvioRepository;
@@ -15,6 +19,7 @@ import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
+import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
@@ -35,6 +40,7 @@ import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -66,6 +72,8 @@ class PedidoServiceTest {
     @Mock PedidoMapper pedidoMapper;
     @Mock FacturaMapper facturaMapper;
     @Mock EnvioMapper envioMapper;
+    @Mock CotizacionEnvioService cotizacionEnvioService;
+    @Mock ICuponService cuponService;
 
     @InjectMocks
     PedidoService pedidoService;
@@ -272,6 +280,26 @@ class PedidoServiceTest {
         verify(facturaRepository, never()).save(any());
     }
 
+    @Test
+    void pagar_conCostoEnvio_facturaIncluyeEnvio() {
+        Variante variante = Variante.builder().id(1L).stock(10).build();
+        ItemPedido item = ItemPedido.builder()
+                .variante(variante).cantidad(2).precioProducto(500.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.EN_PREPARACION, item);
+        pedido.setCostoEnvio(1200.0);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        when(pedidoMapper.toResponse(any())).thenReturn(null);
+
+        pedidoService.pagar(1L, new PagoRequest(TipoFactura.B));
+
+        ArgumentCaptor<Factura> captor = ArgumentCaptor.forClass(Factura.class);
+        verify(facturaRepository).save(captor.capture());
+        assertThat(captor.getValue().getPrecioTotal()).isEqualTo(1700.0);
+    }
+
     // ─── crearEnvio() ────────────────────────────────────────────────────────
 
     @Test
@@ -407,7 +435,7 @@ class PedidoServiceTest {
         when(varianteRepository.findById(7L)).thenReturn(Optional.of(dosKilos));
         when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        pedidoService.crear(new PedidoRequest(null, null, List.of(new ItemPedidoRequest(2L, 7L, 2))),
+        pedidoService.crear(new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 2)), null),
                 UsuarioDetails.fromCliente(clienteCrear));
 
         ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
@@ -426,11 +454,114 @@ class PedidoServiceTest {
         when(varianteRepository.findById(7L)).thenReturn(Optional.of(deOtro));
 
         assertThatThrownBy(() -> pedidoService.crear(
-                new PedidoRequest(null, null, List.of(new ItemPedidoRequest(2L, 7L, 1))),
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 1)), null),
                 UsuarioDetails.fromCliente(clienteCrear)))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("no pertenece al producto");
         verify(pedidoRepository, never()).save(any());
+    }
+
+    // ─── crear: cupón de descuento ────────────────────────────────────────────
+
+    @Test
+    void crear_conCupon_loAplicaSobreLosProductosYLoGuardaEnElPedido() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).build();
+        Cupon cupon = Cupon.builder().id(3L).codigo("VERANO10").build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        // 2 × $30.000 = $60.000 de productos: el cupón se valida contra eso.
+        when(cuponService.aplicar("verano10", 60000.0)).thenReturn(new ICuponService.CuponAplicado(cupon, 6000.0));
+
+        pedidoService.crear(new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 2)), "verano10"),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getCupon()).isSameAs(cupon);
+        assertThat(guardado.getValue().getDescuentoCupon()).isEqualTo(6000.0);
+        assertThat(pedidoService.calcularTotal(guardado.getValue())).isEqualTo(54000.0);
+    }
+
+    @Test
+    void crear_sinCupon_noLoBusca() {
+        Producto producto = proteina();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(Variante.builder().id(7L).producto(producto).stock(10).build()));
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, 7L, 1)), "  "),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        verifyNoInteractions(cuponService);
+    }
+
+    @Test
+    void cancelar_pedidoConCupon_devuelveElUso() {
+        Cupon cupon = Cupon.builder().id(3L).codigo("VERANO10").usos(1).build();
+        Pedido pedido = Pedido.builder().id(1L).cliente(clienteCrear).estadoPedido(EstadoPedido.PENDIENTE_PAGO).cupon(cupon).build();
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                UsuarioDetails.fromCliente(clienteCrear), null, List.of()));
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        pedidoService.cancelar(1L);
+
+        verify(cuponService).devolverUso(cupon);
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+    }
+
+    // ─── crear: costo de envío cotizado por el back ───────────────────────────
+
+    private Direccion direccionDe(Cliente cliente) {
+        return Direccion.builder().id(5L).cliente(cliente).build();
+    }
+
+    @Test
+    void crear_conDireccion_guardaElCostoQueCotizaElBack() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();
+        OpcionEnvioRequest opcion = new OpcionEnvioRequest("D", "Clasico");
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccionDe(clienteCrear)));
+        when(cotizacionEnvioService.precioDeOpcion(5L, opcion)).thenReturn(4300.0);
+        when(pedidoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        pedidoService.crear(new PedidoRequest(null, 5L, opcion, List.of(new ItemPedidoRequest(2L, 7L, 1)), null),
+                UsuarioDetails.fromCliente(clienteCrear));
+
+        ArgumentCaptor<Pedido> guardado = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getCostoEnvio()).isEqualTo(4300.0);
+    }
+
+    @Test
+    void crear_conDireccionSinOpcionDeEnvio_rechaza() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccionDe(clienteCrear)));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, 5L, null, List.of(new ItemPedidoRequest(2L, 7L, 1)), null),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("opción de envío");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void calcularTotal_sumaProductosMasEnvio() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, itemDe(500.0, variante(10), 2));
+        pedido.setCostoEnvio(1200.0);
+
+        assertThat(pedidoService.calcularTotal(pedido)).isEqualTo(1700.0);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

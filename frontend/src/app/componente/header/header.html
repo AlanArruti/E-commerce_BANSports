@@ -30,11 +30,8 @@
       >Ofertas</a>
     </nav>
 
-    <form class="buscador" role="search" (submit)="buscar($event)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <label for="buscar" class="solo-lectores">Buscar productos</label>
-      <input id="buscar" type="search" placeholder="Buscá proteína, creatina…" [formControl]="busqueda" enterkeyhint="search" />
-    </form>
+    <!-- Buscador con sugerencias. La caja y su lugar en la grilla salen de .buscador (header.css). -->
+    <app-buscador-productos class="buscador" />
 
     <div class="acciones">
       @if (authService.estaLogueado()) {

@@ -104,7 +104,7 @@ class AuthServiceTest {
         ClienteRequest request = new ClienteRequest(
                 "Ana", "García", "30000000", "ana@test.com", "pass123");
         ClienteResponse expected = new ClienteResponse(
-                1L, "uuid-1", "Ana", "García", "30000000", "ana@test.com", List.of());
+                1L, "uuid-1", "Ana", "García", "30000000", "ana@test.com", List.of(), null);
         when(clienteService.crear(request)).thenReturn(expected);
 
         ClienteResponse result = authService.registrar(request);

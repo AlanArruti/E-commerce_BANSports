@@ -1,0 +1,240 @@
+/*
+ * La caja del buscador (alto, fondo, borde, lugar en la grilla) la sigue poniendo el
+ * header con la clase .buscador sobre este componente. Acá va lo de adentro y la lista.
+ */
+:host {
+  position: relative;
+}
+
+:host(:focus-within) {
+  border-color: var(--color-verde-hover);
+}
+
+/* El form no arma caja propia: sus hijos quedan en la fila flex del host. */
+.formulario {
+  display: contents;
+}
+
+.icono {
+  flex: none;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.indicador {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-borde-input);
+  border-top-color: var(--color-verde);
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Lista de sugerencias ──────────────────────────────── */
+.panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -1px;
+  right: -1px;
+  z-index: 40;
+  min-width: 360px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+
+.opciones {
+  margin: 0;
+  padding: var(--espacio-1);
+  list-style: none;
+  max-height: min(460px, 70vh);
+  overflow-y: auto;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-height: 64px;
+  padding: var(--espacio-2);
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+}
+
+.opcion.activa {
+  background: var(--color-superficie-2);
+  box-shadow: inset 3px 0 0 var(--color-verde);
+}
+
+.miniatura {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 48px;
+  overflow: hidden;
+  background: var(--color-superficie-2);
+  border-radius: var(--radio-chico);
+}
+
+.opcion.activa .miniatura {
+  background: var(--color-borde);
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* El pote mide mucho más que la miniatura: se centra a mano y se achica. */
+.mini-pote {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.26);
+}
+
+.datos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+mark {
+  background: none;
+  color: var(--color-verde);
+}
+
+.categoria {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+}
+
+.precios {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.descuento {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.precio-lista {
+  font-size: 12px;
+  color: var(--color-texto-secundario);
+  text-decoration: line-through;
+}
+
+.precio {
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.1;
+  color: var(--color-texto);
+  white-space: nowrap;
+}
+
+.desde {
+  font-family: var(--fuente-texto);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.ver-todos {
+  justify-content: center;
+  gap: var(--espacio-2);
+  min-height: 48px;
+  margin-top: var(--espacio-1);
+  border-top: 1px solid var(--color-borde);
+  border-radius: 0 0 var(--radio-chico) var(--radio-chico);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-verde);
+}
+
+.cantidad {
+  font-weight: 500;
+  color: var(--color-texto-secundario);
+}
+
+.sin-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  padding: var(--espacio-4);
+  font-size: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.sin-resultados strong {
+  color: var(--color-texto);
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicador {
+    animation-duration: 2s;
+  }
+}
+
+/* ── Celular: la lista ocupa el ancho de la pantalla ───────── */
+@media (max-width: 760px) {
+  .panel {
+    left: 50%;
+    right: auto;
+    width: 100vw;
+    min-width: 0;
+    transform: translateX(-50%);
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .opciones {
+    max-height: 65vh;
+  }
+}

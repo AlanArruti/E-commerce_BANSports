@@ -293,7 +293,17 @@ export function traducirErrorCarrito(error: HttpErrorResponse): ErrorTraducido {
   };
 }
 
-/** Errores al iniciar o confirmar el pago con MercadoPago. */
+export function traducirErrorCotizacion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos calcular el costo de envío',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 /**
  * Errores al iniciar o confirmar un pago. Se muestra el motivo puntual que manda el back
  * (pasarela sin credenciales, rechazo de la pasarela, pasarela caída…). La excepción es el 403:
@@ -345,6 +355,17 @@ export function traducirErrorCheckout(error: HttpErrorResponse): ErrorTraducido 
     return {
       titulo: 'No hay stock suficiente',
       detalle: `De uno de los productos quedan ${disponible} unidades. Ajustá el carrito y volvé a confirmar.`
+    };
+  }
+  // El back vuelve a validar el cupón al confirmar: pudo vencerse o agotarse mientras tanto.
+  if (error.status === 400 && /^El cupón|^No existe un cupón/.test(mensaje)) {
+    return { titulo: 'No pudimos aplicar el cupón', detalle: `${mensaje} Quitalo para confirmar sin descuento.` };
+  }
+  // El back recotiza el envío al confirmar: si la opción elegida ya no aparece, hay que elegir de nuevo.
+  if (error.status === 400 && /opción de envío/i.test(mensaje)) {
+    return {
+      titulo: 'Cambiaron las opciones de envío',
+      detalle: 'Actualizá la página, elegí el envío de nuevo y volvé a confirmar.'
     };
   }
   if (error.status === 409) {
@@ -477,4 +498,183 @@ export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido 
       detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
     }
   );
+}
+
+export function traducirErrorResumen(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el resumen',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidos(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorStock(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar el stock',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorClientes(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los clientes',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorPedidosCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya no está activo',
+      detalle: 'Puede que lo haya dado de baja otro administrador. Actualizá la lista.'
+    };
+  }
+  return {
+    titulo: 'No pudimos cargar los pedidos del cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaCliente(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cliente ya estaba dado de baja',
+      detalle: 'Puede que lo haya dado de baja otro administrador. La lista se actualizó.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al cliente',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorAdministradores(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los administradores',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta de administrador. El 409 (usuario repetido) se muestra en el campo, no acá. */
+export function traducirErrorCrearAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 400) {
+    return {
+      titulo: 'Revisá los datos del administrador',
+      detalle: mensajeDelBack(error) || 'El usuario o la contraseña no cumplen las reglas.'
+    };
+  }
+  return {
+    titulo: 'No pudimos crear el administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorBajaAdministrador(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese administrador ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if (error.status === 409) {
+    return {
+      titulo: 'No podés darte de baja a vos mismo',
+      detalle: mensajeDelBack(error) || 'Pedile a otro administrador que lo haga.'
+    };
+  }
+  return {
+    titulo: 'No pudimos dar de baja al administrador',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Al tocar "Aplicar" en el checkout. El 400 trae el motivo listo para mostrar (vencido, agotado, compra mínima). */
+export function traducirErrorCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'No se puede usar este cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos validar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+export function traducirErrorCupones(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos cargar los cupones',
+    detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Alta, edición o baja de un cupón en el panel. El 409 por código repetido va pegado al campo. */
+export function traducirErrorGuardarCupon(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return {
+      titulo: 'Ese cupón ya no existe',
+      detalle: 'Puede que lo haya borrado otro administrador. La lista se actualizó.'
+    };
+  }
+  if ((error.status === 400 || error.status === 409) && mensaje) {
+    return { titulo: 'Revisá los datos del cupón', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
 }

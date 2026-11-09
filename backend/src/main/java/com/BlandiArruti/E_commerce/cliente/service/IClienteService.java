@@ -14,7 +14,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface IClienteService {
-    PageResponse<ClienteResponse> listarTodos(Pageable pageable);
+    /** Clientes activos, más nuevos primero. {@code buscar} filtra por nombre, apellido o email. */
+    PageResponse<ClienteResponse> listarTodos(String buscar, Pageable pageable);
     ClienteResponse buscarPorId(Long id);
     ClienteResponse crear(ClienteRequest request);
     ClienteResponse actualizar(Long id, ClienteUpdateRequest request);

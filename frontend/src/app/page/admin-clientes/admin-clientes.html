@@ -1,0 +1,235 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Clientes</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Clientes</h1>
+      <p class="cuenta" aria-live="polite">
+        @if (resultado(); as r) {
+          {{ r.total }} {{ r.total === 1 ? 'cliente activo' : 'clientes activos' }}{{ textoBuscado() ? ' con "' + textoBuscado() + '"' : '' }}
+        } @else if (estado().cargando) {
+          Buscando clientes…
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+
+  <div class="filtros" role="search" aria-label="Buscar clientes">
+    <div class="filtro-nombre">
+      <label for="buscar-cliente" class="solo-lectores">Buscar por nombre o email</label>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="buscar-cliente" type="search" placeholder="Buscar por nombre o email…" autocomplete="off" [formControl]="busqueda" />
+    </div>
+  </div>
+
+  @if (estado().error; as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor" [attr.aria-busy]="estado().cargando">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Cliente</th>
+            <th scope="col">Email</th>
+            <th scope="col">DNI</th>
+            <th scope="col">Alta</th>
+            <th scope="col" class="col-acciones"><span class="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (estado().cargando) {
+            @for (fila of [1, 2, 3, 4, 5]; track fila) {
+              <tr class="fila-esqueleto">
+                <td colspan="5"><span class="esqueleto"></span></td>
+              </tr>
+            }
+          } @else {
+            @for (cliente of estado().pagina?.content ?? []; track cliente.id) {
+              <tr>
+                <td>
+                  <div class="cliente">
+                    <span class="avatar" aria-hidden="true">{{ iniciales(cliente) }}</span>
+                    <div>
+                      <span class="nombre">{{ nombreCompleto(cliente) }}</span>
+                      <span class="id">#{{ cliente.id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email">{{ cliente.email }}</td>
+                <td class="dni">
+                  @if (cliente.dni) {
+                    {{ cliente.dni }}
+                  } @else {
+                    <span class="sin-dato" title="Se registró con GitHub o Google y todavía no cargó el DNI">Sin DNI</span>
+                  }
+                </td>
+                <td class="fecha">
+                  @if (cliente.fechaAlta) {
+                    {{ cliente.fechaAlta | date: 'dd/MM/yyyy' }}
+                  } @else {
+                    <span class="sin-dato">—</span>
+                  }
+                </td>
+                <td class="col-acciones">
+                  <button type="button" class="btn-pedidos" [attr.aria-label]="'Ver los pedidos de ' + nombreCompleto(cliente)" (click)="verPedidos(cliente, $event)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
+                    Pedidos
+                  </button>
+                  <button type="button" class="btn-accion borrar" [attr.aria-label]="'Dar de baja a ' + nombreCompleto(cliente)" title="Dar de baja" (click)="pedirBaja(cliente, $event)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="sin-resultados">
+                  @if (textoBuscado()) {
+                    No hay clientes que coincidan con "{{ textoBuscado() }}".
+                    <button type="button" class="link" (click)="limpiarBusqueda()">Limpiar búsqueda</button>
+                  } @else {
+                    Todavía no hay clientes registrados.
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (resultado(); as r) {
+      <div class="pie-tabla">
+        <span class="rango">Mostrando {{ r.desde }}–{{ r.hasta }} de {{ r.total }}</span>
+        @if (paginas().length && estado().pagina; as pagina) {
+          <nav class="paginacion" aria-label="Páginas">
+            <button type="button" class="pag" aria-label="Página anterior" [disabled]="pagina.page === 0" (click)="irAPagina(pagina.page - 1)">‹</button>
+            @for (numero of paginas(); track numero) {
+              <button type="button" class="pag" [ngClass]="{ actual: numero === pagina.page }"
+                [attr.aria-current]="numero === pagina.page ? 'page' : null" (click)="irAPagina(numero)">{{ numero + 1 }}</button>
+            }
+            <button type="button" class="pag" aria-label="Página siguiente" [disabled]="pagina.page >= pagina.totalPages - 1" (click)="irAPagina(pagina.page + 1)">›</button>
+          </nav>
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- ── Panel lateral: pedidos del cliente ───────────────────── -->
+@if (panel(); as p) {
+  <div class="fondo-modal" (click)="cerrarPanel()"></div>
+  <aside class="panel-lateral" role="dialog" aria-modal="true" aria-labelledby="titulo-panel">
+    <header class="panel-encabezado">
+      <span class="avatar avatar-grande" aria-hidden="true">{{ iniciales(p.cliente) }}</span>
+      <div class="panel-cliente">
+        <h2 class="titulo-display titulo-panel" id="titulo-panel">{{ nombreCompleto(p.cliente) }}</h2>
+        <span class="panel-email">{{ p.cliente.email }}</span>
+      </div>
+      <button #cerrarPanelBtn type="button" class="btn-accion" aria-label="Cerrar" (click)="cerrarPanel()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+
+    @if (p.cargando) {
+      <div class="panel-cuerpo" aria-busy="true">
+        <span class="esqueleto esqueleto-resumen"></span>
+        @for (fila of [1, 2, 3]; track fila) {
+          <span class="esqueleto"></span>
+        }
+      </div>
+    } @else if (p.error; as error) {
+      <div class="panel-cuerpo">
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div class="alerta-cuerpo">
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="panel-cuerpo">
+        <dl class="resumen">
+          <div>
+            <dt>Pedidos</dt>
+            <dd>{{ resumenPedidos().cantidad }}</dd>
+          </div>
+          <div>
+            <dt>Cobrados</dt>
+            <dd>{{ resumenPedidos().cobrados }}</dd>
+          </div>
+          <div>
+            <dt>Total cobrado</dt>
+            <dd>{{ resumenPedidos().totalCobrado | precio }}</dd>
+          </div>
+        </dl>
+
+        @if (p.pedidos.length === 0) {
+          <p class="panel-vacio">Este cliente todavía no hizo pedidos.</p>
+        } @else {
+          <ul class="pedidos">
+            @for (pedido of p.pedidos; track pedido.id) {
+              <li class="pedido">
+                <div class="pedido-linea">
+                  <span class="pedido-numero">Pedido #{{ pedido.id }}</span>
+                  <span class="estado" [ngClass]="'estado-' + pedido.estado.toLowerCase()">{{ etiquetasEstado[pedido.estado] }}</span>
+                </div>
+                <div class="pedido-linea pedido-detalle">
+                  <span>
+                    {{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }} ·
+                    {{ cantidadItems(pedido) }} {{ cantidadItems(pedido) === 1 ? 'producto' : 'productos' }}
+                  </span>
+                  <strong>{{ pedido.total | precio }}</strong>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </aside>
+}
+
+<!-- ── Modal de baja ───────────────────────────────────────── -->
+@if (clienteBaja(); as cliente) {
+  <div class="fondo-modal fondo-modal-arriba" (click)="cerrarBaja()"></div>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="titulo-baja" aria-describedby="texto-baja">
+    @if (errorBaja(); as error) {
+      <div class="alerta-error" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div>
+          <div class="alerta-error-titulo">{{ error.titulo }}</div>
+          <div class="alerta-error-texto">{{ error.detalle }}</div>
+        </div>
+      </div>
+    }
+    <h2 class="titulo-display titulo-modal" id="titulo-baja">¿Dar de baja a {{ nombreCompleto(cliente) }}?</h2>
+    <p class="texto-modal" id="texto-baja">
+      No va a poder iniciar sesión y deja de aparecer en este listado. Sus pedidos y facturas se conservan.
+    </p>
+    <div class="acciones-modal">
+      <button #cancelarBajaBtn type="button" class="btn btn-secundario" [disabled]="dandoDeBaja()" (click)="cerrarBaja()">Cancelar</button>
+      <button type="button" class="btn btn-peligro" [disabled]="dandoDeBaja()" (click)="confirmarBaja()">
+        {{ dandoDeBaja() ? 'Dando de baja…' : 'Sí, dar de baja' }}
+      </button>
+    </div>
+  </div>
+}

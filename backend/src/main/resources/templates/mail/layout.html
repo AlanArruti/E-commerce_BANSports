@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!--
+  Estructura común de todos los mails: logo, tarjeta con el contenido y pie.
+  Los clientes de correo ignoran gran parte del CSS moderno (variables, flex, grid),
+  así que el diseño va con tablas y estilos inline. Los colores son los de
+  frontend/src/styles/variables.css; si cambia la paleta, cambiala acá también.
+
+  Uso desde una plantilla:
+    <html th:replace="~{mail/layout :: layout(~{::contenido})}">
+      ... <th:block th:fragment="contenido"> ... </th:block>
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(contenido)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- El mail ya es oscuro: evita que Apple Mail / Outlook lo inviertan. -->
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title th:text="${asunto}">BAN Sports</title>
+  <!-- Las fuentes del sitio. Apple Mail e iOS las cargan; el resto usa las alternativas. -->
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;1,800&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; supported-color-schemes: dark; }
+    body { margin: 0; padding: 0; }
+    a { color: #2be37a; }
+    @media (max-width: 620px) {
+      .tarjeta-celda { padding: 28px 20px !important; }
+      .titulo { font-size: 34px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0d0b; color:#f2f5f3;">
+  <!-- Texto que muestran las bandejas al lado del asunto. -->
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#0a0d0b;"
+       th:text="${preheader}">Resumen del mail</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0d0b"
+         style="background-color:#0a0d0b;">
+    <tr>
+      <td align="center" style="padding:32px 12px 40px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px; width:100%;">
+
+          <!-- ── Logo ── -->
+          <tr>
+            <td style="padding:0 4px 24px;">
+              <a th:href="${frontUrl}" style="text-decoration:none;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td bgcolor="#2be37a" style="background-color:#2be37a; padding:5px 12px 3px; border-radius:3px;">
+                      <span style="font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-weight:800; font-style:italic; font-size:26px; line-height:1; color:#06110a;">BAN</span>
+                    </td>
+                    <td style="padding-left:10px;">
+                      <span style="font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-weight:700; font-size:22px; line-height:1; letter-spacing:0.18em; color:#f2f5f3;">SPORTS</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+
+          <!-- ── Tarjeta ── -->
+          <tr>
+            <td class="tarjeta-celda" bgcolor="#121714"
+                style="background-color:#121714; border:1px solid #26302a; border-top:4px solid #2be37a; border-radius:16px; padding:40px 36px; font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; line-height:1.6; color:#c9d2cc;">
+              <th:block th:replace="${contenido}">Contenido del mail</th:block>
+            </td>
+          </tr>
+
+          <!-- ── Pie ── -->
+          <tr>
+            <td style="padding:28px 4px 0; font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#9ba8a0;">
+              <p style="margin:0 0 8px;">Suplementos deportivos originales, con envío a todo el país.</p>
+              <p style="margin:0 0 16px;">
+                <a th:href="${frontUrl + '/productos'}" style="color:#2be37a; text-decoration:none; font-weight:600;">Productos</a>
+                <span style="color:#3a463f;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                <a th:href="${frontUrl + '/ofertas'}" style="color:#2be37a; text-decoration:none; font-weight:600;">Ofertas</a>
+                <span style="color:#3a463f;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+                <a th:href="${frontUrl + '/perfil'}" style="color:#2be37a; text-decoration:none; font-weight:600;">Mi cuenta</a>
+              </p>
+              <p style="margin:0;">
+                Te escribimos porque tenés una cuenta en BAN Sports. Este mail se envía automáticamente: no hace falta que lo respondas.
+              </p>
+              <p style="margin:12px 0 0;">&copy; <span th:text="${anio}">2026</span> BAN Sports. Todos los derechos reservados.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

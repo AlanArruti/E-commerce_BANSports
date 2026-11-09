@@ -4,7 +4,6 @@ import { Login } from './page/login/login';
 import { Registro } from './page/registro/registro';
 import { Perfil } from './page/perfil/perfil';
 import { AdminLogin } from './page/admin-login/admin-login';
-import { AdminInicio } from './page/admin-inicio/admin-inicio';
 import { guestGuard } from './guards/guest.guard';
 import { rolGuard, sinAdminGuard } from './guards/rol.guard';
 
@@ -102,7 +101,11 @@ export const routes: Routes = [
     canActivate: [rolGuard('ADMIN')],
     canActivateChild: [rolGuard('ADMIN')],
     children: [
-      { path: '', component: AdminInicio, title: 'Panel | BAN Sports' },
+      {
+        path: '',
+        loadComponent: () => import('./page/admin-inicio/admin-inicio').then((m) => m.AdminInicio),
+        title: 'Panel | BAN Sports'
+      },
       {
         path: 'pedidos',
         loadComponent: () => import('./page/admin-pedidos/admin-pedidos').then((m) => m.AdminPedidos),

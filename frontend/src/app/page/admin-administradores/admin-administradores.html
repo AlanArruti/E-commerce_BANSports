@@ -1,0 +1,200 @@
+<div class="contenedor admin-pagina">
+  <nav class="migas" aria-label="Ubicación">
+    <a routerLink="/admin">Panel</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Administradores</span>
+  </nav>
+
+  <div class="encabezado">
+    <div>
+      <h1 class="titulo-display titulo">Administradores</h1>
+      <p class="cuenta" aria-live="polite">
+        @if (!cargando() && !errorCarga()) {
+          {{ administradores().length }} {{ administradores().length === 1 ? 'cuenta con acceso al panel' : 'cuentas con acceso al panel' }}
+        }
+      </p>
+    </div>
+    <button type="button" class="btn btn-primario btn-nuevo" [disabled]="cargando()" (click)="abrirAlta($event)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Nuevo administrador
+    </button>
+  </div>
+
+  @if (aviso(); as texto) {
+    <div class="alerta-ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      <span class="alerta-error-texto">{{ texto }}</span>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="lista" aria-busy="true">
+      @for (fila of [1, 2, 3]; track fila) {
+        <span class="esqueleto"></span>
+      }
+    </div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <ul class="lista">
+      @for (admin of ordenados(); track admin.idAdministrador) {
+        <li class="admin" [class.propio]="esPropio(admin)">
+          <span class="avatar" aria-hidden="true">{{ inicial(admin) }}</span>
+          <div class="admin-datos">
+            <span class="admin-usuario">
+              {{ admin.username }}
+              @if (esPropio(admin)) {
+                <span class="etiqueta-vos">Vos</span>
+              }
+            </span>
+            <span class="admin-id">#{{ admin.idAdministrador }}</span>
+          </div>
+          @if (esPropio(admin)) {
+            <span class="nota-propio">No podés darte de baja a vos mismo</span>
+          } @else {
+            <button type="button" class="btn-baja" [attr.aria-label]="'Dar de baja a ' + admin.username" (click)="pedirBaja(admin, $event)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+              Dar de baja
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+@if (modal(); as m) {
+  <div class="fondo-modal" (click)="cerrarModal()"></div>
+
+  @if (m.tipo === 'alta') {
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-alta">
+      <h2 class="titulo-display titulo-modal" id="titulo-alta">Nuevo administrador</h2>
+      <p class="texto-modal">Va a poder entrar al panel con este usuario y contraseña. Pasáselos por un medio seguro.</p>
+
+      @if (errorModal(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
+
+      <form class="formulario" [formGroup]="formulario" (ngSubmit)="crear()" novalidate>
+        <div class="campo">
+          <label for="admin-usuario">Usuario</label>
+          <input
+            #campoUsuario
+            id="admin-usuario"
+            class="input"
+            formControlName="usuario"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Por ejemplo, lucia.ventas"
+            [ngClass]="{ 'input-error': error('usuario') }"
+            [attr.aria-invalid]="error('usuario') ? true : null"
+            aria-describedby="admin-usuario-ayuda"
+          />
+          <span class="ayuda-campo" id="admin-usuario-ayuda">
+            @if (error('usuario'); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            } @else {
+              <span class="pista">Hasta {{ usuarioMax }} caracteres.</span>
+            }
+          </span>
+        </div>
+
+        <div class="campo">
+          <label for="admin-contrasenia">Contraseña</label>
+          <div class="input-con-boton">
+            <input
+              id="admin-contrasenia"
+              class="input"
+              formControlName="contrasenia"
+              autocomplete="new-password"
+              [type]="mostrarContrasenia() ? 'text' : 'password'"
+              [ngClass]="{ 'input-error': error('contrasenia') }"
+              [attr.aria-invalid]="error('contrasenia') ? true : null"
+              aria-describedby="admin-contrasenia-ayuda"
+            />
+            <button
+              type="button"
+              class="btn-ojo"
+              (click)="alternarContrasenia()"
+              [attr.aria-label]="mostrarContrasenia() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
+              [attr.aria-pressed]="mostrarContrasenia()"
+            >
+              @if (mostrarContrasenia()) {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3 3.6M6.6 6.6A16 16 0 0 0 2.5 12S6 18 12 18a9.4 9.4 0 0 0 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              } @else {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+          </div>
+          <span class="ayuda-campo" id="admin-contrasenia-ayuda">
+            @if (error('contrasenia'); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            } @else {
+              <span class="pista">Entre {{ contraseniaMin }} y 50 caracteres.</span>
+            }
+          </span>
+        </div>
+
+        <div class="campo">
+          <label for="admin-repetir">Repetir contraseña</label>
+          <input
+            id="admin-repetir"
+            class="input"
+            formControlName="repetirContrasenia"
+            autocomplete="new-password"
+            [type]="mostrarContrasenia() ? 'text' : 'password'"
+            [ngClass]="{ 'input-error': error('repetirContrasenia') }"
+            [attr.aria-invalid]="error('repetirContrasenia') ? true : null"
+            aria-describedby="admin-repetir-ayuda"
+          />
+          <span class="ayuda-campo" id="admin-repetir-ayuda">
+            @if (error('repetirContrasenia'); as mensaje) {
+              <span class="msj-error">{{ mensaje }}</span>
+            }
+          </span>
+        </div>
+
+        <div class="acciones-modal">
+          <button type="button" class="btn btn-secundario" [disabled]="enviando()" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primario" [disabled]="enviando()">
+            {{ enviando() ? 'Creando…' : 'Crear administrador' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  } @else {
+    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="titulo-baja" aria-describedby="texto-baja">
+      @if (errorModal(); as error) {
+        <div class="alerta-error" role="alert">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <div>
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
+      <h2 class="titulo-display titulo-modal" id="titulo-baja">¿Dar de baja a "{{ m.admin.username }}"?</h2>
+      <p class="texto-modal" id="texto-baja">Pierde el acceso al panel en el momento. Si lo necesitás de nuevo, vas a tener que crearlo otra vez.</p>
+      <div class="acciones-modal">
+        <button #cancelarBajaBtn type="button" class="btn btn-secundario" [disabled]="enviando()" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-peligro" [disabled]="enviando()" (click)="confirmarBaja()">
+          {{ enviando() ? 'Dando de baja…' : 'Sí, dar de baja' }}
+        </button>
+      </div>
+    </div>
+  }
+}

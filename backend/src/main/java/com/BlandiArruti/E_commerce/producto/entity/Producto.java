@@ -61,16 +61,32 @@ public class Producto {
     @Builder.Default
     private Double promedioResenas = 0.0;
 
-    /** Precio que paga el cliente: el de oferta si hay, o el base. */
+    /** Precio que paga el cliente por el producto sin variante: el de oferta si hay, o el base. */
     public double getPrecioConDescuento() {
-        if (precio == null) {
+        return aplicarDescuento(precio);
+    }
+
+    /**
+     * Precio unitario que paga el cliente por una variante. Si la variante tiene precio propio
+     * (por ejemplo, 2 kg cuesta más que 1 kg) se usa ese; si no, el del producto. El descuento
+     * de la oferta es del producto y se aplica igual a todas sus variantes.
+     */
+    public double precioUnitario(Variante variante) {
+        if (variante != null && variante.getPrecio() != null) {
+            return aplicarDescuento(variante.getPrecio());
+        }
+        return getPrecioConDescuento();
+    }
+
+    private double aplicarDescuento(Double base) {
+        if (base == null) {
             return 0;
         }
         int porcentaje = descuento == null ? 0 : descuento;
         if (porcentaje <= 0 || porcentaje >= 100) {
-            return redondear(precio);
+            return redondear(base);
         }
-        return BigDecimal.valueOf(precio)
+        return BigDecimal.valueOf(base)
                 .multiply(BigDecimal.valueOf(100 - porcentaje))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
                 .doubleValue();

@@ -62,16 +62,6 @@
   color: var(--color-texto-secundario);
 }
 
-.buscador input {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  color: var(--color-texto);
-  font-size: 14px;
-  outline: none;
-}
-
 .acciones {
   display: flex;
   align-items: center;

@@ -91,12 +91,18 @@ export interface Pedido {
   uuidPedido: string;
   fechaCreacion: string;
   items: ItemPedido[];
+  costoEnvio: number;
+  /** Lo que descontó el cupón sobre los productos (0 si no usó). */
+  descuentoCupon?: number;
+  /** Código del cupón usado, o null. */
+  codigoCupon?: string | null;
+  /** Ítems menos el cupón, más el envío. */
   total: number;
   estado: EstadoPedido;
   /** Dirección elegida en el checkout. */
   direccionEnvio: Direccion | null;
   envio: Envio | null;
-  /** Lo usa el panel del admin. */
+  /** Lo usa el panel del admin (listado y detalle). El checkout no lo usa. */
   cliente: Cliente | null;
   factura: Factura | null;
 }

@@ -57,7 +57,10 @@
     <div class="producto-pie">
       <span class="producto-precios">
         @if (tieneOferta()) {
-          <span class="producto-precio-anterior">{{ producto().precioBase | precio }}</span>
+          <span class="producto-precio-anterior">{{ rango().listaMinimo | precio }}</span>
+        }
+        @if (esPrecioDesde()) {
+          <span class="producto-precio-desde">Desde</span>
         }
         <span class="producto-precio">{{ precioVigente() | precio }}</span>
       </span>

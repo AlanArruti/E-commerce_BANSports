@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.cliente.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ClienteResponse(
@@ -9,5 +10,6 @@ public record ClienteResponse(
         String apellido,
         String dni,
         String email,
-        List<DireccionResponse> direcciones
+        List<DireccionResponse> direcciones,
+        LocalDateTime fechaAlta
 ) {}

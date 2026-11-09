@@ -1,0 +1,81 @@
+.pagar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.facturas {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.facturas-titulo {
+  padding: 0;
+  margin-bottom: var(--espacio-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.facturas-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-2);
+}
+
+.factura {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio, 10px);
+  background: var(--color-superficie);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.factura:hover {
+  border-color: var(--color-texto-secundario);
+}
+
+.factura input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.factura:has(input:focus-visible) {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+
+.factura-elegida {
+  border-color: var(--color-verde);
+  box-shadow: inset 0 0 0 1px var(--color-verde);
+}
+
+.factura-titulo {
+  font-weight: 700;
+}
+
+.factura-detalle {
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+}
+
+.btn {
+  gap: 10px;
+}
+
+.pagar-nota {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-texto-secundario);
+  text-align: center;
+}

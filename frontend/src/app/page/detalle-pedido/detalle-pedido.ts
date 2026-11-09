@@ -20,7 +20,7 @@ import {
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
-import { ErrorTraducido, traducirErrorCancelarPedido, traducirErrorPedidos } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorCancelarPedido, traducirErrorMisPedidos } from '../../validaciones/errores-api';
 
 interface EstadoDetalle {
   cargando: boolean;
@@ -94,7 +94,7 @@ export class DetallePedido {
                 cargando: false,
                 error:
                   e instanceof HttpErrorResponse
-                    ? traducirErrorPedidos(e)
+                    ? traducirErrorMisPedidos(e)
                     : { titulo: 'No pudimos cargar el pedido', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
               });
             }),

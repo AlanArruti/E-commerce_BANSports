@@ -69,6 +69,22 @@ export const MENSAJES: Record<string, Mensajes> = {
   loginContrasenia: {
     requerido: () => 'Ingresá tu contraseña.'
   },
+  adminUsuario: {
+    requerido: () => 'Ingresá el usuario del nuevo administrador.',
+    maxlength: (d) => `El usuario puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  adminContrasenia: {
+    requerido: () => 'Ingresá una contraseña para el nuevo administrador.',
+    minlength: (d) => {
+      const faltan = d.requiredLength - d.actualLength;
+      return `La contraseña debe tener al menos ${d.requiredLength} caracteres (te ${faltan === 1 ? 'falta 1' : `faltan ${faltan}`}).`;
+    },
+    maxlength: (d) => `La contraseña puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+  },
+  adminRepetirContrasenia: {
+    requerido: () => 'Repetí la contraseña.',
+    noCoinciden: () => 'Las contraseñas no coinciden. Escribí la misma en los dos campos.'
+  },
   categoriaNombre: {
     requerido: () => 'Ingresá el nombre de la categoría.',
     maxlength: (d) => `El nombre puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`,

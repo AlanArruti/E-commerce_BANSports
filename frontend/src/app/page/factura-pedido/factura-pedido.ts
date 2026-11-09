@@ -11,7 +11,7 @@ import { ItemPedido, Pedido, numeroFactura } from '../../models/pedido';
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
-import { ErrorTraducido, traducirErrorPedidos } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorMisPedidos } from '../../validaciones/errores-api';
 
 interface EstadoFactura {
   cargando: boolean;
@@ -65,7 +65,7 @@ export class FacturaPedido {
                 cargando: false,
                 error:
                   e instanceof HttpErrorResponse
-                    ? traducirErrorPedidos(e)
+                    ? traducirErrorMisPedidos(e)
                     : { titulo: 'No pudimos cargar la factura', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
               });
             }),

@@ -1,9 +1,13 @@
 package com.BlandiArruti.E_commerce.auth.controller;
 
 import com.BlandiArruti.E_commerce.auth.dto.request.LoginRequest;
+import com.BlandiArruti.E_commerce.auth.dto.request.RecuperarPasswordRequest;
+import com.BlandiArruti.E_commerce.auth.dto.request.RestablecerPasswordRequest;
+import com.BlandiArruti.E_commerce.auth.dto.response.MensajeResponse;
 import com.BlandiArruti.E_commerce.auth.dto.response.TokenResponse;
 import com.BlandiArruti.E_commerce.auth.dto.response.UsuarioActualResponse;
 import com.BlandiArruti.E_commerce.auth.service.AuthService;
+import com.BlandiArruti.E_commerce.auth.service.RecuperacionPasswordService;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
@@ -19,6 +23,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Tag(name = "Autenticación", description = "Login y registro de usuarios")
 @RestController
@@ -27,6 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RecuperacionPasswordService recuperacionPasswordService;
+    private final ClientRegistrationRepository clientRegistrations;
+
+    /** Valor por defecto de GITHUB_CLIENT_ID / GOOGLE_CLIENT_ID cuando no están en el .env. */
+    private static final String OAUTH_DESHABILITADO = "OAUTH_DISABLED";
 
     @Operation(summary = "Iniciar sesión", description = "Devuelve un JWT Bearer token válido por 24 horas.")
     @PostMapping("/login")
@@ -38,6 +53,42 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ClienteResponse> registrar(@Valid @RequestBody ClienteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrar(request));
+    }
+
+    @Operation(summary = "Pedir enlace para recuperar la contraseña",
+               description = "Si el email es de un cliente activo, le manda un enlace que vence en 30 minutos. "
+                           + "Responde siempre lo mismo, exista o no la cuenta.")
+    @PostMapping("/recuperar")
+    public ResponseEntity<MensajeResponse> recuperar(@Valid @RequestBody RecuperarPasswordRequest request) {
+        recuperacionPasswordService.solicitar(request);
+        return ResponseEntity.ok(new MensajeResponse(
+                "Si el email corresponde a una cuenta, te enviamos un enlace para restablecer la contraseña."));
+    }
+
+    @Operation(summary = "Restablecer la contraseña",
+               description = "Recibe el token del enlace y la contraseña nueva. El token se puede usar una sola vez.")
+    @PostMapping("/restablecer")
+    public ResponseEntity<MensajeResponse> restablecer(@Valid @RequestBody RestablecerPasswordRequest request) {
+        recuperacionPasswordService.restablecer(request);
+        return ResponseEntity.ok(new MensajeResponse("Tu contraseña se actualizó. Ya podés iniciar sesión."));
+    }
+
+    @Operation(summary = "Proveedores de login social disponibles",
+               description = "Lista los proveedores (github, google) que tienen credenciales cargadas. "
+                           + "El front muestra solo esos botones. Para iniciar el login, el navegador "
+                           + "va a /oauth2/authorization/{proveedor}.")
+    @GetMapping("/proveedores")
+    public ResponseEntity<List<String>> proveedores() {
+        List<String> habilitados = new ArrayList<>();
+        if (clientRegistrations instanceof Iterable<?> registros) {
+            for (Object registro : registros) {
+                if (registro instanceof ClientRegistration cr && !OAUTH_DESHABILITADO.equals(cr.getClientId())) {
+                    habilitados.add(cr.getRegistrationId());
+                }
+            }
+        }
+        Collections.sort(habilitados);
+        return ResponseEntity.ok(habilitados);
     }
 
     @Operation(summary = "Usuario autenticado",

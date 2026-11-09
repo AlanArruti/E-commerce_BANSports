@@ -1,0 +1,14 @@
+:host {
+  display: contents;
+}
+
+.botones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-social {
+  gap: 10px;
+  text-decoration: none;
+}

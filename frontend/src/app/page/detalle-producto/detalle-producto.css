@@ -146,6 +146,12 @@
   text-decoration: line-through;
 }
 
+.detalle-precio-desde {
+  color: var(--color-texto-secundario);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .detalle-precio {
   font-family: var(--fuente-titulos);
   font-weight: 800;

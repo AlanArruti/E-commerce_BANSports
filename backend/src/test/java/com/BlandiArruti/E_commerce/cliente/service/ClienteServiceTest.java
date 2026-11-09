@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -56,6 +58,29 @@ class ClienteServiceTest {
     @AfterEach
     void limpiarContexto() {
         SecurityContextHolder.clearContext();
+    }
+
+    // ─── listarTodos ─────────────────────────────────────────────────────────
+
+    @Test
+    void listarTodos_sinBusqueda_listaLosActivos() {
+        var pageable = PageRequest.of(0, 10);
+        when(clienteRepository.findAllByActivoTrue(pageable)).thenReturn(Page.empty(pageable));
+
+        clienteService.listarTodos("   ", pageable);
+
+        verify(clienteRepository).findAllByActivoTrue(pageable);
+        verify(clienteRepository, never()).buscarActivos(any(), any());
+    }
+
+    @Test
+    void listarTodos_conBusqueda_buscaEnMinusculasYEscapaComodines() {
+        var pageable = PageRequest.of(0, 10);
+        when(clienteRepository.buscarActivos(any(), any())).thenReturn(Page.empty(pageable));
+
+        clienteService.listarTodos("  Ana_100% ", pageable);
+
+        verify(clienteRepository).buscarActivos("%ana\\_100\\%%", pageable);
     }
 
     // ─── crear ───────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedi
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
-import { ErrorTraducido, traducirErrorPedidos } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorMisPedidos } from '../../validaciones/errores-api';
 
 interface FiltroEstado {
   /** null = todos. */
@@ -69,7 +69,7 @@ export class MisPedidos implements OnInit {
         this.cargando.set(false);
         this.error.set(
           e instanceof HttpErrorResponse
-            ? traducirErrorPedidos(e)
+            ? traducirErrorMisPedidos(e)
             : { titulo: 'No pudimos cargar tus pedidos', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
         );
       }

@@ -892,16 +892,30 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /pedidos/{id}/iniciar-pago:
+  /pago/pasarelas:
+    get:
+      tags: [Pagos]
+      summary: Pasarelas de pago disponibles (ADMIN o CLIENTE)
+      description: Las que tienen credenciales cargadas. El front muestra un boton por cada una.
+      responses:
+        '200':
+          description: Lista de pasarelas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PasarelaResponse'
+
+  /pago/pedido/{id}:
     post:
       tags: [Pagos]
-      summary: Iniciar pago con MercadoPago Checkout Pro (ADMIN o CLIENTE)
+      summary: Iniciar el pago de un pedido con una pasarela (ADMIN o CLIENTE)
       description: >
-        Crea una preferencia de pago en MercadoPago y retorna el
-        `preferenceId` y el `initPoint` (URL de pago).
-        El cliente accede a `initPoint` y paga en la pagina de MercadoPago.
-        Una vez confirmado el pago, MP notifica al webhook y el backend
-        procesa automaticamente el pedido.
+        Registra un intento de pago (Pago, estado CREADO) y crea el cobro en la
+        pasarela elegida (hoy `mercadopago`, Checkout Pro via API de Orders).
+        Devuelve la URL de la pasarela. Al terminar, la pasarela devuelve al
+        cliente a `/pago/resultado?pago={pagoId}` del front.
       parameters:
         - $ref: '#/components/parameters/Id'
       requestBody:
@@ -909,14 +923,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PagoRequest'
+              $ref: '#/components/schemas/IniciarPagoRequest'
       responses:
-        '200':
-          description: Preferencia creada en MercadoPago
+        '201':
+          description: Cobro creado en la pasarela
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PreferenciaResponse'
+                $ref: '#/components/schemas/InicioPagoResponse'
         '400':
           description: El pedido no esta en estado PENDIENTE_PAGO
           content:
@@ -926,29 +940,88 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Pedido o pasarela inexistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Pasarela sin credenciales, caida o que rechazo el cobro (el mensaje dice el motivo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [Pagos]
+      summary: Intentos de pago de un pedido (ADMIN o CLIENTE)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Del mas nuevo al mas viejo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PagoResponse'
 
-  /webhook/mercadopago:
+  /pago/{id}/confirmar:
     post:
       tags: [Pagos]
-      summary: Webhook de notificaciones de MercadoPago (publico)
+      summary: Confirmar un pago al volver de la pasarela (ADMIN o CLIENTE)
       description: >
-        Endpoint publico para recibir notificaciones de MercadoPago.
-        Al confirmar el pago verifica con la API de MP, descuenta stock,
-        genera la Factura y cambia el pedido a PAGADO.
+        Consulta el estado real del cobro en la pasarela (no confia en la URL).
+        Si esta aprobado y cubre el total, descuenta stock, genera la Factura y
+        el pedido pasa a PAGADO. Idempotente.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Estado actual del pago y del pedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoResponse'
+        '400':
+          description: El cobro de la pasarela no corresponde a este pago
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhook/{pasarela}:
+    post:
+      tags: [Pagos]
+      summary: Aviso de una pasarela de pago (publico)
+      description: >
+        Un solo webhook para todas las pasarelas (ej. `/webhook/mercadopago`,
+        topico `order`). El back vuelve a consultar el cobro en la pasarela,
+        asi que un aviso falso no puede marcar un pedido como pagado.
       security: []
+      parameters:
+        - name: pasarela
+          in: path
+          required: true
+          schema:
+            type: string
+            example: mercadopago
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              description: Payload de notificacion de MercadoPago
+              description: Payload propio de cada pasarela
       responses:
         '200':
-          description: Notificacion procesada
-        '400':
-          description: Pago no aprobado o payload invalido
+          description: Aviso recibido (siempre, para que la pasarela no reintente)
+        '404':
+          description: Pasarela inexistente
 
   # ── Facturas ────────────────────────────────────────────────────────────────
 
@@ -1729,16 +1802,64 @@ components:
         tipoFactura:
           $ref: '#/components/schemas/TipoFactura'
 
-    PreferenciaResponse:
+    IniciarPagoRequest:
+      type: object
+      required: [pasarela, tipoFactura]
+      properties:
+        pasarela:
+          type: string
+          example: mercadopago
+        tipoFactura:
+          $ref: '#/components/schemas/TipoFactura'
+
+    InicioPagoResponse:
       type: object
       properties:
-        preferenceId:
-          type: string
-          description: ID de preferencia en MercadoPago
-        initPoint:
+        pagoId:
+          type: integer
+          format: int64
+          description: Id del intento de pago (vuelve en /pago/resultado?pago=...)
+        urlPago:
           type: string
           format: uri
-          description: URL de pago en MercadoPago
+          description: Pagina de la pasarela a la que se redirige al cliente
+
+    PasarelaResponse:
+      type: object
+      properties:
+        codigo:
+          type: string
+          example: mercadopago
+        nombre:
+          type: string
+          example: Mercado Pago
+
+    PagoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        pedidoId:
+          type: integer
+          format: int64
+        pasarela:
+          type: string
+        estado:
+          type: string
+          enum: [CREADO, PENDIENTE, APROBADO, RECHAZADO]
+        tipoFactura:
+          $ref: '#/components/schemas/TipoFactura'
+        monto:
+          type: number
+        montoPagado:
+          type: number
+          nullable: true
+        estadoPedido:
+          type: string
+        fechaCreacion:
+          type: string
+          format: date-time
 
     # ── Envio ──
 

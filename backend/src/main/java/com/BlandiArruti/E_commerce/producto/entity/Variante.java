@@ -44,6 +44,13 @@ public class Variante {
     @Column(name = "stock", nullable = false)
     private Integer stock;
 
+    /**
+     * Precio propio de la variante, sin descuento (ej. la de 2 kg cuesta más que la de 1 kg).
+     * null = usa el precio del producto. Ver Producto#precioUnitario.
+     */
+    @Column(name = "precio")
+    private Double precio;
+
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;

@@ -76,32 +76,43 @@ services:
 
       # ── CORS y OAuth2: acá se conecta el front de Progra 4 ──
       FRONT_ORIGINS: ${FRONT_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:4200}
-      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-}
+      # Login con GitHub y Google: sin client id el botón no aparece en el front.
+      # La vuelta va a la pantalla /ingreso-social del front, que guarda el token.
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-${FRONT_URL:-http://localhost:4200}/ingreso-social}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-OAUTH_DISABLED}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-OAUTH_DISABLED}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-OAUTH_DISABLED}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-OAUTH_DISABLED}
 
-      # ── Mail: dentro del stack SIEMPRE va a Mailpit ──
-      # Fijo a propósito, sin leer del .env: ese archivo suele tener las
-      # credenciales de Mailtrap para correr fuera de Docker, y si se filtran
-      # acá la app intenta salir a internet con la config equivocada y los
-      # mails se pierden en silencio.
-      # Para mandar por Mailtrap/Gmail desde Docker, cambiá estas cuatro líneas
-      # a mano y poné MAIL_SMTP_AUTH/STARTTLS en "true".
-      MAIL_HOST: mailpit
-      MAIL_PORT: "1025"
-      MAIL_SMTP_AUTH: "false"
-      MAIL_SMTP_STARTTLS: "false"
-      MAIL_USERNAME: ""
-      MAIL_PASSWORD: ""
-      MAIL_FROM: ${MAIL_FROM:-no-reply@ecommerce-blandi-arruti.com}
+      # ── Mail: Mailpit salvo que el .env defina SMTP_HOST ──
+      # Para Docker se usan variables SMTP_* y no MAIL_*: el .env suele tener
+      # MAIL_* de Mailtrap para correr fuera de Docker, y si se colaran acá los
+      # mails se perderían en silencio. Sin SMTP_HOST nada sale a internet.
+      #
+      # Gmail (ver README → "Mails reales con Gmail"):
+      #   SMTP_HOST=smtp.gmail.com
+      #   SMTP_PORT=587
+      #   SMTP_USERNAME=la-casilla@gmail.com
+      #   SMTP_PASSWORD=contraseña de aplicación de 16 letras
+      # Con SMTP_HOST definido se activan auth y STARTTLS. El remitente es la
+      # misma casilla (Gmail reescribe cualquier otro), salvo que pongas SMTP_FROM.
+      MAIL_HOST: ${SMTP_HOST:-mailpit}
+      MAIL_PORT: ${SMTP_PORT:-1025}
+      MAIL_SMTP_AUTH: ${SMTP_HOST:+true}
+      MAIL_SMTP_STARTTLS: ${SMTP_HOST:+true}
+      MAIL_USERNAME: ${SMTP_USERNAME:-}
+      MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${SMTP_FROM:-${SMTP_USERNAME:-no-reply@ecommerce-blandi-arruti.com}}
+
+      # Base de los enlaces que van en los mails (ej. recuperar la contraseña) y de
+      # la vuelta de las pasarelas de pago (/pago/resultado).
+      FRONT_URL: ${FRONT_URL:-http://localhost:4200}
 
       # ── Servicios externos (opcionales: sin token quedan inactivos) ──
+      # Pasarela MercadoPago. Su webhook (https://<NGROK_DOMAIN>/api/v1/webhook/mercadopago,
+      # tópico "order") se carga en el panel de MercadoPago; sin él, el pago lo confirma la
+      # pantalla de vuelta del front.
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
-      # Si definís NGROK_DOMAIN en el .env, estas dos se arman solas con ese
-      # dominio. Podés pisarlas seteándolas a mano. Vacías = sin webhook, y la
-      # app cae a http://localhost:8080 para las back_urls.
-      MP_NOTIFICATION_URL: ${MP_NOTIFICATION_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}/api/v1/webhook/mercadopago}}
-      MP_BACK_URL: ${MP_BACK_URL:-${NGROK_DOMAIN:+https://${NGROK_DOMAIN}}}
       CORREO_ARGENTINO_USER_TOKEN: ${CORREO_ARGENTINO_USER_TOKEN:-}
       CORREO_ARGENTINO_PASSWORD_TOKEN: ${CORREO_ARGENTINO_PASSWORD_TOKEN:-}
       CORREO_ARGENTINO_CUSTOMER_ID: ${CORREO_ARGENTINO_CUSTOMER_ID:-}
@@ -167,8 +178,8 @@ services:
   #   NGROK_DOMAIN     → tu dominio estático, sin el https://
   #
   # El dominio estático es en la práctica obligatorio: sin él ngrok da una URL
-  # distinta en cada arranque, y la app lee MP_NOTIFICATION_URL una sola vez al
-  # iniciar. El plan gratuito incluye uno.
+  # distinta en cada arranque, y habría que volver a cargar la URL del webhook en el
+  # panel de MercadoPago cada vez. El plan gratuito incluye uno.
   ngrok:
     image: ngrok/ngrok:latest
     container_name: ecommerce-ngrok
@@ -205,7 +216,7 @@ services:
           exec ngrok http app:8080 --url="https://$$NGROK_DOMAIN" --log=stdout
         fi
         echo "Sin NGROK_DOMAIN: la URL va a ser distinta en cada arranque."
-        echo "Mirá cuál te tocó en http://localhost:4040 y actualizá MP_NOTIFICATION_URL."
+        echo "Mirá cuál te tocó en http://localhost:4040 y cargala en el panel de MercadoPago (Webhooks)."
         exec ngrok http app:8080 --log=stdout
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:4040/api/tunnels || exit 1"]

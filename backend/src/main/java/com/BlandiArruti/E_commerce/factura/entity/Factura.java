@@ -41,7 +41,8 @@ public class Factura {
     private TipoFactura tipoFactura;
     @Column(name = "precio_total", nullable = false)
     private Double precioTotal;
-    // Nullable: las facturas emitidas antes de SCRUM-140 no la guardaban.
+
+    /** Va impresa en el PDF. Las facturas anteriores a este campo quedan en null. */
     @Column(name = "fecha_emision")
     private LocalDateTime fechaEmision;
 }

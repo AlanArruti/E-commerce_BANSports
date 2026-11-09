@@ -4,6 +4,7 @@ import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -28,6 +29,9 @@ public class Factura {
         if (this.uuid == null) {
             this.uuid = UUID.randomUUID().toString();
         }
+        if (this.fechaEmision == null) {
+            this.fechaEmision = LocalDateTime.now();
+        }
     }
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_pedido", nullable = false, unique = true)
@@ -37,4 +41,8 @@ public class Factura {
     private TipoFactura tipoFactura;
     @Column(name = "precio_total", nullable = false)
     private Double precioTotal;
+
+    /** Va impresa en el PDF. Las facturas anteriores a este campo quedan en null. */
+    @Column(name = "fecha_emision")
+    private LocalDateTime fechaEmision;
 }

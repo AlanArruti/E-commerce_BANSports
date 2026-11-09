@@ -10,12 +10,14 @@ import { Direccion, localidadDeDireccion } from '../../models/direccion';
 import { ItemCarrito } from '../../models/item-carrito';
 import { ETIQUETAS_ESTADO_PEDIDO, Pedido } from '../../models/pedido';
 import { CotizacionEnvio, plazoDeEnvio } from '../../models/cotizacion-envio';
+import { ValidacionCupon } from '../../models/cupon';
 import { atributosOrdenados } from '../../models/variante';
-import { PrecioPipe } from '../../pipes/precio.pipe';
+import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
 import { CarritoService } from '../../services/carrito.service';
 import { CotizacionService } from '../../services/cotizacion.service';
+import { CuponService } from '../../services/cupon.service';
 import { DireccionService } from '../../services/direccion.service';
-import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout, traducirErrorCotizacion } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout, traducirErrorCotizacion, traducirErrorCupon } from '../../validaciones/errores-api';
 import { ErrorCarga } from '../../componente/error-carga/error-carga';
 import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 
@@ -46,10 +48,18 @@ export class Checkout implements OnInit {
   protected readonly cargandoEnvio = signal(false);
   protected readonly errorEnvio = signal<ErrorTraducido | null>(null);
 
+  /** Cupón: lo escrito, el que el back aceptó (vista previa del descuento) y el motivo si lo rechazó. */
+  protected readonly codigoCupon = signal('');
+  protected readonly cupon = signal<ValidacionCupon | null>(null);
+  protected readonly validandoCupon = signal(false);
+  protected readonly errorCupon = signal<ErrorTraducido | null>(null);
+
   protected readonly items;
   protected readonly direccionElegida;
   protected readonly opcionElegida;
   protected readonly costoEnvio;
+  protected readonly subtotal;
+  protected readonly descuento;
   protected readonly totalConEnvio;
   protected readonly unidadesDelPedido;
   protected readonly etiquetasEstado = ETIQUETAS_ESTADO_PEDIDO;
@@ -60,6 +70,7 @@ export class Checkout implements OnInit {
     protected carritoService: CarritoService,
     private direccionService: DireccionService,
     private cotizacionService: CotizacionService,
+    private cuponService: CuponService,
     private title: Title
   ) {
     this.items = computed(() => this.carritoService.carrito()?.items ?? []);
@@ -71,7 +82,10 @@ export class Checkout implements OnInit {
       return indice === null ? null : (this.cotizaciones()[indice] ?? null);
     });
     this.costoEnvio = computed(() => this.opcionElegida()?.precio ?? 0);
-    this.totalConEnvio = computed(() => (this.carritoService.carrito()?.total ?? 0) + this.costoEnvio());
+    this.subtotal = computed(() => this.carritoService.carrito()?.total ?? 0);
+    // El cupón descuenta sobre los productos, no sobre el envío (igual que el back).
+    this.descuento = computed(() => this.cupon()?.descuento ?? 0);
+    this.totalConEnvio = computed(() => this.subtotal() - this.descuento() + this.costoEnvio());
     this.unidadesDelPedido = computed(
       () => this.pedido()?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0
     );
@@ -175,7 +189,7 @@ export class Checkout implements OnInit {
 
     this.confirmando.set(true);
     this.errorConfirmar.set(null);
-    this.carritoService.checkout(direccion.id, opcion).subscribe({
+    this.carritoService.checkout(direccion.id, opcion, this.cupon()?.codigo ?? null).subscribe({
       next: (pedido) => {
         this.confirmando.set(false);
         this.direccionDelPedido.set(direccion);
@@ -192,6 +206,47 @@ export class Checkout implements OnInit {
         );
       }
     });
+  }
+
+  // ── Cupón ────────────────────────────────────────────
+
+  /** Pregunta al back si el cupón sirve para este carrito. El descuento final lo calcula al crear el pedido. */
+  aplicarCupon(evento: Event): void {
+    evento.preventDefault();
+    const codigo = this.codigoCupon().trim();
+    if (!codigo) {
+      this.errorCupon.set({ titulo: 'Falta el código', detalle: 'Escribí el código del cupón para aplicarlo.' });
+      return;
+    }
+    this.validandoCupon.set(true);
+    this.errorCupon.set(null);
+    this.cuponService.validar(codigo).subscribe({
+      next: (cupon) => {
+        this.validandoCupon.set(false);
+        this.cupon.set(cupon);
+        this.codigoCupon.set('');
+        this.errorConfirmar.set(null);
+      },
+      error: (e: unknown) => {
+        this.validandoCupon.set(false);
+        this.errorCupon.set(
+          e instanceof HttpErrorResponse
+            ? traducirErrorCupon(e)
+            : { titulo: 'No pudimos validar el cupón', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
+        );
+      }
+    });
+  }
+
+  quitarCupon(): void {
+    this.cupon.set(null);
+    this.errorCupon.set(null);
+    this.errorConfirmar.set(null);
+  }
+
+  /** "15% off" o "$ 5.000 off". */
+  protected beneficio(cupon: ValidacionCupon): string {
+    return cupon.tipo === 'PORCENTAJE' ? `${cupon.valor}% off` : `${formatearPrecio(cupon.valor)} off`;
   }
 
   /** "1 kg · Chocolate". Vacío si el producto no tiene variante. */

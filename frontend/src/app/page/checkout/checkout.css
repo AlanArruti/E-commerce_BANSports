@@ -526,6 +526,106 @@
   color: var(--color-texto-secundario);
 }
 
+/* ── Cupón de descuento ────────────────────────────────── */
+.cupon-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.cupon-form {
+  display: flex;
+  gap: var(--espacio-2);
+}
+
+.cupon-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cupon-input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.cupon-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  font-size: 13px;
+}
+
+.cupon-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-error-texto);
+}
+
+.cupon-aplicado {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px dashed var(--color-verde);
+  border-radius: var(--radio);
+  background: rgb(43 227 122 / 0.08);
+  color: var(--color-verde);
+}
+
+.cupon-aplicado-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cupon-aplicado-texto strong {
+  letter-spacing: 0.06em;
+  color: var(--color-texto);
+}
+
+.cupon-aplicado-texto span {
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+/* Productos, cupón y envío, arriba del total. */
+.resumen-cuentas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  margin: 0;
+}
+
+.resumen-cuentas > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  font-size: 14px;
+  color: var(--color-texto-suave);
+}
+
+.resumen-cuentas dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuenta-descuento {
+  color: var(--color-verde) !important;
+  font-weight: 600;
+}
+
+.tarjeta-ahorro {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-verde);
+}
+
 /* ── Mobile: una sola columna ──────────────────────────── */
 @media (max-width: 1000px) {
   .checkout {

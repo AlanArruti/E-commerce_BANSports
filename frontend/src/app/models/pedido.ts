@@ -32,6 +32,11 @@ export interface Pedido {
   cliente?: { id: number; nombre: string; apellido: string };
   items: ItemPedido[];
   costoEnvio: number;
+  /** Lo que descontó el cupón sobre los productos (0 si no usó). */
+  descuentoCupon?: number;
+  /** Código del cupón usado, o null. */
+  codigoCupon?: string | null;
+  /** Ítems menos el cupón, más el envío. */
   total: number;
   estado: EstadoPedido;
 }

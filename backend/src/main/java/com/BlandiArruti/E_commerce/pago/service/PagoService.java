@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -144,8 +145,10 @@ public class PagoService {
         }
     }
 
-    private List<SolicitudCobro.LineaCobro> lineas(Pedido pedido) {
-        List<SolicitudCobro.LineaCobro> lineas = new ArrayList<>(pedido.getItems().stream().map(this::linea).toList());
+    /** Líneas del cobro. Tienen que sumar exacto el total del pedido (con cupón y envío). */
+    static List<SolicitudCobro.LineaCobro> lineas(Pedido pedido) {
+        List<SolicitudCobro.LineaCobro> lineas = new ArrayList<>(conCupon(pedido,
+                pedido.getItems().stream().map(PagoService::linea).toList()));
         // El envío va como una línea más: las pasarelas exigen que las líneas sumen exacto el total.
         double costoEnvio = pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0;
         if (costoEnvio > 0) {
@@ -154,7 +157,33 @@ public class PagoService {
         return lineas;
     }
 
-    private SolicitudCobro.LineaCobro linea(ItemPedido item) {
+    /**
+     * Reparte el descuento del cupón entre los productos, en proporción a lo que pesa cada línea.
+     * MercadoPago no acepta líneas negativas, así que no puede ir como una línea "Cupón".
+     * La última línea se lleva lo que sobre del redondeo, para que el total cierre al centavo.
+     */
+    private static List<SolicitudCobro.LineaCobro> conCupon(Pedido pedido, List<SolicitudCobro.LineaCobro> productos) {
+        BigDecimal descuento = BigDecimal.valueOf(pedido.getDescuentoCupon() != null ? pedido.getDescuentoCupon() : 0.0)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal subtotal = productos.stream().map(SolicitudCobro.LineaCobro::monto).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (descuento.signum() <= 0 || subtotal.signum() <= 0) {
+            return productos;
+        }
+        List<SolicitudCobro.LineaCobro> resultado = new ArrayList<>();
+        BigDecimal restante = descuento;
+        for (int i = 0; i < productos.size(); i++) {
+            SolicitudCobro.LineaCobro linea = productos.get(i);
+            BigDecimal parte = i == productos.size() - 1
+                    ? restante
+                    : linea.monto().multiply(descuento).divide(subtotal, 2, RoundingMode.HALF_UP);
+            restante = restante.subtract(parte);
+            resultado.add(new SolicitudCobro.LineaCobro(linea.codigo(), linea.titulo(), linea.cantidad(),
+                    linea.monto().subtract(parte).setScale(2, RoundingMode.HALF_UP)));
+        }
+        return resultado;
+    }
+
+    private static SolicitudCobro.LineaCobro linea(ItemPedido item) {
         String codigo = item.getVariante() != null
                 ? "V" + item.getVariante().getId()
                 : "P" + item.getProducto().getId();

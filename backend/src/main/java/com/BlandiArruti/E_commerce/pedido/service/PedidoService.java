@@ -5,6 +5,7 @@ import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
 import com.BlandiArruti.E_commerce.cotizacion.service.CotizacionEnvioService;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EstadoEnvioRequest;
@@ -66,6 +67,7 @@ public class PedidoService implements IPedidoService {
     private final FacturaMapper facturaMapper;
     private final EnvioMapper envioMapper;
     private final CotizacionEnvioService cotizacionEnvioService;
+    private final ICuponService cuponService;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -170,7 +172,23 @@ public class PedidoService implements IPedidoService {
             pedido.getItems().add(item);
         }
 
+        aplicarCupon(pedido, request.codigoCupon());
+
         return pedidoMapper.toResponse(pedidoRepository.save(pedido));
+    }
+
+    /**
+     * Valida el cupón contra el subtotal de productos (sin envío), le suma un uso y deja el
+     * descuento congelado en el pedido. Si el cupón no sirve, el pedido no se crea y el
+     * cliente ve el motivo (vencido, agotado, compra mínima).
+     */
+    private void aplicarCupon(Pedido pedido, String codigoCupon) {
+        if (codigoCupon == null || codigoCupon.isBlank()) {
+            return;
+        }
+        ICuponService.CuponAplicado aplicado = cuponService.aplicar(codigoCupon, subtotalProductos(pedido));
+        pedido.setCupon(aplicado.cupon());
+        pedido.setDescuentoCupon(aplicado.descuento());
     }
 
     /**
@@ -206,6 +224,11 @@ public class PedidoService implements IPedidoService {
                     varianteRepository.save(variante);
                 }
             }
+        }
+
+        // El uso del cupón vuelve a estar disponible.
+        if (pedido.getCupon() != null) {
+            cuponService.devolverUso(pedido.getCupon());
         }
 
         pedido.setEstadoPedido(EstadoPedido.CANCELADO);
@@ -265,10 +288,17 @@ public class PedidoService implements IPedidoService {
     /** Margen por redondeo de centavos en la pasarela. */
     private static final BigDecimal TOLERANCIA_REDONDEO = new BigDecimal("0.05");
 
-    /** Productos más envío: es lo que se cobra en la pasarela y lo que va a la factura. */
+    /** Productos menos el cupón, más envío: es lo que se cobra en la pasarela y lo que va a la factura. */
     public double calcularTotal(Pedido pedido) {
-        double productos = pedido.getItems().stream().mapToDouble(ItemPedido::getPrecioProducto).sum();
-        return productos + costoEnvio(pedido);
+        return subtotalProductos(pedido) - descuentoCupon(pedido) + costoEnvio(pedido);
+    }
+
+    private static double subtotalProductos(Pedido pedido) {
+        return pedido.getItems().stream().mapToDouble(ItemPedido::getPrecioProducto).sum();
+    }
+
+    private static double descuentoCupon(Pedido pedido) {
+        return pedido.getDescuentoCupon() != null ? pedido.getDescuentoCupon() : 0.0;
     }
 
     private static double costoEnvio(Pedido pedido) {

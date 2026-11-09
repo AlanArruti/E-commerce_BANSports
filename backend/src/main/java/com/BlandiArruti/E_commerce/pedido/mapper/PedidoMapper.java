@@ -16,16 +16,20 @@ public interface PedidoMapper {
     @Mapping(source = "estadoPedido", target = "estado")
     @Mapping(source = "items", target = "items")
     @Mapping(source = "costoEnvio", target = "costoEnvio")
+    @Mapping(source = "descuentoCupon", target = "descuentoCupon")
+    @Mapping(source = "cupon.codigo", target = "codigoCupon")
     @Mapping(target = "total", expression = "java(calcularTotal(pedido))")
     PedidoResponse toResponse(Pedido pedido);
 
+    /** Igual que PedidoService.calcularTotal: productos menos el cupón, más el envío. */
     default Double calcularTotal(Pedido pedido) {
         double costoEnvio = pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0;
+        double descuento = pedido.getDescuentoCupon() != null ? pedido.getDescuentoCupon() : 0.0;
         if (pedido.getItems() == null) {
             return costoEnvio;
         }
         return pedido.getItems().stream()
                 .mapToDouble(item -> item.getPrecioProducto() != null ? item.getPrecioProducto() : 0.0)
-                .sum() + costoEnvio;
+                .sum() - descuento + costoEnvio;
     }
 }

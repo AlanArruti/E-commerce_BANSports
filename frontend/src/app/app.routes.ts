@@ -123,6 +123,11 @@ export const routes: Routes = [
         title: 'Administradores | Panel BAN Sports'
       },
       {
+        path: 'cupones',
+        loadComponent: () => import('./page/admin-cupones/admin-cupones').then((m) => m.AdminCupones),
+        title: 'Cupones | Panel BAN Sports'
+      },
+      {
         path: 'stock-bajo',
         loadComponent: () => import('./page/admin-stock-bajo/admin-stock-bajo').then((m) => m.AdminStockBajo),
         title: 'Stock bajo | Panel BAN Sports'

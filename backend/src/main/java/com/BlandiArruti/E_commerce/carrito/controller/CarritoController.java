@@ -57,10 +57,10 @@ public class CarritoController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Confirmar pedido desde el carrito", description = "Crea el pedido con todos los ítems del carrito y lo vacía. El cliente indica la dirección de envío.")
+    @Operation(summary = "Confirmar pedido desde el carrito", description = "Crea el pedido con todos los ítems del carrito y lo vacía. El cliente indica la dirección de envío y, si tiene, un cupón.")
     @PostMapping("/checkout")
     public ResponseEntity<PedidoResponse> checkout(@PathVariable Long idCliente,
                                                     @Valid @RequestBody CheckoutRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(idCliente, request.idDireccion(), request.opcionEnvio()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(idCliente, request.idDireccion(), request.opcionEnvio(), request.codigoCupon()));
     }
 }

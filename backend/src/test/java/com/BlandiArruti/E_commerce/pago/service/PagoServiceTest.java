@@ -129,6 +129,28 @@ class PagoServiceTest {
         assertThat(solicitud.getValue().total()).isEqualByComparingTo("2500");
     }
 
+    @Test
+    void lineas_conCupon_repartenElDescuentoYSumanExactoElTotal() {
+        Producto whey = Producto.builder().id(2L).nombre("Whey").build();
+        Producto creatina = Producto.builder().id(4L).nombre("Creatina").build();
+        Producto omega = Producto.builder().id(5L).nombre("Omega 3").build();
+        Pedido conCupon = Pedido.builder().id(9L).costoEnvio(1500.0).descuentoCupon(1000.0).build();
+        conCupon.getItems().add(ItemPedido.builder().producto(whey).cantidad(1).precioProducto(3333.33).build());
+        conCupon.getItems().add(ItemPedido.builder().producto(creatina).cantidad(2).precioProducto(2000.0).build());
+        conCupon.getItems().add(ItemPedido.builder().producto(omega).cantidad(1).precioProducto(1666.67).build());
+
+        var lineas = PagoService.lineas(conCupon);
+
+        // Productos 7000 − cupón 1000 + envío 1500 = 7500, al centavo.
+        BigDecimal total = lineas.stream().map(SolicitudCobro.LineaCobro::monto).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(total).isEqualByComparingTo("7500.00");
+        assertThat(lineas).hasSize(4);
+        assertThat(lineas).allSatisfy(l -> assertThat(l.monto()).isPositive());
+        // A cada producto le toca descuento según lo que pesa: el de $2000 paga 2000 − 2000×1000/7000.
+        assertThat(lineas.get(1).monto()).isEqualByComparingTo("1714.29");
+        assertThat(lineas.get(3).codigo()).isEqualTo("ENVIO");
+    }
+
     // ─── confirmar (pantalla de vuelta) ──────────────────────────────────────
 
     @Test

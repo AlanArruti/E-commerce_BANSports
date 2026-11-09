@@ -14,6 +14,10 @@ public class DuplicadoException extends EcommerceException {
         return new DuplicadoException("El DNI '" + dni + "' ya está registrado.");
     }
 
+    public static DuplicadoException cupon(String codigo) {
+        return new DuplicadoException("Ya existe un cupón con el código " + codigo + ".");
+    }
+
     public static DuplicadoException username(String username) {
         return new DuplicadoException("El username '" + username + "' ya está en uso.");
     }

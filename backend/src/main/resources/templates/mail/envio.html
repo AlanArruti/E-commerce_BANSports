@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/layout :: layout(~{::contenido})}">
+<body>
+<th:block th:fragment="contenido">
+  <p th:replace="~{mail/componentes :: etiqueta(${'Envío · Pedido #' + idPedido})}"></p>
+
+  <h1 class="titulo" style="margin:0 0 20px; font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif; font-weight:800; font-size:42px; line-height:0.95; text-transform:uppercase; color:#f2f5f3;">
+    <th:block th:text="${tituloInicio}">Tu pedido está</th:block>
+    <span style="color:#2be37a;" th:text="${tituloAcento}">en camino</span>
+  </h1>
+
+  <p style="margin:0 0 28px;">
+    Hola <strong style="color:#f2f5f3;" th:text="${nombre}">Maria</strong>, <th:block th:text="${mensaje}">tu pedido ya está viajando hacia la dirección de entrega.</th:block>
+  </p>
+
+  <!-- ── Seguimiento: una barra por etapa, verde las que ya pasaron. ── -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td th:each="paso, it : ${pasos}" width="33%" valign="top"
+          th:style="${'padding:0 ' + (it.last ? '0' : '6px') + ' 0 0;'}">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td height="6" th:bgcolor="${paso.hecho() ? '#2be37a' : '#26302a'}"
+                th:style="${'height:6px; font-size:0; line-height:0; border-radius:3px; background-color:' + (paso.hecho() ? '#2be37a' : '#26302a') + ';'}">&nbsp;</td>
+          </tr>
+          <tr>
+            <td th:style="${'padding-top:8px; font-size:13px; font-weight:' + (paso.actual() ? '700' : '600') + '; color:' + (paso.actual() ? '#2be37a' : (paso.hecho() ? '#f2f5f3' : '#9ba8a0')) + ';'}"
+                th:text="${paso.etiqueta()}">Despachado</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Detalle del envío ── -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a211d"
+         style="margin-top:28px; background-color:#1a211d; border:1px solid #26302a; border-radius:10px;">
+    <tr>
+      <td style="padding:16px 20px;">
+        <span style="display:block; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;">Dirección de entrega</span>
+        <span style="display:block; margin-top:4px; font-weight:600; color:#f2f5f3;" th:text="${direccion}">Calle 13 567, La Plata (CP 1900)</span>
+      </td>
+    </tr>
+    <tr th:if="${fechaSalida != null or fechaLlegada != null}">
+      <td style="padding:0 20px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #26302a;">
+          <tr>
+            <td th:if="${fechaSalida != null}" valign="top" style="padding-top:14px;">
+              <span style="display:block; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;">Salió el</span>
+              <span style="display:block; margin-top:4px; font-weight:600; color:#f2f5f3;" th:text="${fechaSalida}">09/11/2026</span>
+            </td>
+            <td th:if="${fechaLlegada != null}" valign="top" style="padding-top:14px;">
+              <span style="display:block; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9ba8a0;"
+                    th:text="${entregado ? 'Llegada' : 'Llegada estimada'}">Llegada estimada</span>
+              <span style="display:block; margin-top:4px; font-weight:600; color:#f2f5f3;" th:text="${fechaLlegada}">12/11/2026</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table th:replace="~{mail/componentes :: boton('Ver mis pedidos', ${frontUrl + '/perfil'})}"></table>
+</th:block>
+</body>
+</html>

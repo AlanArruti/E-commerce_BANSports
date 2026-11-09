@@ -6,6 +6,7 @@ import com.BlandiArruti.E_commerce.envio.dto.request.EstadoEnvioRequest;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
+import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
@@ -31,6 +32,9 @@ public interface IPedidoService {
     PedidoResponse pagar(Long id, PagoRequest request);
     PedidoResponse cambiarEstado(Long id, EstadoPedidoRequest request);
     FacturaResponse obtenerFactura(Long idPedido);
+
+    /** La factura del pedido en PDF (la misma que va adjunta al mail). */
+    FacturaPdfResponse obtenerFacturaPdf(Long idPedido);
     EnvioResponse obtenerEnvio(Long idPedido);
     EnvioResponse crearEnvio(Long idPedido, EnvioRequest request);
     EnvioResponse actualizarEstadoEnvio(Long idPedido, EstadoEnvioRequest request);

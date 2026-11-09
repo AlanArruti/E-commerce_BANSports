@@ -482,6 +482,47 @@ Cobertura de tests unitarios:
 - `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
 - `NotificacionServiceTest` — 4 tests (emails, fallo de conexión)
 
+### Tests del front
+
+El front tiene **71 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
+
+**Con Docker (recomendado, no hace falta instalar nada):**
+
+```bash
+# Desde la raíz del repo. Corre los tests en un Chromium sin ventana;
+# si alguno falla, el comando termina con error y muestra cuál.
+docker build --target test --progress=plain ./frontend
+```
+
+**Sin Docker** (Angular 22 pide Node 22.22.3+ o 24.15+, y Chrome instalado):
+
+```bash
+cd frontend
+npm install
+
+# Una sola corrida, sin ventana (igual que en Docker):
+npm run test:ci
+
+# Modo desarrollo: abre Chrome y vuelve a correr los tests al guardar un archivo
+npm test
+
+# Con cobertura (queda en frontend/coverage/frontend/index.html):
+npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+```
+
+Qué cubren (lo que más se rompe):
+- `guards.spec.ts` — 11 tests: `rolGuard` (sin sesión va al login con `redirect`, un CLIENTE en `/admin` vuelve a la tienda, un ADMIN en pantallas de cliente vuelve al panel), `sinAdminGuard` y `guestGuard`
+- `auth.interceptor.spec.ts` — 9 tests: agrega el token solo a nuestra API (no al login ni a otros sitios); un 401 cierra la sesión y manda al login que corresponde; el 401 del login o de "contraseña actual incorrecta" no la cierra
+- `auth.service.spec.ts` — 16 tests: login (recordarme o solo la pestaña, rol equivocado en cada login), logout, y validación de la sesión guardada (vencida, no es un JWT, token editado a mano, 401, sin conexión)
+- `validadores.spec.ts` — 13 tests: validadores propios (DNI, precio argentino, descuento, email…) y los mensajes de `mensajes.ts`
+- `errores-api.spec.ts` — 15 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente) y de checkout
+- `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
+
+Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
+tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario
+hubiera iniciado sesión (`guardarToken`).
+
 ---
 
 ## Colección Postman

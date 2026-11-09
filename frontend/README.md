@@ -44,6 +44,9 @@ To execute unit tests with the [Karma](https://karma-runner.github.io) test runn
 ng test
 ```
 
+For a single headless run (the same one Docker uses), run `npm run test:ci`, or without installing Node: `docker build --target test --progress=plain .` from this folder.
+What the tests cover and how to run them is documented in the root README, section "Tests del front".
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:

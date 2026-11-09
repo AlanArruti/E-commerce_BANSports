@@ -51,6 +51,15 @@ public class Producto {
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+    // Resumen de reseñas: lo mantiene ResenaService al crear o borrar una.
+    // Con DEFAULT en la base para que ddl-auto pueda agregar las columnas sobre filas existentes.
+    @Column(name = "cantidad_resenas", columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer cantidadResenas = 0;
+    /** Promedio de estrellas, con un decimal. 0 si no tiene reseñas. */
+    @Column(name = "promedio_resenas", columnDefinition = "double precision default 0")
+    @Builder.Default
+    private Double promedioResenas = 0.0;
 
     /** Precio que paga el cliente por el producto sin variante: el de oferta si hay, o el base. */
     public double getPrecioConDescuento() {

@@ -1,0 +1,34 @@
+:host {
+  display: inline-flex;
+}
+
+.estrellas {
+  position: relative;
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.estrellas.chicas {
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.estrellas.grandes {
+  font-size: 24px;
+}
+
+.fondo {
+  color: var(--color-borde-input);
+}
+
+/* La capa amarilla se recorta al porcentaje del puntaje. */
+.relleno {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  color: var(--color-aviso);
+}

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,6 +15,14 @@ public interface ItemPedidoRepository extends JpaRepository<ItemPedido, Long> {
 
     List<ItemPedido> findByPedidoId(Long idPedido);
 
+    /** Si el cliente tiene ese producto en algún pedido que esté en uno de los estados indicados. */
+    @Query("SELECT COUNT(i) > 0 FROM ItemPedido i " +
+           "WHERE i.pedido.cliente.id = :idCliente " +
+           "AND i.producto.id = :idProducto " +
+           "AND i.pedido.estadoPedido IN :estados")
+    boolean clienteComproProducto(@Param("idCliente") Long idCliente,
+                                  @Param("idProducto") Long idProducto,
+                                  @Param("estados") Collection<EstadoPedido> estados);
     /**
      * Productos más vendidos (por unidades) en pedidos cobrados del período.
      * Una fila por producto: [idProducto, nombre, unidades, total facturado sin envío].

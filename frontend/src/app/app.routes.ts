@@ -90,6 +90,23 @@ export const routes: Routes = [
         path: 'favoritos',
         loadComponent: () => import('./page/favoritos/favoritos').then((m) => m.Favoritos),
         title: 'Mis favoritos | BAN Sports'
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () => import('./page/mis-pedidos/mis-pedidos').then((m) => m.MisPedidos),
+        title: 'Mis pedidos | BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el número de pedido.
+        path: 'pedidos/:id',
+        loadComponent: () => import('./page/detalle-pedido/detalle-pedido').then((m) => m.DetallePedido),
+        title: 'Pedido | BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el tipo y número de factura.
+        path: 'pedidos/:id/factura',
+        loadComponent: () => import('./page/factura-pedido/factura-pedido').then((m) => m.FacturaPedido),
+        title: 'Factura | BAN Sports'
       }
     ]
   },
@@ -165,6 +182,17 @@ export const routes: Routes = [
         path: 'productos/:id/variantes',
         loadComponent: () => import('./page/admin-variantes/admin-variantes').then((m) => m.AdminVariantes),
         title: 'Variantes y stock | Panel BAN Sports'
+      },
+      {
+        // El título final lo pone la página con el número de pedido.
+        path: 'pedidos/:id',
+        loadComponent: () => import('./page/admin-pedido/admin-pedido').then((m) => m.AdminPedido),
+        title: 'Pedido | Panel BAN Sports'
+      },
+      {
+        path: 'envios',
+        loadComponent: () => import('./page/admin-envios/admin-envios').then((m) => m.AdminEnvios),
+        title: 'Envíos | Panel BAN Sports'
       }
     ]
   },

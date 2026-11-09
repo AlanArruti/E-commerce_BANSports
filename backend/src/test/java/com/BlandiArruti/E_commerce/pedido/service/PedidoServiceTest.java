@@ -149,6 +149,33 @@ class PedidoServiceTest {
     }
 
     @Test
+    void cancelar_clienteDesdePendientePago_cancela() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        pedidoService.cancelar(1L);
+
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+    }
+
+    @Test
+    void cancelar_clienteDesdePagado_lanzaExcepcionYNoTocaStock() {
+        Variante variante = Variante.builder().id(1L).stock(7).build();
+        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(3).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, item);
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.cancelar(1L))
+                .isInstanceOf(PedidoNoModificableException.class);
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
+        assertThat(variante.getStock()).isEqualTo(7);
+    }
+
+    @Test
     void cancelar_desdeEntregado_lanzaExcepcion() {
         Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
 
@@ -313,7 +340,7 @@ class PedidoServiceTest {
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
         when(envioRepository.findByPedidoId(1L)).thenReturn(Optional.of(Envio.builder().build()));
 
-        var request = new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3));
+        var request = new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3));
 
         assertThatThrownBy(() -> pedidoService.crearEnvio(1L, request))
                 .isInstanceOf(ConflictoException.class);
@@ -326,7 +353,7 @@ class PedidoServiceTest {
         autenticarComoAdmin();
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
 
-        var request = new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3));
+        var request = new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3));
 
         assertThatThrownBy(() -> pedidoService.crearEnvio(1L, request))
                 .isInstanceOf(EcommerceException.class);
@@ -344,7 +371,7 @@ class PedidoServiceTest {
         when(envioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(envioMapper.toResponse(any())).thenReturn(null);
 
-        pedidoService.crearEnvio(1L, new EnvioRequest(LocalDate.now(), LocalDate.now().plusDays(3)));
+        pedidoService.crearEnvio(1L, new EnvioRequest(" Andreani ", "360002541870", LocalDate.now(), LocalDate.now().plusDays(3)));
 
         assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.DESPACHADO);
         verify(notificacionService).notificarEnvioActualizado(any());

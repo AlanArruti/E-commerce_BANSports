@@ -44,6 +44,11 @@ public class Envio {
     private LocalDate fechaSalida;
     @Column(name = "fecha_llegada", nullable = false)
     private LocalDate fechaLlegada;
+    // Nullable: los envíos creados antes de SCRUM-139 no los tienen.
+    @Column(name = "empresa", length = 60)
+    private String empresa;
+    @Column(name = "numero_seguimiento", length = 60)
+    private String numeroSeguimiento;
 
 }
 

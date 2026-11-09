@@ -49,7 +49,7 @@
         <tbody>
           @for (pedido of pedidos(); track pedido.id) {
             <tr>
-              <td class="numero">#{{ pedido.id }}</td>
+              <td class="numero"><a [routerLink]="['/admin/pedidos', pedido.id]">#{{ pedido.id }}</a></td>
               <td>{{ pedido.fechaCreacion | date: 'dd/MM/yyyy' }}</td>
               <td>{{ nombreCliente(pedido) }}</td>
               <td class="col-total">{{ pedido.total | precio }}</td>

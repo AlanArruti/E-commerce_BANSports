@@ -219,6 +219,11 @@ public class PedidoService implements IPedidoService {
             throw PedidoNoModificableException.noCancelable(id, estado);
         }
 
+        if (getPrincipal().getRol() == Rol.CLIENTE
+                && estado != EstadoPedido.PENDIENTE_PAGO && estado != EstadoPedido.EN_PREPARACION) {
+            throw PedidoNoModificableException.clienteNoPuedeCancelar(id, estado);
+        }
+
         if (estado == EstadoPedido.PAGADO || estado == EstadoPedido.DESPACHADO) {
             for (ItemPedido item : pedido.getItems()) {
                 Variante variante = item.getVariante();
@@ -462,6 +467,8 @@ public class PedidoService implements IPedidoService {
                 .estado(EstadoEnvio.DESPACHADO)
                 .fechaSalida(request.fechaSalida())
                 .fechaLlegada(request.fechaLlegada())
+                .empresa(request.empresa().trim())
+                .numeroSeguimiento(request.numeroSeguimiento().trim())
                 .build();
         envioRepository.save(envio);
 

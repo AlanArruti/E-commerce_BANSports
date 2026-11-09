@@ -1,0 +1,119 @@
+/* Lo común (tabla, migas, encabezado, esqueleto) viene de admin-productos.css. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.chip {
+  min-height: 40px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-texto-suave);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--color-verde);
+}
+
+.chip.activo {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.tabla {
+  min-width: 820px;
+}
+
+.principal {
+  display: block;
+  color: var(--color-texto);
+}
+
+.col-fecha {
+  white-space: nowrap;
+}
+
+.col-acciones {
+  width: 140px;
+}
+
+.estado-envio {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px solid var(--color-verde);
+  border-radius: 999px;
+  color: var(--color-verde);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.estado-envio.estado-en_camino {
+  border-color: var(--color-aviso);
+  color: var(--color-aviso);
+}
+
+.estado-envio.estado-entregado {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.btn-avanzar {
+  min-height: 40px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--color-verde);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-verde);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn-avanzar:hover:not(:disabled) {
+  background: var(--color-verde);
+  color: var(--color-texto-sobre-verde);
+}
+
+.btn-avanzar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.alerta-ok,
+.alerta-error {
+  align-items: center;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+}
+
+.btn-texto {
+  min-height: 44px;
+  padding: 0 var(--espacio-4);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-texto:hover {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.rango {
+  margin: 0;
+}

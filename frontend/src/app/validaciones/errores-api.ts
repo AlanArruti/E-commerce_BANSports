@@ -491,6 +491,106 @@ export function traducirErrorFavoritos(error: HttpErrorResponse): ErrorTraducido
   };
 }
 
+/** Para "Mis pedidos". En el detalle, el 403 y el 404 los muestra la página como "Pedido no encontrado". */
+export function traducirErrorMisPedidos(error: HttpErrorResponse): ErrorTraducido {
+  return (
+    errorGeneral(error) ?? {
+      titulo: 'No pudimos cargar tus pedidos',
+      detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+    }
+  );
+}
+
+export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 403) {
+    return {
+      titulo: 'No podés opinar sobre este producto',
+      detalle: 'Solo pueden opinar quienes lo compraron y ya tienen el pedido pagado.'
+    };
+  }
+  if (error.status === 409) {
+    return { titulo: 'Ya opinaste sobre este producto', detalle: 'Se puede dejar una sola opinión por producto.' };
+  }
+  if (error.status === 404) {
+    return { titulo: 'Esa opinión ya no existe', detalle: 'Puede que la hayan borrado. La lista se actualizó.' };
+  }
+  if (error.status === 400 && mensaje) {
+    return { titulo: 'Revisá tu opinión', detalle: mensaje };
+  }
+  return {
+    titulo: 'No pudimos guardar tu opinión',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Cuando el cliente cancela un pedido desde "Mis pedidos". */
+export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (mensaje.includes('ya fue cobrado')) {
+    return {
+      titulo: 'Este pedido ya está pago',
+      detalle: 'Ya no se puede cancelar desde acá. Escribinos y lo resolvemos con la devolución del dinero.'
+    };
+  }
+  if (mensaje.includes('no puede cancelarse')) {
+    return { titulo: 'Este pedido ya no se puede cancelar', detalle: 'Ya estaba cancelado o entregado. Actualizamos su estado.' };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return { titulo: 'No encontramos ese pedido', detalle: 'Puede que no sea de tu cuenta. Volvé a Mis pedidos.' };
+  }
+  return {
+    titulo: 'No pudimos cancelar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** Para el panel de pedidos: listado, detalle y cambios de estado. */
+export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 404) {
+    return { titulo: 'Ese pedido ya no existe', detalle: 'Volvé al listado y elegí otro.' };
+  }
+  if (error.status === 403) {
+    return { titulo: 'No tenés permiso para esto', detalle: 'Solo un administrador puede gestionar pedidos.' };
+  }
+  // Cubre los cambios de estado del pedido y los del envío ("Transición de estado de envío inválida…").
+  if (mensaje.startsWith('Transición de estado') || mensaje.includes('no puede cancelarse')) {
+    return {
+      titulo: 'El pedido ya no admite ese cambio',
+      detalle: 'Puede que otra persona lo haya modificado mientras lo mirabas. Actualizamos el pedido para que veas su estado real.'
+    };
+  }
+  if (mensaje.startsWith('Solo se puede crear un envío')) {
+    return { titulo: 'No se puede despachar todavía', detalle: 'Solo se despachan pedidos que ya están pagados.' };
+  }
+  if (error.status === 409 || mensaje.includes('ya tiene un envío')) {
+    return { titulo: 'Este pedido ya fue despachado', detalle: 'Ya tiene un envío creado. Actualizamos el pedido.' };
+  }
+  if (mensaje.includes('no tiene dirección de envío')) {
+    return {
+      titulo: 'El pedido no tiene dirección de entrega',
+      detalle: 'Es un pedido viejo, de antes de que el checkout guardara la dirección. No se puede despachar desde acá.'
+    };
+  }
+  return {
+    titulo: 'No pudimos actualizar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 export function traducirErrorCatalogo(error: HttpErrorResponse): ErrorTraducido {
   return (
     errorGeneral(error) ?? {

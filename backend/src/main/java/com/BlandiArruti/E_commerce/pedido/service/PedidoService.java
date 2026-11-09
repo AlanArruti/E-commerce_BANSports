@@ -23,7 +23,9 @@ import java.math.BigDecimal;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
+import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
+import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
@@ -68,6 +70,7 @@ public class PedidoService implements IPedidoService {
     private final EnvioMapper envioMapper;
     private final CotizacionEnvioService cotizacionEnvioService;
     private final ICuponService cuponService;
+    private final FacturaPdfGenerator facturaPdfGenerator;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -411,6 +414,18 @@ public class PedidoService implements IPedidoService {
             throw new ConflictoException("El pedido con id " + idPedido + " aún no tiene factura.");
         }
         return facturaMapper.toResponse(pedido.getFactura());
+    }
+
+    @Transactional(readOnly = true)
+    public FacturaPdfResponse obtenerFacturaPdf(Long idPedido) {
+        Pedido pedido = pedidoRepository.findById(idPedido)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(idPedido));
+        verificarPropietario(pedido);
+        Factura factura = pedido.getFactura();
+        if (factura == null) {
+            throw new ConflictoException("El pedido con id " + idPedido + " aún no tiene factura.");
+        }
+        return new FacturaPdfResponse(facturaPdfGenerator.nombreArchivo(factura), facturaPdfGenerator.generar(factura));
     }
 
     @Transactional(readOnly = true)

@@ -259,7 +259,7 @@ select.input {
 }
 
 .col-acciones {
-  width: 196px;
+  width: 240px;
   text-align: right;
   white-space: nowrap;
 }
@@ -465,4 +465,27 @@ select.input {
   .acciones-modal .btn {
     flex: 1;
   }
+}
+
+/* ── Novedades del inicio ──────────────────────────────── */
+.btn-accion.novedad.activa {
+  color: var(--color-verde);
+}
+
+.btn-accion:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.etiqueta-novedad {
+  display: inline-block;
+  margin-left: var(--espacio-2);
+  padding: 2px 8px;
+  border: 1px solid var(--color-verde);
+  border-radius: 999px;
+  color: var(--color-verde);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }

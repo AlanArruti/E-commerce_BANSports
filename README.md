@@ -120,9 +120,10 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/oauth2/authorization/{github\|google}` | Inicia el login con GitHub o Google (lo abre el navegador) | Público |
 | `POST` | `/auth/recuperar` | Manda por mail un enlace para elegir contraseña nueva (responde igual exista o no la cuenta) | Público |
 | `POST` | `/auth/restablecer` | Guarda la contraseña nueva con el token del enlace (un solo uso, vence a los 30 min) | Público |
-| `GET` | `/producto` | Listar productos (filtros: categoría, precio, búsqueda; orden por `sortBy`/`sortDir`) | Público |
+| `GET` | `/producto` | Listar productos (filtros: categoría, precio, búsqueda, `soloOfertas`, `soloNovedades`; orden por `sortBy`/`sortDir`) | Público |
 | `GET` | `/producto/{id}` | Detalle de producto | Público |
 | `POST` | `/producto` | Crear producto | ADMIN |
+| `PATCH` | `/producto/{id}/novedad` | Mostrarlo o no en "Novedades" del inicio `{ novedad }` | ADMIN |
 | `PATCH` | `/producto/{id}/variante/{vid}/stock` | Ajustar stock | ADMIN |
 | `POST` | `/producto/{id}/imagen` | Subir/reemplazar imagen (multipart, JPEG/PNG/WEBP, máx 2 MB) | ADMIN |
 | `GET` | `/producto/{id}/imagen` | Descargar la imagen del producto | Público |

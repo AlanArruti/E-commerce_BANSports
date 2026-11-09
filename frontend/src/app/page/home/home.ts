@@ -99,8 +99,16 @@ export class Home {
       { initialValue: { cargando: true, datos: sinProductos } }
     );
 
+    // "Lo más nuevo": los que el admin marcó como novedad; si no marcó ninguno, los últimos cargados.
+    const novedades = productoService.listar(filtros('nuevos', POR_FILA), false, true).pipe(
+      switchMap((elegidas) =>
+        elegidas.content.length
+          ? of(elegidas.content)
+          : productoService.listar(filtros('nuevos', POR_FILA)).pipe(map((p) => p.content))
+      )
+    );
     this.nuevos = toSignal(
-      cargar(productoService.listar(filtros('nuevos', POR_FILA)).pipe(map((p) => p.content)), [] as Producto[]),
+      cargar(novedades, [] as Producto[]),
       { initialValue: { cargando: true, datos: [] as Producto[] } }
     );
 

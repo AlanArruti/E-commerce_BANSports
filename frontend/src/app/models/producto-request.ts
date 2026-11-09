@@ -6,4 +6,6 @@ export interface ProductoRequest {
   precioBase: number;
   descuento: number | null;
   categoriaId: number;
+  /** Mostrarlo en "Novedades" del inicio. Ausente al editar = no cambia. */
+  novedad?: boolean;
 }

@@ -49,6 +49,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query("SELECT p FROM Producto p LEFT JOIN p.categoria c WHERE p.activo = true " +
            "AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId) " +
            "AND (:soloOfertas = false OR (p.descuento IS NOT NULL AND p.descuento > 0)) " +
+           "AND (:soloNovedades = false OR p.novedad = true) " +
            "AND (:precioMin IS NULL OR COALESCE(p.precioFinal, p.precio) >= :precioMin) " +
            "AND (:precioMax IS NULL OR COALESCE(p.precioFinal, p.precio) <= :precioMax) " +
            "AND (" + NOMBRE_SIN_TILDES + " LIKE CONCAT('%', :search, '%') " +
@@ -58,5 +59,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
                                     @Param("precioMax") Double precioMax,
                                     @Param("search") String search,
                                     @Param("soloOfertas") Boolean soloOfertas,
+                                    @Param("soloNovedades") Boolean soloNovedades,
                                     Pageable pageable);
 }

@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.producto.controller;
 
+import com.BlandiArruti.E_commerce.producto.dto.request.NovedadRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.ProductoRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.StockRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.VarianteRequest;
@@ -47,7 +48,7 @@ public class ProductoController {
     );
 
     @Operation(summary = "Listar productos",
-               description = "Filtrables por categoría, precio, nombre y ofertas. Ordenable por id, nombre, precio o descuento.")
+               description = "Filtrables por categoría, precio, nombre, ofertas y novedades. Ordenable por id, nombre, precio o descuento.")
     @GetMapping
     public ResponseEntity<PageResponse<ProductoResponse>> listarTodos(
             @RequestParam(required = false) Long categoriaId,
@@ -55,6 +56,7 @@ public class ProductoController {
             @RequestParam(required = false) Double precioMax,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "false") boolean soloOfertas,
+            @RequestParam(defaultValue = "false") boolean soloNovedades,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
@@ -64,7 +66,7 @@ public class ProductoController {
         int pagina = Math.max(page, 0);
         int tamanio = Math.min(Math.max(size, 1), TAMANIO_MAXIMO_PAGINA);
         return ResponseEntity.ok(productoService.listarTodos(
-                categoriaId, precioMin, precioMax, search, soloOfertas,
+                categoriaId, precioMin, precioMax, search, soloOfertas, soloNovedades,
                 PageRequest.of(pagina, tamanio, ordenar(sortBy, sortDir))));
     }
 
@@ -78,6 +80,13 @@ public class ProductoController {
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
         return Sort.by(direccion, campo);
+    }
+
+    @Operation(summary = "Marcar o desmarcar el producto como novedad del inicio (solo ADMIN)")
+    @PatchMapping("/{id}/novedad")
+    public ResponseEntity<ProductoResponse> marcarNovedad(@PathVariable Long id,
+                                                          @Valid @RequestBody NovedadRequest request) {
+        return ResponseEntity.ok(productoService.marcarNovedad(id, request.novedad()));
     }
 
     @Operation(summary = "Subir/reemplazar la imagen del producto (solo ADMIN)",

@@ -10,11 +10,13 @@ import com.BlandiArruti.E_commerce.producto.dto.request.ProductoRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.StockRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.VarianteRequest;
 import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
+import com.BlandiArruti.E_commerce.producto.entity.ImagenVariante;
 import com.BlandiArruti.E_commerce.producto.entity.Producto;
 import com.BlandiArruti.E_commerce.producto.entity.Variante;
 import com.BlandiArruti.E_commerce.producto.mapper.ProductoMapper;
 import com.BlandiArruti.E_commerce.producto.mapper.VarianteMapper;
 import com.BlandiArruti.E_commerce.producto.repository.ImagenProductoRepository;
+import com.BlandiArruti.E_commerce.producto.repository.ImagenVarianteRepository;
 import com.BlandiArruti.E_commerce.producto.repository.ProductoRepository;
 import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,7 @@ class ProductoServiceTest {
     @Mock CategoriaRepository categoriaRepository;
     @Mock VarianteRepository varianteRepository;
     @Mock ImagenProductoRepository imagenProductoRepository;
+    @Mock ImagenVarianteRepository imagenVarianteRepository;
     @Mock ProductoMapper productoMapper;
     @Mock VarianteMapper varianteMapper;
 
@@ -419,5 +422,80 @@ class ProductoServiceTest {
 
         assertThat(producto.isTieneImagen()).isFalse();
         verify(imagenProductoRepository).delete(imagen);
+    }
+
+    // ─── imágenes de variante ────────────────────────────────────────────────
+
+    @Test
+    void subirImagenVariante_archivoValido_guardaYMarcaLaVariante() {
+        Producto producto = Producto.builder().id(1L).activo(true).build();
+        Variante variante = Variante.builder().id(10L).activo(true).producto(producto).build();
+        var archivo = new MockMultipartFile("archivo", "choco.webp", "image/webp", new byte[]{1, 2, 3});
+
+        when(productoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findByIdAndActivoTrue(10L)).thenReturn(Optional.of(variante));
+        when(imagenVarianteRepository.findByVarianteId(10L)).thenReturn(Optional.empty());
+
+        var response = productoService.subirImagenVariante(1L, 10L, archivo);
+
+        assertThat(variante.isTieneImagen()).isTrue();
+        assertThat(response.url()).isEqualTo("/api/v1/producto/1/variante/10/imagen");
+        verify(imagenVarianteRepository).save(any(ImagenVariante.class));
+    }
+
+    @Test
+    void subirImagenVariante_varianteDeOtroProducto_lanzaNotFound() {
+        Producto producto1 = Producto.builder().id(1L).activo(true).build();
+        Producto producto2 = Producto.builder().id(2L).activo(true).build();
+        Variante variante = Variante.builder().id(10L).activo(true).producto(producto2).build();
+        var archivo = new MockMultipartFile("archivo", "a.png", "image/png", new byte[]{1});
+
+        when(productoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(producto1));
+        when(varianteRepository.findByIdAndActivoTrue(10L)).thenReturn(Optional.of(variante));
+
+        assertThatThrownBy(() -> productoService.subirImagenVariante(1L, 10L, archivo))
+                .isInstanceOf(EntidadNoEncontradaException.class);
+        verify(imagenVarianteRepository, never()).save(any());
+    }
+
+    @Test
+    void subirImagenVariante_formatoNoSoportado_lanzaEcommerceException() {
+        Producto producto = Producto.builder().id(1L).activo(true).build();
+        Variante variante = Variante.builder().id(10L).activo(true).producto(producto).build();
+        var archivo = new MockMultipartFile("archivo", "a.gif", "image/gif", new byte[]{1});
+
+        when(productoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findByIdAndActivoTrue(10L)).thenReturn(Optional.of(variante));
+
+        assertThatThrownBy(() -> productoService.subirImagenVariante(1L, 10L, archivo))
+                .isInstanceOf(EcommerceException.class);
+    }
+
+    @Test
+    void obtenerImagenVariante_deOtroProducto_lanzaNotFound() {
+        Producto producto2 = Producto.builder().id(2L).build();
+        Variante variante = Variante.builder().id(10L).producto(producto2).build();
+        ImagenVariante imagen = ImagenVariante.builder().id(3L).variante(variante).build();
+
+        when(imagenVarianteRepository.findByVarianteId(10L)).thenReturn(Optional.of(imagen));
+
+        assertThatThrownBy(() -> productoService.obtenerImagenVariante(1L, 10L))
+                .isInstanceOf(EntidadNoEncontradaException.class);
+    }
+
+    @Test
+    void eliminarImagenVariante_borraYDesmarcaLaVariante() {
+        Producto producto = Producto.builder().id(1L).activo(true).build();
+        Variante variante = Variante.builder().id(10L).activo(true).producto(producto).tieneImagen(true).build();
+        ImagenVariante imagen = ImagenVariante.builder().id(3L).variante(variante).build();
+
+        when(productoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findByIdAndActivoTrue(10L)).thenReturn(Optional.of(variante));
+        when(imagenVarianteRepository.findByVarianteId(10L)).thenReturn(Optional.of(imagen));
+
+        productoService.eliminarImagenVariante(1L, 10L);
+
+        assertThat(variante.isTieneImagen()).isFalse();
+        verify(imagenVarianteRepository).delete(imagen);
     }
 }

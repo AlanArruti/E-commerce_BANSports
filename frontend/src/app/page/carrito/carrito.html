@@ -85,7 +85,7 @@
           @for (item of items(); track item.idItemCarrito) {
             <li class="item" [attr.aria-busy]="itemPendiente() === item.idItemCarrito">
               <a class="item-imagen" [routerLink]="['/productos', item.producto.id]" tabindex="-1" aria-hidden="true">
-                @if (item.producto.imagenUrl; as imagen) {
+                @if (item.variante?.imagenUrl ?? item.producto.imagenUrl; as imagen) {
                   <img [src]="imagen" alt="" />
                 } @else {
                   <app-pote-producto class="item-pote" [nombre]="abreviatura(item)" />

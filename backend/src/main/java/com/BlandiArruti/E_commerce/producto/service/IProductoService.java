@@ -8,6 +8,7 @@ import com.BlandiArruti.E_commerce.producto.dto.response.ProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.VarianteResponse;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
+import com.BlandiArruti.E_commerce.producto.entity.ImagenVariante;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,4 +32,8 @@ public interface IProductoService {
     ImagenProductoResponse subirImagen(Long idProducto, MultipartFile archivo);
     ImagenProducto obtenerImagen(Long idProducto);
     void eliminarImagen(Long idProducto);
+    /** Foto propia de una variante (ej. el sabor); si no tiene, el front usa la del producto. */
+    ImagenProductoResponse subirImagenVariante(Long idProducto, Long idVariante, MultipartFile archivo);
+    ImagenVariante obtenerImagenVariante(Long idProducto, Long idVariante);
+    void eliminarImagenVariante(Long idProducto, Long idVariante);
 }

@@ -12,6 +12,8 @@ export interface Variante {
   precio: number | null;
   /** Lo que paga el cliente por una unidad: su precio (o el del producto) con la oferta aplicada. */
   precioFinal: number;
+  /** Foto propia de la variante (ej. el sabor). null = se muestra la del producto. */
+  imagenUrl: string | null;
 }
 
 // ── Precios (SCRUM-154): cada variante puede tener su propio precio ──────────

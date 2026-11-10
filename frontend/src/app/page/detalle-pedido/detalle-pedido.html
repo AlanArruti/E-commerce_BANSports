@@ -99,7 +99,7 @@
           @for (item of pedido.items; track item.idItemPedido) {
             <li class="item">
               <div class="item-imagen" aria-hidden="true">
-                @if (item.producto.imagenUrl; as imagen) {
+                @if (item.variante?.imagenUrl ?? item.producto.imagenUrl; as imagen) {
                   <img [src]="imagen" alt="" loading="lazy" />
                 } @else {
                   <app-pote-producto class="item-pote" [nombre]="abreviatura(item)" />

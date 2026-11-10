@@ -17,6 +17,7 @@ import { Producto } from '../../models/producto';
 import { STOCK_BAJO, Variante, atributosOrdenados, etiquetaAtributo } from '../../models/variante';
 import { OperacionStock } from '../../models/variante-request';
 import { ProductoService } from '../../services/producto.service';
+import { CargadorImagen } from '../../componente/cargador-imagen/cargador-imagen';
 import { ErrorTraducido, traducirErrorProducto, traducirErrorVariante } from '../../validaciones/errores-api';
 import { leerPrecio, precioValido, requerido } from '../../validaciones/validadores';
 import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
@@ -55,7 +56,7 @@ function entero(min: number) {
  */
 @Component({
   selector: 'app-admin-variantes',
-  imports: [RouterLink, ReactiveFormsModule, NgClass, PrecioPipe],
+  imports: [RouterLink, ReactiveFormsModule, NgClass, PrecioPipe, CargadorImagen],
   templateUrl: './admin-variantes.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-variantes.css',
@@ -105,7 +106,10 @@ export class AdminVariantes implements OnInit {
   protected readonly dandoDeBaja = signal(false);
   protected readonly errorBaja = signal<ErrorTraducido | null>(null);
 
-  private idProducto = 0;
+  // ── Foto de la variante ────────────────────────────────
+  protected readonly fotografiando = signal<Variante | null>(null);
+
+  protected idProducto = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -328,9 +332,26 @@ export class AdminVariantes implements OnInit {
     });
   }
 
+  // ── Foto ───────────────────────────────────────────────
+
+  abrirFoto(variante: Variante): void {
+    this.aviso.set(null);
+    this.fotografiando.set(variante);
+  }
+
+  cerrarFoto(): void {
+    this.fotografiando.set(null);
+  }
+
+  /** El cargador subió o borró la foto: se refleja en la fila sin recargar la lista. */
+  fotoCambiada(variante: Variante, url: string | null): void {
+    this.variantes.update((lista) => lista.map((v) => (v.id === variante.id ? { ...v, imagenUrl: url } : v)));
+  }
+
   cerrarModales(): void {
     this.cerrarAjuste();
     this.cerrarBaja();
+    this.cerrarFoto();
   }
 
   // ── Internos ───────────────────────────────────────────

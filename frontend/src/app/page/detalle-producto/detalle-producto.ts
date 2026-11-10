@@ -118,6 +118,8 @@ export class DetalleProducto {
     const rango = rangoDePrecios(producto);
     return rango.minimo < rango.maximo;
   });
+  /** Foto a mostrar: la de la variante elegida (ej. el sabor) o, si no tiene, la del producto. */
+  protected readonly imagen;
   /** La imagen del back no cargó: se muestra el dibujo del pote. */
   protected readonly imagenFallo;
 
@@ -182,7 +184,6 @@ export class DetalleProducto {
       promedio: this.estado().producto?.promedioResenas ?? 0,
       cantidad: this.estado().producto?.cantidadResenas ?? 0
     }));
-    this.imagenFallo = linkedSignal({ source: () => this.estado().producto?.id, computation: () => false });
 
     // Atributos elegidos. Vuelve a la variante inicial cada vez que se carga otro producto.
     this.seleccion = linkedSignal<Seleccion>(() => ({
@@ -192,6 +193,10 @@ export class DetalleProducto {
     this.varianteElegida = computed(
       () => this.estado().variantes.find((variante) => coincide(variante, this.seleccion())) ?? null
     );
+
+    this.imagen = computed(() => this.varianteElegida()?.imagenUrl ?? this.estado().producto?.imagenUrl ?? null);
+    // Se resetea con cada foto nueva: que falle la de un sabor no tapa la de otro.
+    this.imagenFallo = linkedSignal({ source: this.imagen, computation: () => false });
 
     this.cantidad = linkedSignal({ source: this.varianteElegida, computation: () => 1 });
     this.resultadoAgregar = linkedSignal<Variante | null, { ok: boolean; error: ErrorTraducido | null } | null>({

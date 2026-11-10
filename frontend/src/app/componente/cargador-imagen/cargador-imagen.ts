@@ -33,6 +33,8 @@ import {
 })
 export class CargadorImagen {
   readonly productoId = input.required<number>();
+  /** Si viene, la foto es de esa variante y no del producto. */
+  readonly varianteId = input<number | null>(null);
   /** Imagen que ya tiene el producto (imagenUrl del ProductoResponse), o null. */
   readonly imagenUrl = input<string | null>(null);
   /** Avisa la nueva URL después de subir, o null después de eliminar. */
@@ -100,7 +102,7 @@ export class CargadorImagen {
       return;
     }
     if (archivos.length > 1) {
-      this.errorArchivo.set('Soltá una sola imagen: cada producto tiene una.');
+      this.errorArchivo.set('Soltá una sola imagen.');
       return;
     }
     this.tomarArchivo(archivos[0]);
@@ -124,7 +126,7 @@ export class CargadorImagen {
     this.errorServidor.set(null);
     const reemplaza = this.imagenActual() !== null;
 
-    this.imagenService.subir(this.productoId(), archivo).subscribe({
+    this.imagenService.subir(this.productoId(), archivo, this.varianteId()).subscribe({
       next: (imagen) => {
         this.subiendo.set(false);
         // El GET de la imagen se cachea 1 hora: el parámetro fuerza a pedir la nueva.
@@ -132,7 +134,7 @@ export class CargadorImagen {
         this.imagenActual.set(url);
         this.imagenActualFallo.set(false);
         this.descartar();
-        this.aviso.set(reemplaza ? 'Listo, reemplazaste la imagen.' : 'Listo, el producto ya tiene imagen.');
+        this.aviso.set(reemplaza ? 'Listo, reemplazaste la imagen.' : this.varianteId() == null ? 'Listo, el producto ya tiene imagen.' : 'Listo, la variante ya tiene foto.');
         this.imagenCambiada.emit(url);
       },
       error: (e: unknown) => {
@@ -156,12 +158,14 @@ export class CargadorImagen {
 
   eliminar(): void {
     this.eliminando.set(true);
-    this.imagenService.eliminar(this.productoId()).subscribe({
+    this.imagenService.eliminar(this.productoId(), this.varianteId()).subscribe({
       next: () => {
         this.eliminando.set(false);
         this.confirmando.set(false);
         this.imagenActual.set(null);
-        this.aviso.set('Eliminaste la imagen del producto.');
+        this.aviso.set(this.varianteId() == null
+          ? 'Eliminaste la imagen del producto.'
+          : 'Eliminaste la foto de la variante: ahora muestra la del producto.');
         this.imagenCambiada.emit(null);
       },
       error: (e: unknown) => {

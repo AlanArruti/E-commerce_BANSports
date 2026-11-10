@@ -41,8 +41,8 @@
         @if (productoAgotado()) {
           <span class="etiqueta-agotado">Sin stock</span>
         }
-        @if (producto.imagenUrl && !imagenFallo()) {
-          <img class="detalle-foto" [src]="producto.imagenUrl" [alt]="producto.nombre" (error)="imagenFallo.set(true)" />
+        @if (imagen() && !imagenFallo()) {
+          <img class="detalle-foto" [src]="imagen()" [alt]="producto.nombre" (error)="imagenFallo.set(true)" />
         } @else {
           <app-pote-producto class="detalle-pote" [nombre]="abreviatura()" [grande]="true" />
         }

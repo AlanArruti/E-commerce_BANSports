@@ -2,12 +2,48 @@
   padding-bottom: var(--espacio-8);
 }
 
-/* ── Migas ──────────────────────────────────────────────── */
+/* ── Volver + migas ─────────────────────────────────────── */
+.barra-superior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3) var(--espacio-5);
+  padding: var(--espacio-5) 0;
+}
+
+.btn-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-height: 40px;
+  padding: 0 var(--espacio-4) 0 var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-volver:hover,
+.btn-volver:focus-visible {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.btn-volver svg {
+  transition: transform 0.15s ease;
+}
+
+.btn-volver:hover svg {
+  transform: translateX(-3px);
+}
+
 .migas {
   display: flex;
   flex-wrap: wrap;
   gap: var(--espacio-2);
-  padding: var(--espacio-5) 0 var(--espacio-5);
   font-size: 13px;
   color: var(--color-texto-secundario);
 }

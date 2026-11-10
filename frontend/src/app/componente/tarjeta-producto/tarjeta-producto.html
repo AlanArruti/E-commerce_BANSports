@@ -64,10 +64,70 @@
         }
         <span class="producto-precio">{{ precioVigente() | precio }}</span>
       </span>
-      <!-- Solo decorativa: el click lo toma el link del nombre, que cubre toda la tarjeta. -->
-      <span class="btn-ver" [ngClass]="{ apagado: sinStock() }" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </span>
+      @if (authService.esAdmin()) {
+        <!-- Solo decorativa: el click lo toma el link del nombre, que cubre toda la tarjeta. -->
+        <span class="btn-ver" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      } @else {
+        <!-- Queda por encima del link que cubre la tarjeta. -->
+        <button
+          type="button"
+          class="btn-ver btn-carrito"
+          [ngClass]="{ apagado: !puedeAgregar(), cargando: agregando() !== null }"
+          [disabled]="!puedeAgregar() || agregando() !== null"
+          [attr.aria-haspopup]="opciones().length > 1 ? 'dialog' : null"
+          [attr.aria-expanded]="opciones().length > 1 ? eligiendo() : null"
+          [attr.aria-label]="motivoCarrito() + ': ' + producto().nombre"
+          [title]="motivoCarrito()"
+          (click)="clickCarrito()"
+        >
+          @if (agregando() !== null) {
+            <span class="spinner" aria-hidden="true"></span>
+          } @else {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/><path d="M14 9.5v4M12 11.5h4"/></svg>
+          }
+        </button>
+      }
     </div>
   </div>
+
+  @if (eligiendo()) {
+    <div class="selector" role="dialog" [attr.aria-label]="'Elegí una opción de ' + producto().nombre">
+      <div class="selector-cabecera">
+        <span class="selector-titulo">Elegí una opción</span>
+        <button type="button" class="selector-cerrar" aria-label="Cerrar" (click)="cerrarSelector()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <ul class="selector-lista">
+        @for (variante of opciones(); track variante.id) {
+          <li>
+            <button type="button" class="selector-opcion" [disabled]="agregando() !== null" (click)="agregar(variante)">
+              <span class="selector-nombre">{{ descripcion(variante) || 'Única' }}</span>
+              <span class="selector-precio">
+                @if (agregando() === variante.id) {
+                  <span class="spinner chico" aria-hidden="true"></span>
+                } @else {
+                  {{ precioDe(variante) | precio }}
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (aviso(); as a) {
+    <div class="aviso-carrito" [ngClass]="{ error: !a.ok }" role="status">
+      @if (a.ok) {
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+      }
+      <span class="aviso-texto">{{ a.texto }}</span>
+      @if (a.ok) {
+        <a class="aviso-link" routerLink="/carrito">Ver carrito</a>
+      }
+    </div>
+  }
 </article>

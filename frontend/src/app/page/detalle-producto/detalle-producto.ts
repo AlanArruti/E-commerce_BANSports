@@ -3,7 +3,7 @@ import { NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, UrlTree } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
@@ -123,6 +123,9 @@ export class DetalleProducto {
   /** La imagen del back no cargó: se muestra el dibujo del pote. */
   protected readonly imagenFallo;
 
+  /** A dónde lleva "Volver a los productos": la búsqueda del catálogo de la que se vino, o el catálogo. */
+  protected readonly urlVolver: UrlTree;
+
   /** Unidades a agregar al carrito. Vuelve a 1 al cambiar de variante. */
   protected readonly cantidad;
   /** Unidades de la variante elegida que ya están en el carrito. */
@@ -142,8 +145,15 @@ export class DetalleProducto {
     protected favoritoService: FavoritoService,
     protected authService: AuthService,
     private route: ActivatedRoute,
-    private title: Title
+    private title: Title,
+    router: Router
   ) {
+    // Si se llegó desde el catálogo, "Volver" vuelve a esa misma búsqueda (filtros y página incluidos).
+    // Se lee la navegación en curso (la que trae al detalle): su anterior es la página de la que se vino.
+    const anterior = router.currentNavigation()?.previousNavigation?.finalUrl;
+    const vieneDelCatalogo = anterior?.root.children['primary']?.segments.map((s) => s.path).join('/') === 'productos';
+    this.urlVolver = anterior && vieneDelCatalogo ? anterior : router.createUrlTree(['/productos']);
+
     const id$ = this.route.paramMap.pipe(map((params) => params.get('id')));
 
     // Producto y variantes juntos. Si el id no es un número, ni se consulta: no existe.

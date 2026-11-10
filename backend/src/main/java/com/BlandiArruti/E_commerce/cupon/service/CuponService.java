@@ -56,6 +56,7 @@ public class CuponService implements ICuponService {
             throw DuplicadoException.cupon(codigo);
         }
         validarReglas(request);
+        validarFechasNoPasadas(request, null, LocalDate.now());
         Cupon cupon = Cupon.builder().codigo(codigo).build();
         copiar(request, cupon);
         return aResponse(cuponRepository.save(cupon), LocalDate.now());
@@ -74,6 +75,7 @@ public class CuponService implements ICuponService {
                     + " pedido(s): no se le puede cambiar el código. Creá uno nuevo.");
         }
         validarReglas(request);
+        validarFechasNoPasadas(request, cupon, LocalDate.now());
         cupon.setCodigo(codigo);
         copiar(request, cupon);
         return aResponse(cuponRepository.save(cupon), LocalDate.now());
@@ -163,6 +165,25 @@ public class CuponService implements ICuponService {
                 && request.vigenteHasta().isBefore(request.vigenteDesde())) {
             throw new EcommerceException("La fecha de fin no puede ser anterior a la de inicio.");
         }
+    }
+
+    /**
+     * Un cupón nuevo no puede empezar ni vencer antes de hoy. Al editar, una fecha pasada se acepta solo si
+     * es la que ya tenía (así se puede editar un cupón que ya empezó o venció sin tocarle las fechas).
+     */
+    static void validarFechasNoPasadas(CuponRequest request, Cupon actual, LocalDate hoy) {
+        LocalDate desdeAnterior = actual != null ? actual.getVigenteDesde() : null;
+        LocalDate hastaAnterior = actual != null ? actual.getVigenteHasta() : null;
+        if (esPasadaYNueva(request.vigenteDesde(), desdeAnterior, hoy)) {
+            throw new EcommerceException("La fecha de inicio no puede ser anterior a hoy.");
+        }
+        if (esPasadaYNueva(request.vigenteHasta(), hastaAnterior, hoy)) {
+            throw new EcommerceException("La fecha de fin no puede ser anterior a hoy.");
+        }
+    }
+
+    private static boolean esPasadaYNueva(LocalDate fecha, LocalDate anterior, LocalDate hoy) {
+        return fecha != null && fecha.isBefore(hoy) && !fecha.equals(anterior);
     }
 
     private static void copiar(CuponRequest request, Cupon cupon) {

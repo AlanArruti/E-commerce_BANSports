@@ -176,12 +176,16 @@
         <div class="fila-campos">
           <div class="campo">
             <label for="cupon-desde">Desde <span class="opcional">(opcional)</span></label>
-            <input id="cupon-desde" class="input" type="date" formControlName="vigenteDesde" />
+            <input id="cupon-desde" class="input" type="date" formControlName="vigenteDesde" [min]="minimoDesde"
+              [ngClass]="{ 'input-error': error('fechas') && formulario.errors?.['desdePasada'] }"
+              [attr.aria-invalid]="error('fechas') && formulario.errors?.['desdePasada'] ? true : null"
+              aria-describedby="cupon-fechas-ayuda" />
           </div>
           <div class="campo">
             <label for="cupon-hasta">Hasta <span class="opcional">(opcional)</span></label>
-            <input id="cupon-hasta" class="input" type="date" formControlName="vigenteHasta"
-              [ngClass]="{ 'input-error': error('fechas') }" [attr.aria-invalid]="error('fechas') ? true : null"
+            <input id="cupon-hasta" class="input" type="date" formControlName="vigenteHasta" [min]="minimoHasta"
+              [ngClass]="{ 'input-error': error('fechas') && !formulario.errors?.['desdePasada'] }"
+              [attr.aria-invalid]="error('fechas') && !formulario.errors?.['desdePasada'] ? true : null"
               aria-describedby="cupon-fechas-ayuda" />
           </div>
         </div>

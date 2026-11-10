@@ -41,6 +41,28 @@ function fechasEnOrden(grupo: AbstractControl): ValidationErrors | null {
   return desde && hasta && hasta < desde ? { fechasInvertidas: true } : null;
 }
 
+/** Hoy en formato yyyy-mm-dd (el del input date), en hora local. */
+export function hoyISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Ninguna fecha puede ser anterior a hoy. Al editar se acepta la que el cupón ya tenía
+ * (ej. uno que empezó la semana pasada), igual que en el back.
+ */
+function fechasNoPasadas(originales: () => { desde: string; hasta: string }) {
+  return (grupo: AbstractControl): ValidationErrors | null => {
+    const hoy = hoyISO();
+    const desde = grupo.get('vigenteDesde')?.value as string;
+    const hasta = grupo.get('vigenteHasta')?.value as string;
+    const errores: ValidationErrors = {};
+    if (desde && desde < hoy && desde !== originales().desde) errores['desdePasada'] = true;
+    if (hasta && hasta < hoy && hasta !== originales().hasta) errores['hastaPasada'] = true;
+    return Object.keys(errores).length ? errores : null;
+  };
+}
+
 /**
  * Cupones de descuento del panel: listado con su estado, alta, edición y baja (lógica).
  * El cupón descuenta sobre el subtotal de productos del pedido, no sobre el envío.
@@ -66,6 +88,21 @@ export class AdminCupones implements OnInit {
   protected readonly errorModal = signal<ErrorTraducido | null>(null);
   protected readonly intentoGuardar = signal(false);
 
+  /** Fechas que tenía el cupón al abrir la edición (vacías en el alta). */
+  private fechasOriginales = { desde: '', hasta: '' };
+
+  /** Mínimo de los date pickers: hoy, o la fecha que el cupón ya tenía si es anterior. */
+  protected minimoFecha(original: string): string {
+    const hoy = hoyISO();
+    return original && original < hoy ? original : hoy;
+  }
+  protected get minimoDesde(): string {
+    return this.minimoFecha(this.fechasOriginales.desde);
+  }
+  protected get minimoHasta(): string {
+    return this.minimoFecha(this.fechasOriginales.hasta);
+  }
+
   readonly formulario = new FormGroup(
     {
       codigo: new FormControl('', { nonNullable: true, validators: [requerido, Validators.pattern(CODIGO)] }),
@@ -77,7 +114,7 @@ export class AdminCupones implements OnInit {
       usosMaximos: new FormControl('', { nonNullable: true, validators: [Validators.pattern(ENTERO), Validators.min(1)] }),
       activo: new FormControl(true, { nonNullable: true })
     },
-    { validators: [valorValido, fechasEnOrden] }
+    { validators: [valorValido, fechasEnOrden, fechasNoPasadas(() => this.fechasOriginales)] }
   );
 
   private disparador: HTMLElement | null = null;
@@ -153,10 +190,14 @@ export class AdminCupones implements OnInit {
         const c = f.controls.usosMaximos;
         return mostrar(c) && c.errors ? 'Un número entero, al menos 1. Vacío = sin límite.' : null;
       }
-      case 'fechas':
-        return (f.controls.vigenteHasta.touched || this.intentoGuardar()) && f.errors?.['fechasInvertidas']
-          ? 'La fecha de fin no puede ser anterior a la de inicio.'
-          : null;
+      case 'fechas': {
+        const tocadas = f.controls.vigenteDesde.touched || f.controls.vigenteHasta.touched || this.intentoGuardar();
+        if (!tocadas || !f.errors) return null;
+        if (f.errors['desdePasada']) return 'La fecha de inicio no puede ser anterior a hoy.';
+        if (f.errors['hastaPasada']) return 'La fecha de fin no puede ser anterior a hoy.';
+        if (f.errors['fechasInvertidas']) return 'La fecha de fin no puede ser anterior a la de inicio.';
+        return null;
+      }
     }
   }
 
@@ -164,6 +205,7 @@ export class AdminCupones implements OnInit {
 
   abrirFormulario(cupon: Cupon | null, evento: Event): void {
     this.disparador = evento.currentTarget as HTMLElement;
+    this.fechasOriginales = { desde: cupon?.vigenteDesde ?? '', hasta: cupon?.vigenteHasta ?? '' };
     this.formulario.reset({
       codigo: cupon?.codigo ?? '',
       tipo: cupon?.tipo ?? 'PORCENTAJE',

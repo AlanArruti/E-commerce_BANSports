@@ -211,9 +211,61 @@ class CuponServiceTest {
     @Test
     void crear_fechasInvertidas_loRechaza() {
         assertThatThrownBy(() -> cuponService.crear(
-                request("FECHAS", TipoCupon.MONTO_FIJO, 1000, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 11, 1))))
+                request("FECHAS", TipoCupon.MONTO_FIJO, 1000, LocalDate.now().plusDays(30), LocalDate.now().plusDays(10))))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("fecha de fin");
+    }
+
+    @Test
+    void crear_fechaDeInicioPasada_laRechaza() {
+        assertThatThrownBy(() -> cuponService.crear(
+                request("VIEJO", TipoCupon.PORCENTAJE, 10, LocalDate.now().minusDays(1), null)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("inicio no puede ser anterior a hoy");
+    }
+
+    @Test
+    void crear_fechaDeFinPasada_laRechaza() {
+        assertThatThrownBy(() -> cuponService.crear(
+                request("VIEJO", TipoCupon.PORCENTAJE, 10, null, LocalDate.now().minusDays(1))))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("fin no puede ser anterior a hoy");
+    }
+
+    @Test
+    void crear_empezandoHoy_sirve() {
+        when(cuponRepository.existsByCodigo("HOY")).thenReturn(false);
+        when(cuponRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CuponResponse creado = cuponService.crear(
+                request("hoy", TipoCupon.PORCENTAJE, 10, LocalDate.now(), LocalDate.now()));
+
+        assertThat(creado.codigo()).isEqualTo("HOY");
+    }
+
+    @Test
+    void actualizar_conservaLaFechaPasadaQueYaTenia() {
+        LocalDate empezo = LocalDate.now().minusDays(20);
+        Cupon cupon = porcentaje(10).vigenteDesde(empezo).build();
+        when(cuponRepository.findById(1L)).thenReturn(Optional.of(cupon));
+        when(cuponRepository.findByCodigo(cupon.getCodigo())).thenReturn(Optional.of(cupon));
+        when(cuponRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        cuponService.actualizar(1L, request(cupon.getCodigo(), TipoCupon.PORCENTAJE, 15, empezo, null));
+
+        assertThat(cupon.getValor()).isEqualTo(15);
+    }
+
+    @Test
+    void actualizar_cambiarAOtraFechaPasada_laRechaza() {
+        Cupon cupon = porcentaje(10).vigenteDesde(LocalDate.now().minusDays(20)).build();
+        when(cuponRepository.findById(1L)).thenReturn(Optional.of(cupon));
+        when(cuponRepository.findByCodigo(cupon.getCodigo())).thenReturn(Optional.of(cupon));
+
+        assertThatThrownBy(() -> cuponService.actualizar(1L,
+                request(cupon.getCodigo(), TipoCupon.PORCENTAJE, 10, LocalDate.now().minusDays(5), null)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("inicio no puede ser anterior a hoy");
     }
 
     @Test

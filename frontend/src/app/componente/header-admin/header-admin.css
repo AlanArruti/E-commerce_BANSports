@@ -46,10 +46,28 @@
   color: var(--color-texto-secundario);
 }
 
+/* Mismo botón que "Cerrar sesión" del header de la tienda. */
 .btn-salir {
   display: inline-flex;
   align-items: center;
   gap: var(--espacio-2);
+  min-height: 44px;
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--color-borde-input);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--color-texto);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-salir:hover,
+.btn-salir:focus-visible {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
 }
 
 /* Las secciones se desplazan de costado si no entran (celular). */
@@ -90,6 +108,17 @@
 
 @media (max-width: 640px) {
   .usuario {
+    display: none;
+  }
+
+  /* En el celular queda solo el ícono. */
+  .btn-salir {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .btn-salir span {
     display: none;
   }
 }

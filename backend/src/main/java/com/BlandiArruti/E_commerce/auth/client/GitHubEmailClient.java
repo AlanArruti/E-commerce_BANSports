@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.auth.client;
 
+import com.BlandiArruti.E_commerce.cotizacion.config.RestClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +22,7 @@ public class GitHubEmailClient {
 
     private final RestClient restClient = RestClient.builder()
             .baseUrl("https://api.github.com")
+            .requestFactory(RestClientConfig.conTimeouts(Duration.ofSeconds(10)))
             .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github+json")
             .build();
 

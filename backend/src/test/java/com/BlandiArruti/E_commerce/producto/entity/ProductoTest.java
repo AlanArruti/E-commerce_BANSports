@@ -62,4 +62,17 @@ class ProductoTest {
 
         assertThat(producto.getPrecioConDescuento()).isEqualTo(15000.0);
     }
+
+    @Test
+    void recalcularPrecioFinal_descuentoVacioQuedaEnCero() {
+        Producto producto = Producto.builder()
+                .precio(15000.0)
+                .descuento(null)
+                .build();
+
+        producto.recalcularPrecioFinal();
+
+        assertThat(producto.getDescuento()).isZero();
+        assertThat(producto.getPrecioFinal()).isEqualTo(15000.0);
+    }
 }

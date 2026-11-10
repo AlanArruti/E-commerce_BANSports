@@ -80,7 +80,16 @@ public class ProductoController {
         Sort.Direction direccion = "desc".equalsIgnoreCase(sortDir)
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
-        return Sort.by(direccion, campo);
+        return ordenConNulosAlFinal(direccion, campo);
+    }
+
+    /**
+     * Los nulos siempre al final (Postgres los pone primero en DESC: un producto sin descuento cargado
+     * encabezaba "Mayor descuento") y el id desempata, así el orden no cambia entre recargas o páginas.
+     */
+    static Sort ordenConNulosAlFinal(Sort.Direction direccion, String campo) {
+        Sort orden = Sort.by(new Sort.Order(direccion, campo).nullsLast());
+        return "id".equals(campo) ? orden : orden.and(Sort.by(Sort.Direction.ASC, "id"));
     }
 
     @Operation(summary = "Marcar o desmarcar el producto como novedad del inicio (solo ADMIN)")

@@ -97,8 +97,14 @@ public class Producto {
         recalcularPrecioFinal();
     }
 
-    /** Vuelve a calcular el precio final después de cambiar precio o descuento. */
+    /**
+     * Vuelve a calcular el precio final después de cambiar precio o descuento. De paso, un descuento vacío
+     * queda en 0: con null el producto se colaba primero al ordenar por "Mayor descuento".
+     */
     public void recalcularPrecioFinal() {
+        if (this.descuento == null) {
+            this.descuento = 0;
+        }
         this.precioFinal = getPrecioConDescuento();
     }
 

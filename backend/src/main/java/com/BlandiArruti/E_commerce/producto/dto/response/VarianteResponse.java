@@ -12,5 +12,7 @@ public record VarianteResponse(
         /** Precio propio cargado en el panel, sin descuento; null si usa el del producto. */
         Double precio,
         /** Lo que paga el cliente por una unidad: precio de la variante (o del producto) con la oferta aplicada. */
-        Double precioFinal
+        Double precioFinal,
+        /** URL de la foto propia de la variante, o null si usa la del producto. */
+        String imagenUrl
 ) {}

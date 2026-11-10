@@ -34,7 +34,8 @@ const CHOCOLATE: Variante = {
   activo: true,
   idProducto: ID_PRODUCTO,
   precio: null,
-  precioFinal: 30000
+  precioFinal: 30000,
+  imagenUrl: null
 };
 
 describe('AdminVariantes (formulario de variantes)', () => {

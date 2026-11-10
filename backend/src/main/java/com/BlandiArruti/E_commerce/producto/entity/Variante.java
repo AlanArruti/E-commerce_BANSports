@@ -54,4 +54,14 @@ public class Variante {
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+
+    /**
+     * Bandera desnormalizada, como Producto.tieneImagen: dice si hay fila en imagenes_variante
+     * sin consultarla. La mantiene ProductoService. Con DEFAULT para que ddl-auto=update pueda
+     * agregar la columna sobre una tabla con filas.
+     */
+    @Column(name = "tiene_imagen", nullable = false,
+            columnDefinition = "boolean default false not null")
+    @Builder.Default
+    private boolean tieneImagen = false;
 }

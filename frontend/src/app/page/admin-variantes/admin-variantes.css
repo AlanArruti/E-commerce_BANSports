@@ -536,3 +536,34 @@
     flex: 1;
   }
 }
+
+/* ── Foto de la variante ─────────────────────────────── */
+.col-variante {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+.miniatura {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio);
+  object-fit: cover;
+  background: var(--color-fondo, #f4f4f4);
+}
+
+.miniatura.sin-foto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-borde);
+  color: var(--color-texto-secundario);
+}
+
+.modal.modal-foto {
+  width: min(820px, calc(100% - 2 * var(--espacio-4)));
+  max-height: calc(100vh - 2 * var(--espacio-4));
+  overflow-y: auto;
+}
+

@@ -13,11 +13,13 @@ import com.BlandiArruti.E_commerce.producto.dto.response.ImagenProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.ProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.VarianteResponse;
 import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
+import com.BlandiArruti.E_commerce.producto.entity.ImagenVariante;
 import com.BlandiArruti.E_commerce.producto.entity.Producto;
 import com.BlandiArruti.E_commerce.producto.entity.Variante;
 import com.BlandiArruti.E_commerce.producto.mapper.ProductoMapper;
 import com.BlandiArruti.E_commerce.producto.mapper.VarianteMapper;
 import com.BlandiArruti.E_commerce.producto.repository.ImagenProductoRepository;
+import com.BlandiArruti.E_commerce.producto.repository.ImagenVarianteRepository;
 import com.BlandiArruti.E_commerce.producto.repository.ProductoRepository;
 import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
@@ -49,6 +51,7 @@ public class ProductoService implements IProductoService {
     private final CategoriaRepository categoriaRepository;
     private final VarianteRepository varianteRepository;
     private final ImagenProductoRepository imagenProductoRepository;
+    private final ImagenVarianteRepository imagenVarianteRepository;
     private final ProductoMapper productoMapper;
     private final VarianteMapper varianteMapper;
 
@@ -56,31 +59,14 @@ public class ProductoService implements IProductoService {
         Producto producto = productoRepository.findById(idProducto)
                 .orElseThrow(() -> EntidadNoEncontradaException.producto(idProducto));
 
-        if (archivo == null || archivo.isEmpty()) {
-            throw new EcommerceException("El archivo de imagen está vacío.");
-        }
-        if (archivo.getSize() > TAMANIO_MAXIMO_IMAGEN) {
-            throw new EcommerceException("La imagen no puede superar los 2 MB.");
-        }
-        String contentType = archivo.getContentType();
-        if (contentType == null || !TIPOS_IMAGEN_PERMITIDOS.contains(contentType.toLowerCase())) {
-            throw new EcommerceException(
-                    "Formato de imagen no soportado. Se aceptan: JPEG, PNG y WEBP.");
-        }
-
-        byte[] datos;
-        try {
-            datos = archivo.getBytes();
-        } catch (IOException e) {
-            throw new EcommerceException("No se pudo leer el archivo de imagen.");
-        }
+        ArchivoImagen archivoImagen = leerImagen(archivo);
+        byte[] datos = archivoImagen.datos();
 
         // Una imagen por producto: si ya había, se reemplaza.
         ImagenProducto imagen = imagenProductoRepository.findByProductoId(idProducto)
                 .orElseGet(() -> ImagenProducto.builder().producto(producto).build());
-        imagen.setNombreArchivo(archivo.getOriginalFilename() != null
-                ? archivo.getOriginalFilename() : "imagen");
-        imagen.setContentType(contentType.toLowerCase());
+        imagen.setNombreArchivo(archivoImagen.nombre());
+        imagen.setContentType(archivoImagen.contentType());
         imagen.setDatos(datos);
         imagenProductoRepository.save(imagen);
 
@@ -113,6 +99,79 @@ public class ProductoService implements IProductoService {
         imagenProductoRepository.delete(imagen);
         producto.setTieneImagen(false);
         productoRepository.save(producto);
+    }
+
+    public ImagenProductoResponse subirImagenVariante(Long idProducto, Long idVariante, MultipartFile archivo) {
+        Variante variante = buscarVarianteDelProducto(idProducto, idVariante);
+        ArchivoImagen archivoImagen = leerImagen(archivo);
+
+        // Una foto por variante: si ya había, se reemplaza.
+        ImagenVariante imagen = imagenVarianteRepository.findByVarianteId(idVariante)
+                .orElseGet(() -> ImagenVariante.builder().variante(variante).build());
+        imagen.setNombreArchivo(archivoImagen.nombre());
+        imagen.setContentType(archivoImagen.contentType());
+        imagen.setDatos(archivoImagen.datos());
+        imagenVarianteRepository.save(imagen);
+
+        variante.setTieneImagen(true);
+        varianteRepository.save(variante);
+
+        return new ImagenProductoResponse(
+                idProducto,
+                imagen.getNombreArchivo(),
+                imagen.getContentType(),
+                archivoImagen.datos().length,
+                "/api/v1/producto/" + idProducto + "/variante/" + idVariante + "/imagen");
+    }
+
+    @Transactional(readOnly = true)
+    public ImagenVariante obtenerImagenVariante(Long idProducto, Long idVariante) {
+        return imagenVarianteRepository.findByVarianteId(idVariante)
+                .filter(i -> i.getVariante().getProducto().getId().equals(idProducto))
+                .orElseThrow(() -> new EntidadNoEncontradaException(
+                        "La variante con id " + idVariante + " no tiene imagen cargada."));
+    }
+
+    public void eliminarImagenVariante(Long idProducto, Long idVariante) {
+        Variante variante = buscarVarianteDelProducto(idProducto, idVariante);
+        ImagenVariante imagen = imagenVarianteRepository.findByVarianteId(idVariante)
+                .orElseThrow(() -> new EntidadNoEncontradaException(
+                        "La variante con id " + idVariante + " no tiene imagen cargada."));
+
+        imagenVarianteRepository.delete(imagen);
+        variante.setTieneImagen(false);
+        varianteRepository.save(variante);
+    }
+
+    private Variante buscarVarianteDelProducto(Long idProducto, Long idVariante) {
+        productoRepository.findByIdAndActivoTrue(idProducto)
+                .orElseThrow(() -> EntidadNoEncontradaException.producto(idProducto));
+        return varianteRepository.findByIdAndActivoTrue(idVariante)
+                .filter(v -> v.getProducto().getId().equals(idProducto))
+                .orElseThrow(() -> EntidadNoEncontradaException.variante(idVariante));
+    }
+
+    /** Archivo de imagen ya validado (formato y tamaño). */
+    private record ArchivoImagen(String nombre, String contentType, byte[] datos) {}
+
+    private ArchivoImagen leerImagen(MultipartFile archivo) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new EcommerceException("El archivo de imagen está vacío.");
+        }
+        if (archivo.getSize() > TAMANIO_MAXIMO_IMAGEN) {
+            throw new EcommerceException("La imagen no puede superar los 2 MB.");
+        }
+        String contentType = archivo.getContentType();
+        if (contentType == null || !TIPOS_IMAGEN_PERMITIDOS.contains(contentType.toLowerCase())) {
+            throw new EcommerceException(
+                    "Formato de imagen no soportado. Se aceptan: JPEG, PNG y WEBP.");
+        }
+        try {
+            String nombre = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "imagen";
+            return new ArchivoImagen(nombre, contentType.toLowerCase(), archivo.getBytes());
+        } catch (IOException e) {
+            throw new EcommerceException("No se pudo leer el archivo de imagen.");
+        }
     }
 
     @Transactional(readOnly = true)

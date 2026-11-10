@@ -48,3 +48,4 @@ frontend/.vite/
 
 # Volcados de crash de Git Bash
 *.stackdump
+scripts/imagenes-generadas/

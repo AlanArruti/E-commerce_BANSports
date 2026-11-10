@@ -9,6 +9,7 @@ import com.BlandiArruti.E_commerce.producto.dto.response.ImagenProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.ProductoResponse;
 import com.BlandiArruti.E_commerce.producto.dto.response.VarianteResponse;
 import com.BlandiArruti.E_commerce.producto.entity.ImagenProducto;
+import com.BlandiArruti.E_commerce.producto.entity.ImagenVariante;
 import com.BlandiArruti.E_commerce.producto.service.IProductoService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -175,5 +176,32 @@ public class ProductoController {
                                                          @PathVariable Long idVariante,
                                                          @Valid @RequestBody StockRequest request) {
         return ResponseEntity.ok(productoService.ajustarStock(idProducto, idVariante, request));
+    }
+
+    @Operation(summary = "Subir/reemplazar la foto de una variante (solo ADMIN)",
+               description = "Acepta JPEG, PNG o WEBP de hasta 2 MB. Sin foto, la variante usa la del producto.")
+    @PostMapping(value = "/{idProducto}/variante/{idVariante}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImagenProductoResponse> subirImagenVariante(@PathVariable Long idProducto,
+                                                                      @PathVariable Long idVariante,
+                                                                      @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productoService.subirImagenVariante(idProducto, idVariante, archivo));
+    }
+
+    @Operation(summary = "Obtener la foto de una variante", description = "Público. Devuelve los bytes de la imagen.")
+    @GetMapping("/{idProducto}/variante/{idVariante}/imagen")
+    public ResponseEntity<byte[]> obtenerImagenVariante(@PathVariable Long idProducto, @PathVariable Long idVariante) {
+        ImagenVariante imagen = productoService.obtenerImagenVariante(idProducto, idVariante);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(imagen.getContentType()))
+                .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
+                .body(imagen.getDatos());
+    }
+
+    @Operation(summary = "Eliminar la foto de una variante (solo ADMIN)")
+    @DeleteMapping("/{idProducto}/variante/{idVariante}/imagen")
+    public ResponseEntity<Void> eliminarImagenVariante(@PathVariable Long idProducto, @PathVariable Long idVariante) {
+        productoService.eliminarImagenVariante(idProducto, idVariante);
+        return ResponseEntity.noContent().build();
     }
 }

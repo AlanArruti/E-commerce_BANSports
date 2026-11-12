@@ -2,6 +2,8 @@
 
 Tienda online de suplementos deportivos. El backend es una API REST desarrollada como Trabajo Práctico Final de Programación III, y el frontend en Angular 22 es el Trabajo Práctico Final de Programación IV — UTN Mar del Plata.
 
+📄 **[Documentación del proyecto](docs/DOCUMENTACION.md)**: qué hace, arquitectura, decisiones de diseño, diagramas y cumplimiento de la consigna.
+
 ## Estructura del repositorio
 
 ```

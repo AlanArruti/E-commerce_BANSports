@@ -36,6 +36,9 @@ spring:
         format_sql: true
         jdbc:
           time_zone: America/Argentina/Buenos_Aires
+        # Evita el N+1 en los listados: las categorías, variantes e ítems de varios productos o
+        # pedidos se traen juntos en una consulta con IN (...) en vez de una consulta por cada uno.
+        default_batch_fetch_size: 50
         # Por defecto, update borra cada UNIQUE antes de crearla ("drop constraint if exists") y
         # Postgres llena el log de avisos "does not exist, skipping" al crear la base de cero.
         schema_update:

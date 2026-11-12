@@ -4,6 +4,7 @@ import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.ServicioExternoException;
 import com.BlandiArruti.E_commerce.pago.pasarela.mercadopago.dto.OrdenMercadoPago;
 import com.BlandiArruti.E_commerce.pago.pasarela.mercadopago.dto.OrdenRequest;
+import com.BlandiArruti.E_commerce.cotizacion.config.RestClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +35,11 @@ public class MercadoPagoClient {
 
     public MercadoPagoClient(MercadoPagoProperties properties) {
         this.properties = properties;
-        this.restClient = RestClient.builder().baseUrl(BASE_URL).build();
+        // Crear una orden puede tardar unos segundos: 20 s de lectura antes de dar a MP por caído.
+        this.restClient = RestClient.builder()
+                .baseUrl(BASE_URL)
+                .requestFactory(RestClientConfig.conTimeouts(Duration.ofSeconds(20)))
+                .build();
     }
 
     public OrdenMercadoPago crearOrden(OrdenRequest orden) {

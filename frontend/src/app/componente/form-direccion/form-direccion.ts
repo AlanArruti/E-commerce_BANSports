@@ -10,7 +10,7 @@ import { DireccionService } from '../../services/direccion.service';
 import { GeoService } from '../../services/geo.service';
 import { ErrorTraducido, traducirErrorDireccion } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
-import { requerido, soloNumeros } from '../../validaciones/validadores';
+import { codigoPostalValido, requerido, soloNumeros } from '../../validaciones/validadores';
 
 /** Caracteres mínimos para buscar localidades (el back tampoco busca con menos). */
 const MINIMO_BUSQUEDA = 3;
@@ -41,7 +41,7 @@ export class FormDireccion {
   // Mismas reglas que DireccionRequest en el back.
   calle = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(100)] });
   numeroCalle = new FormControl('', { nonNullable: true, validators: [requerido, soloNumeros, Validators.min(1)] });
-  codigoPostal = new FormControl('', { nonNullable: true, validators: [requerido, Validators.maxLength(8)] });
+  codigoPostal = new FormControl('', { nonNullable: true, validators: [requerido, codigoPostalValido] });
 
   formulario = new FormGroup({
     idLocalidad: this.idLocalidad,

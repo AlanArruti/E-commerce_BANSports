@@ -20,6 +20,7 @@ import com.BlandiArruti.E_commerce.exception.DuplicadoException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.entity.Ciudad;
 import com.BlandiArruti.E_commerce.geo.service.LocalidadService;
+import com.BlandiArruti.E_commerce.geo.util.CodigoPostal;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.mapper.PedidoMapper;
@@ -154,12 +155,14 @@ public class ClienteService implements IClienteService {
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(idCliente)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(idCliente));
         // La ciudad sale de Georef (y se crea si es la primera vez que alguien la usa).
-        Ciudad ciudad = localidadService.resolverCiudad(request.idLocalidad());
+        // También controla que el código postal pueda ser de esa provincia.
+        String codigoPostal = CodigoPostal.normalizar(request.codigoPostal());
+        Ciudad ciudad = localidadService.resolverCiudad(request.idLocalidad(), codigoPostal);
 
         Direccion direccion = Direccion.builder()
                 .nombreCalle(request.nombreCalle())
                 .numeroCalle(request.numeroCalle())
-                .codigoPostal(request.codigoPostal())
+                .codigoPostal(codigoPostal)
                 .ciudad(ciudad)
                 .cliente(cliente)
                 .build();

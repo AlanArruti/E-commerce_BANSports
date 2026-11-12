@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.geo.service;
 
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.client.GeorefClient;
 import com.BlandiArruti.E_commerce.geo.client.dto.GeorefLocalidadesResponse.Localidad;
@@ -11,6 +12,7 @@ import com.BlandiArruti.E_commerce.geo.entity.Provincia;
 import com.BlandiArruti.E_commerce.geo.repository.CiudadRepository;
 import com.BlandiArruti.E_commerce.geo.repository.PaisRepository;
 import com.BlandiArruti.E_commerce.geo.repository.ProvinciaRepository;
+import com.BlandiArruti.E_commerce.geo.util.CodigoPostal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,12 +66,30 @@ public class LocalidadService {
     /** Busca (o crea) la ciudad de la localidad elegida, para guardar la dirección. */
     @Transactional
     public Ciudad resolverCiudad(String idLocalidad) {
+        return resolverCiudad(idLocalidad, null);
+    }
+
+    /**
+     * Igual que {@link #resolverCiudad(String)}, pero además rechaza un código postal que no puede ser
+     * de esa provincia (ver {@link CodigoPostal}). Se controla antes de crear nada.
+     */
+    @Transactional
+    public Ciudad resolverCiudad(String idLocalidad, String codigoPostal) {
         if (idLocalidad == null || !ID_VALIDO.matcher(idLocalidad).matches()) {
             throw noEncontrada();
         }
         Localidad localidad = georefClient.obtenerLocalidad(idLocalidad)
                 .filter(LocalidadService::estaCompleta)
                 .orElseThrow(LocalidadService::noEncontrada);
+
+        if (codigoPostal != null) {
+            // Los 2 primeros dígitos del id de una localidad censal son la provincia (código INDEC).
+            String lugar = localidad.nombre().trim() + " (" + localidad.provincia().nombre().trim() + ")";
+            CodigoPostal.contradiccionConProvincia(codigoPostal, idLocalidad.substring(0, 2), lugar)
+                    .ifPresent(motivo -> {
+                        throw new EcommerceException(motivo);
+                    });
+        }
 
         Pais pais = paisRepository.findByNombreIgnoreCase(PAIS)
                 .orElseGet(() -> paisRepository.save(Pais.builder().nombre(PAIS).build()));

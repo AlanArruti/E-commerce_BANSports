@@ -123,7 +123,7 @@ export const MENSAJES: Record<string, Mensajes> = {
   },
   codigoPostal: {
     requerido: () => 'Ingresá el código postal.',
-    maxlength: (d) => `El código postal puede tener hasta ${d.requiredLength} caracteres (tiene ${d.actualLength}).`
+    codigoPostal: () => 'El código postal tiene que tener 4 números (ej. 7600) o el formato CPA (ej. B7600ABC).'
   },
   empresa: {
     requerido: () => 'Indicá la empresa que lleva el pedido (por ejemplo, Andreani).',

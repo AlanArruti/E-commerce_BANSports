@@ -101,6 +101,18 @@ export const descuentoValido: ValidatorFn = (control: AbstractControl): Validati
   return numero >= 1 && numero <= 99 ? null : { descuentoInvalido: true };
 };
 
+/**
+ * Código postal argentino: 4 números (7600) o CPA (B7600ABC, letra de provincia + 4 números + 3 letras).
+ * Que corresponda a la provincia de la localidad lo controla el back (CodigoPostal.java).
+ */
+export const codigoPostalValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const valor = String(control.value ?? '').trim();
+  if (valor === '' || /^(\d{4}|[A-Za-z]\d{4}[A-Za-z]{3})$/.test(valor)) {
+    return null;
+  }
+  return { codigoPostal: true };
+};
+
 /** Email con formato nombre@dominio.ext (más estricto que Validators.email). */
 export const emailValido: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const valor = String(control.value ?? '').trim();

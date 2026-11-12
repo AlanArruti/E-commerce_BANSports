@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.cliente.dto.request;
 
+import com.BlandiArruti.E_commerce.geo.util.CodigoPostal;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -20,7 +21,7 @@ public record DireccionRequest(
         Integer numeroCalle,
 
         @NotBlank(message = "El código postal no puede estar vacío.")
-        @Size(max = 8, message = "El código postal no puede superar los 8 caracteres.")
+        @Pattern(regexp = CodigoPostal.FORMATO, message = CodigoPostal.MENSAJE_FORMATO)
         String codigoPostal,
 
         @NotBlank(message = "Elegí la localidad de la lista.")

@@ -7,7 +7,7 @@ Tienda online de suplementos deportivos. El backend es una API REST desarrollada
 ```
 backend/        ← API REST Spring Boot (Maven, src/, Dockerfile, colección Postman)
 frontend/       ← SPA Angular 22 (nginx en Docker)
-scripts/        ← SQL de la base (init de Docker, reparación de esquema) y config de pgAdmin
+scripts/        ← config de pgAdmin y generador de las fotos del catálogo de prueba
 compose.yaml    ← levanta todo el stack con Docker
 .env.example    ← variables de entorno de ejemplo
 ```
@@ -40,7 +40,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 | Spring Boot | 4.0.5 |
 | Spring Security + JWT | jjwt 0.12.6 |
 | Spring Data JPA | Hibernate 7.x |
-| PostgreSQL | 17+ |
+| PostgreSQL | 18 |
 | MapStruct | 1.6.3 |
 | Thymeleaf | (plantillas HTML de los mails) |
 | MercadoPago | API de Orders (REST, con `RestClient`) |
@@ -72,8 +72,9 @@ Controller → IService (interface) → ServiceImpl → Repository
 | **Builder** | Todas las entidades JPA (Lombok `@Builder`) |
 | **Singleton** | Todos los `@Service`, `@Component`, `@Repository` (Spring IoC) |
 | **Factory Method** | `UsuarioDetails.fromCliente()` / `UsuarioDetails.fromAdmin()` |
-| **Strategy** | Lógica de validación de stock (`StockRequest.operacion`) |
-| **Template Method** | `GlobalExceptionHandler` — flujo uniforme de respuesta de error |
+| **Template Method** | `PasarelaPagoBase` — define el algoritmo del cobro (`iniciarCobro`, `consultarCobro` son `final`) y cada pasarela completa los pasos (`crearCobro`, `buscarCobro`) |
+| **Strategy** | `PasarelaPago` + `RegistroPasarelas` — cada pasarela es una implementación intercambiable; una nueva es una clase con `@Component` |
+| **DTO** | Records `*Request` / `*Response` — la API nunca expone las entidades |
 
 ---
 
@@ -470,7 +471,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **258 tests** (257 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **319 tests** (318 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -490,24 +491,32 @@ Cobertura de tests unitarios:
 - `OAuth2ClienteServiceTest` — 10 tests (GitHub y Google: alta, vinculación por email, email privado de GitHub, email sin verificar, cuenta desactivada)
 - `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
-- `CarritoServiceTest` — 13 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
-- `CategoriaServiceTest` — 12 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
+- `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
+- `CategoriaServiceTest` — 13 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
 - `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 31 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
-- `CuponServiceTest` — 22 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
-- `ProductoServiceTest` — 11 tests (variantes, stock, ownership)
+- `PedidoServiceTest` — 40 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
+- `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
+- `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
 - `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
-- `CotizacionEnvioServiceTest` — 5 tests (cotización Correo Argentino)
-- `NotificacionServiceTest` — 8 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
+- `CotizacionEnvioServiceTest` — 7 tests (cotización Correo Argentino y tarifa de respaldo por provincia)
+- `NotificacionServiceTest` — 9 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
+- `CodigoPostalTest` — 18 tests (formato de 4 números o CPA, y que el código pueda ser de la provincia de la localidad)
+- `LocalidadServiceTest` — 6 tests (búsqueda en Georef, alta de país, provincia y ciudad la primera vez)
+- `GeorefClientTest` — 3 tests y `CorreoArgentinoClientTest` — 2 tests (respuestas y caídas de las APIs externas)
+- `FavoritoServiceTest` — 9 tests y `ResenaServiceTest` — 8 tests (favoritos; reseñas solo de quien compró, una por producto)
+- `ProductoTest` — 7 tests y `ProductoControllerTest` — 2 tests (precio final con descuento y por variante; imagen)
+- `FacturaPdfGeneratorTest` — 3 tests (PDF de la factura)
+- `AdminResumenServiceTest` — 4 tests (métricas del panel)
+- `JwtAuthFilterTest` — 3 tests (token válido, inválido y ausente)
 
 ### Tests del front
 
-El front tiene **74 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+El front tiene **83 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
 No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
 
 **Con Docker (recomendado, no hace falta instalar nada):**
@@ -535,12 +544,14 @@ npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
 ```
 
 Qué cubren (lo que más se rompe):
-- `guards.spec.ts` — 11 tests: `rolGuard` (sin sesión va al login con `redirect`, un CLIENTE en `/admin` vuelve a la tienda, un ADMIN en pantallas de cliente vuelve al panel), `sinAdminGuard` y `guestGuard`
+- `guards.spec.ts` — 13 tests: `rolGuard` (sin sesión va al login con `redirect`, un CLIENTE en `/admin` vuelve a la tienda, un ADMIN en pantallas de cliente vuelve al panel), `sinAdminGuard` y `guestGuard`
 - `auth.interceptor.spec.ts` — 9 tests: agrega el token solo a nuestra API (no al login ni a otros sitios); un 401 cierra la sesión y manda al login que corresponde; el 401 del login o de "contraseña actual incorrecta" no la cierra
 - `auth.service.spec.ts` — 16 tests: login (recordarme o solo la pestaña, rol equivocado en cada login), logout, y validación de la sesión guardada (vencida, no es un JWT, token editado a mano, 401, sin conexión)
 - `validadores.spec.ts` — 13 tests: validadores propios (DNI, precio argentino, descuento, email…) y los mensajes de `mensajes.ts`
 - `errores-api.spec.ts` — 18 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente), de checkout y de cupones
 - `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
+- `admin-producto.spec.ts` — 4 tests: el alta de un producto con foto y marca de novedad
+- `header-admin.spec.ts` — 3 tests: el header del panel (solo secciones del panel, usuario de la sesión, cerrar sesión)
 
 Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
 tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario

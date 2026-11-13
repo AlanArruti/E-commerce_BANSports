@@ -4,7 +4,14 @@
 
 <header class="header">
   <div class="contenedor header-grilla">
-    <button type="button" class="btn-menu" aria-label="Abrir menú">
+    <button
+      type="button"
+      class="btn-menu"
+      aria-label="Abrir menú"
+      aria-controls="menu-movil"
+      [attr.aria-expanded]="menuAbierto()"
+      (click)="abrirMenu()"
+    >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
     </button>
 
@@ -13,7 +20,7 @@
       <span class="logo-texto">SPORTS</span>
     </a>
 
-    <nav class="categorias" aria-label="Categorías">
+    <nav class="categorias" aria-label="Categorías" appArrastrarScroll>
       @for (categoria of categorias(); track categoria.id) {
         <a
           routerLink="/productos"
@@ -82,6 +89,57 @@
     </div>
   </div>
 </header>
+
+@if (menuAbierto()) {
+  <div class="menu-fondo" (click)="cerrarMenu()" aria-hidden="true"></div>
+  <aside id="menu-movil" class="menu-movil" role="dialog" aria-modal="true" aria-label="Menú">
+    <div class="menu-cabecera">
+      <a routerLink="/" class="logo" aria-label="BAN Sports, ir al inicio">
+        <span class="logo-marca">BAN</span>
+        <span class="logo-texto">SPORTS</span>
+      </a>
+      <button type="button" class="btn-icono" aria-label="Cerrar menú" (click)="cerrarMenu()" autofocus>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <nav class="menu-seccion" aria-label="Tienda">
+      <p class="menu-titulo">Tienda</p>
+      <a routerLink="/productos" routerLinkActive="activa" [routerLinkActiveOptions]="{ exact: true }">Todos los productos</a>
+      <a routerLink="/ofertas" routerLinkActive="activa" class="acento">Ofertas</a>
+    </nav>
+
+    @if (todasLasCategorias().length) {
+      <nav class="menu-seccion" aria-label="Categorías del menú">
+        <p class="menu-titulo">Categorías</p>
+        @for (categoria of todasLasCategorias(); track categoria.id) {
+          <a
+            routerLink="/productos"
+            [queryParams]="{ categoria: categoria.id }"
+            routerLinkActive="activa"
+            [routerLinkActiveOptions]="opcionesActiva"
+          >{{ categoria.nombre }}</a>
+        }
+      </nav>
+    }
+
+    <nav class="menu-seccion" aria-label="Mi cuenta">
+      <p class="menu-titulo">Mi cuenta</p>
+      @if (authService.estaLogueado()) {
+        <button type="button" (click)="abrirPerfil()">Mi perfil</button>
+        <a routerLink="/perfil/pedidos">Mis pedidos</a>
+      } @else {
+        <a routerLink="/login">Ingresar</a>
+        <a routerLink="/registro">Crear cuenta</a>
+      }
+      <a routerLink="/perfil/favoritos">Favoritos</a>
+      <a routerLink="/carrito">Carrito</a>
+      @if (authService.estaLogueado()) {
+        <button type="button" class="menu-salir" (click)="cerrarSesion()">Cerrar sesión</button>
+      }
+    </nav>
+  </aside>
+}
 
 @if (perfilAbierto()) {
   <app-perfil-modal (cerrar)="cerrarPerfil()" />

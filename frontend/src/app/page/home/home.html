@@ -136,7 +136,7 @@
       <h2 id="titulo-ofertas" class="titulo-display titulo-seccion">Ofertas <span class="acento">destacadas</span></h2>
       <a routerLink="/ofertas" class="link-seccion">Ver todas las ofertas →</a>
     </div>
-    <div class="fila-productos">
+    <div class="fila-productos" appArrastrarScroll>
       @if (cargandoOfertas()) {
         @for (i of esqueletos; track i) {
           <div class="esqueleto esqueleto-producto" aria-hidden="true"></div>
@@ -157,7 +157,7 @@
       <h2 id="titulo-nuevos" class="titulo-display titulo-seccion">Lo más <span class="acento">nuevo</span></h2>
       <a routerLink="/productos" class="link-seccion">Ver todos →</a>
     </div>
-    <div class="fila-productos">
+    <div class="fila-productos" appArrastrarScroll>
       @if (nuevos().cargando) {
         @for (i of esqueletos; track i) {
           <div class="esqueleto esqueleto-producto" aria-hidden="true"></div>

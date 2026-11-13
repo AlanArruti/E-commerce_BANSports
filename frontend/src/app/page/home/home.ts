@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Observable, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { TarjetaProducto } from '../../componente/tarjeta-producto/tarjeta-producto';
+import { ArrastrarScroll } from '../../directivas/arrastrar-scroll';
 import { Categoria } from '../../models/categoria';
 import { FiltrosCatalogo, Orden } from '../../models/filtros-catalogo';
 import { Pagina } from '../../models/pagina';
@@ -54,7 +55,7 @@ function cargar<T>(pedido: Observable<T>, vacio: T) {
  */
 @Component({
   selector: 'app-home',
-  imports: [NgClass, RouterLink, PoteProducto, PrecioPipe, TarjetaProducto],
+  imports: [NgClass, RouterLink, PoteProducto, PrecioPipe, TarjetaProducto, ArrastrarScroll],
   templateUrl: './home.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.css'

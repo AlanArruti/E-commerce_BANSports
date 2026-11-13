@@ -30,7 +30,7 @@
       }
     </div>
 
-    <div class="fila" (click)="alElegir($event)">
+    <div class="fila" appArrastrarScroll (click)="alElegir($event)">
       @if (s.cargando) {
         @for (i of esqueletos; track i) {
           <div class="esqueleto" aria-hidden="true"></div>

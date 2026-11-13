@@ -3,6 +3,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Observable, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { TarjetaProducto } from '../tarjeta-producto/tarjeta-producto';
+import { ArrastrarScroll } from '../../directivas/arrastrar-scroll';
 import { Categoria } from '../../models/categoria';
 import { FiltrosCatalogo } from '../../models/filtros-catalogo';
 import { Producto } from '../../models/producto';
@@ -51,7 +52,7 @@ function priorizar(productos: Producto[]): Producto[] {
  */
 @Component({
   selector: 'app-productos-similares',
-  imports: [RouterLink, TarjetaProducto],
+  imports: [RouterLink, TarjetaProducto, ArrastrarScroll],
   templateUrl: './productos-similares.html',
   styleUrl: './productos-similares.css',
   changeDetection: ChangeDetectionStrategy.OnPush

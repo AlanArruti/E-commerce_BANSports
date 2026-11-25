@@ -289,7 +289,22 @@
     }
 
     <section class="perfil-seccion">
-      <h3 class="titulo-display seccion-titulo">Direcciones</h3>
+      <div class="seccion-cabecera">
+        <h3 class="titulo-display seccion-titulo">Direcciones</h3>
+        @if (!agregandoDireccion()) {
+          <button type="button" class="btn btn-secundario btn-chico" (click)="abrirAltaDireccion()">
+            Agregar dirección
+          </button>
+        }
+      </div>
+
+      @if (errorDireccion(); as errorActual) {
+        <p class="direccion-error" role="alert"><strong>{{ errorActual.titulo }}.</strong> {{ errorActual.detalle }}</p>
+      }
+
+      @if (agregandoDireccion()) {
+        <app-form-direccion (guardada)="direccionGuardada($event)" (cancelar)="agregandoDireccion.set(false)" />
+      }
 
       @if ((cliente()?.direcciones?.length ?? 0) > 0) {
         <ul class="lista-simple">
@@ -303,11 +318,30 @@
                 <strong>{{ direccion.nombreCalle }} {{ direccion.numeroCalle }}</strong>
                 <span>{{ direccion.ciudad.nombreCiudad }}, {{ direccion.ciudad.provincia.nombreProvincia }} · CP {{ direccion.codigoPostal }}</span>
               </div>
+              <div class="direccion-acciones">
+                @if (confirmandoBaja() === direccion.id) {
+                  <span class="direccion-pregunta">¿Eliminarla?</span>
+                  <button type="button" class="btn btn-secundario btn-chico" [disabled]="eliminandoDireccion() === direccion.id" (click)="confirmandoBaja.set(null)">
+                    No
+                  </button>
+                  <button type="button" class="btn btn-peligro btn-chico" [disabled]="eliminandoDireccion() === direccion.id" (click)="eliminarDireccion(direccion.id)">
+                    {{ eliminandoDireccion() === direccion.id ? 'Eliminando…' : 'Sí, eliminar' }}
+                  </button>
+                } @else {
+                  <button type="button" class="btn-icono" [attr.aria-label]="'Eliminar ' + direccionTexto(direccion)" title="Eliminar dirección" (click)="pedirBaja(direccion.id)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </svg>
+                  </button>
+                }
+              </div>
             </li>
           }
         </ul>
       } @else {
-        <p class="perfil-vacio">Todavía no cargaste direcciones.</p>
+        @if (!agregandoDireccion()) {
+          <p class="perfil-vacio">Todavía no cargaste direcciones.</p>
+        }
       }
     </section>
 

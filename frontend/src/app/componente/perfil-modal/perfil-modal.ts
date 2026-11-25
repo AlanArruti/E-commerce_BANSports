@@ -16,9 +16,12 @@ import { Direccion } from '../../models/direccion';
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { AuthService } from '../../services/auth.service';
 import { ClienteService } from '../../services/cliente.service';
+import { DireccionService } from '../../services/direccion.service';
 import { FavoritoService } from '../../services/favorito.service';
+import { FormDireccion } from '../form-direccion/form-direccion';
 import {
   ErrorTraducido,
+  traducirErrorBajaDireccion,
   traducirErrorPassword,
   traducirErrorPerfil
 } from '../../validaciones/errores-api';
@@ -30,7 +33,7 @@ type Modo = ModoPerfil;
 
 @Component({
   selector: 'app-perfil-modal',
-  imports: [ReactiveFormsModule, NgClass, DatePipe, DecimalPipe, RouterLink],
+  imports: [ReactiveFormsModule, NgClass, DatePipe, DecimalPipe, RouterLink, FormDireccion],
   templateUrl: './perfil-modal.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './perfil-modal.css'
@@ -49,6 +52,12 @@ export class PerfilModal implements OnInit {
   protected readonly pedidos = signal<Pedido[]>([]);
   protected readonly cargandoPedidos = signal(false);
   protected readonly errorPedidos = signal<string | null>(null);
+
+  /** Direcciones: alta abierta, la que pide confirmación para borrarse y la que se está borrando. */
+  protected readonly agregandoDireccion = signal(false);
+  protected readonly confirmandoBaja = signal<number | null>(null);
+  protected readonly eliminandoDireccion = signal<number | null>(null);
+  protected readonly errorDireccion = signal<ErrorTraducido | null>(null);
 
   private readonly intentoPerfil = signal(false);
   private readonly intentoPassword = signal(false);
@@ -87,6 +96,7 @@ export class PerfilModal implements OnInit {
   constructor(
     private authService: AuthService,
     private clienteService: ClienteService,
+    private direccionService: DireccionService,
     protected favoritoService: FavoritoService
   ) {
     const cliente = this.authService.cliente();
@@ -297,6 +307,51 @@ export class PerfilModal implements OnInit {
 
   protected cantidadProductos(pedido: Pedido): number {
     return (pedido.items ?? []).reduce((total, item) => total + item.cantidad, 0);
+  }
+
+  protected abrirAltaDireccion(): void {
+    this.confirmandoBaja.set(null);
+    this.errorDireccion.set(null);
+    this.agregandoDireccion.set(true);
+  }
+
+  protected direccionGuardada(direccion: Direccion): void {
+    this.agregandoDireccion.set(false);
+    this.cambiarDirecciones((direcciones) => [...direcciones, direccion]);
+  }
+
+  protected pedirBaja(id: number): void {
+    this.errorDireccion.set(null);
+    this.confirmandoBaja.set(id);
+  }
+
+  protected eliminarDireccion(id: number): void {
+    this.eliminandoDireccion.set(id);
+    this.errorDireccion.set(null);
+    this.direccionService.eliminar(id).subscribe({
+      next: () => this.quitarDireccion(id),
+      error: (error) => {
+        this.eliminandoDireccion.set(null);
+        // 404: ya estaba dada de baja (por ejemplo, desde otra pestaña).
+        if (error.status === 404) {
+          this.quitarDireccion(id);
+        }
+        this.errorDireccion.set(traducirErrorBajaDireccion(error));
+      }
+    });
+  }
+
+  private quitarDireccion(id: number): void {
+    this.eliminandoDireccion.set(null);
+    this.confirmandoBaja.set(null);
+    this.cambiarDirecciones((direcciones) => direcciones.filter((direccion) => direccion.id !== id));
+  }
+
+  /** Las direcciones del perfil salen de la sesión: se actualizan ahí para que el resto de la app las vea. */
+  private cambiarDirecciones(cambio: (direcciones: Direccion[]) => Direccion[]): void {
+    this.authService.cliente.update((cliente) =>
+      cliente ? { ...cliente, direcciones: cambio(cliente.direcciones ?? []) } : cliente
+    );
   }
 
   protected direccionTexto(direccion: Direccion): string {

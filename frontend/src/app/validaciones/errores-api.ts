@@ -418,6 +418,21 @@ export function traducirErrorDireccion(error: HttpErrorResponse): ErrorTraducido
   };
 }
 
+export function traducirErrorBajaDireccion(error: HttpErrorResponse): ErrorTraducido {
+  if (error.status === 404) {
+    return {
+      titulo: 'Esa dirección ya no estaba',
+      detalle: 'La sacamos de la lista. Si la necesitás, cargala de nuevo.'
+    };
+  }
+  return (
+    errorGeneral(error) ?? {
+      titulo: 'No pudimos eliminar la dirección',
+      detalle: mensajeDelBack(error) || `El servidor respondió con el código ${error.status}.`
+    }
+  );
+}
+
 /** El 409 (nombre repetido) lo muestra el formulario junto al campo; acá llega el resto. */
 export function traducirErrorCategoria(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);

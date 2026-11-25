@@ -5,6 +5,7 @@ import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -63,7 +64,9 @@ public class Cliente {
     @Column(name = "fecha_alta", nullable = false, updatable = false,
             columnDefinition = "timestamp default now() not null")
     private LocalDateTime fechaAlta;
+    // Solo las activas: las dadas de baja quedan en la base para los pedidos viejos.
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @SQLRestriction("activa = true")
     @Builder.Default
     private List<Direccion> direcciones = new ArrayList<>();
     @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)

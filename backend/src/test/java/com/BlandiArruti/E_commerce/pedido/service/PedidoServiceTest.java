@@ -916,6 +916,26 @@ class PedidoServiceTest {
     }
 
     @Test
+    void crear_conDireccionDadaDeBaja_rechaza() {
+        Producto producto = proteina();
+        Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();
+        Direccion borrada = direccionDe(clienteCrear);
+        borrada.setActiva(false);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(clienteCrear));
+        when(productoRepository.findById(2L)).thenReturn(Optional.of(producto));
+        when(varianteRepository.findById(7L)).thenReturn(Optional.of(variante));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(borrada));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, 5L, new OpcionEnvioRequest("D", "Clasico"),
+                        List.of(new ItemPedidoRequest(2L, 7L, 1)), null),
+                UsuarioDetails.fromCliente(clienteCrear)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("ya no está en tu cuenta");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
     void crear_conDireccionSinOpcionDeEnvio_rechaza() {
         Producto producto = proteina();
         Variante variante = Variante.builder().id(7L).producto(producto).stock(10).activo(true).build();

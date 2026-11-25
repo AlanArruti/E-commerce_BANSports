@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 import { PrecioPipe } from '../../pipes/precio.pipe';
+import { CarritoService } from '../../services/carrito.service';
 import { Pago, PagoService } from '../../services/pago.service';
 import { ErrorTraducido, traducirErrorPago } from '../../validaciones/errores-api';
 
@@ -30,7 +31,8 @@ export class ResultadoPago implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private pagoService: PagoService
+    private pagoService: PagoService,
+    private carritoService: CarritoService
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +57,12 @@ export class ResultadoPago implements OnInit {
     this.pagoService.confirmarPago(this.idPago).subscribe({
       next: (pago) => {
         this.pago.set(pago);
-        this.resultado.set(this.interpretar(pago));
+        const resultado = this.interpretar(pago);
+        this.resultado.set(resultado);
+        if (resultado === 'pagado') {
+          // Al acreditarse, el back saca lo comprado del carrito: se recarga para que el contador lo refleje.
+          this.carritoService.cargar().subscribe({ error: () => undefined });
+        }
       },
       error: (e: HttpErrorResponse) => this.mostrarError(traducirErrorPago(e))
     });

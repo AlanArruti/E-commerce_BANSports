@@ -142,13 +142,14 @@ public class CarritoService {
                         item.getCantidad()))
                 .toList();
 
-        PedidoResponse pedido = pedidoService.crear(
+        // Si antes confirmó y volvió al carrito sin ir a pagar, ese pedido quedó colgado: se cancela
+        // para que no se acumulen pedidos pendientes por cada vuelta.
+        pedidoService.cancelarPendientesSinIntentoDePago(idCliente);
+
+        // El carrito NO se vacía acá: si el cliente se arrepiente antes de pagar, vuelve y lo encuentra
+        // igual. Lo comprado sale del carrito cuando se acredita el pago (PedidoService.acreditarPago).
+        return pedidoService.crear(
                 new PedidoRequest(idCliente, idDireccion, opcionEnvio, items, codigoCupon), getPrincipal());
-
-        carrito.getItems().clear();
-        carritoRepository.save(carrito);
-
-        return pedido;
     }
 
     private UsuarioDetails getPrincipal() {

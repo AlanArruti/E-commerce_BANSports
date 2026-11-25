@@ -5,7 +5,9 @@
       <div class="confirmado-icono" aria-hidden="true">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>
       </div>
-      <h1 class="titulo-display confirmado-titulo" id="titulo-confirmado">¡Pedido confirmado!</h1>
+      <h1 class="titulo-display confirmado-titulo" id="titulo-confirmado">
+        {{ pedidoConfirmado.estado === 'PENDIENTE_PAGO' ? 'Tu pedido está listo para pagar' : '¡Pedido confirmado!' }}
+      </h1>
       <p class="confirmado-numero">
         Pedido <strong>#{{ pedidoConfirmado.id }}</strong> · {{ pedidoConfirmado.fechaCreacion | date: 'dd/MM/yyyy' }}
       </p>
@@ -34,11 +36,27 @@
       @if (pedidoConfirmado.estado === 'PENDIENTE_PAGO') {
         <app-pagar-pedido [idPedido]="pedidoConfirmado.id" />
       }
+      @if (errorVolver(); as error) {
+        <div class="alerta-error" role="alert">
+          <div class="alerta-cuerpo">
+            <div class="alerta-error-titulo">{{ error.titulo }}</div>
+            <div class="alerta-error-texto">{{ error.detalle }}</div>
+          </div>
+        </div>
+      }
       <div class="confirmado-acciones">
-        <!-- "Mis pedidos" (SCRUM-121) llega con su historia. -->
-        <button type="button" class="btn btn-secundario" title="Próximamente">Ver mis pedidos</button>
+        @if (pedidoConfirmado.estado === 'PENDIENTE_PAGO') {
+          <!-- Se arrepintió antes de pagar: cancela este pedido y vuelve al carrito, que sigue igual. -->
+          <button type="button" class="btn btn-secundario" [disabled]="volviendo()" (click)="volverAlCarrito(pedidoConfirmado)">
+            {{ volviendo() ? 'Volviendo…' : 'Volver al carrito para cambiar algo' }}
+          </button>
+        }
+        <a routerLink="/perfil/pedidos" class="btn btn-secundario">Ver mis pedidos</a>
       </div>
-      <p class="confirmado-nota">El stock se reserva cuando se confirma el pago.</p>
+      <p class="confirmado-nota">
+        Tu carrito se mantiene hasta que se acredite el pago. Si salís de Mercado Pago sin pagar, podés pagar
+        este pedido más tarde desde Mis pedidos.
+      </p>
       <a routerLink="/productos" class="link">Seguir comprando</a>
     </section>
   } @else {

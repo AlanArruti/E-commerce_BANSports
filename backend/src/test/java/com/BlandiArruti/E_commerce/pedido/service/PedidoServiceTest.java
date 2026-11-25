@@ -4,6 +4,9 @@ import com.BlandiArruti.E_commerce.administrador.entity.Administrador;
 import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
 import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
+import com.BlandiArruti.E_commerce.carrito.entity.Carrito;
+import com.BlandiArruti.E_commerce.carrito.entity.ItemCarrito;
+import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
@@ -80,6 +83,7 @@ class PedidoServiceTest {
     @Mock EnvioMapper envioMapper;
     @Mock CotizacionEnvioService cotizacionEnvioService;
     @Mock ICuponService cuponService;
+    @Mock CarritoRepository carritoRepository;
     @Mock FacturaPdfGenerator facturaPdfGenerator;
     @Mock NotificacionClienteService notificacionClienteService;
 
@@ -301,6 +305,50 @@ class PedidoServiceTest {
         assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
         assertThat(variante.getStock()).isEqualTo(7);
         verify(facturaRepository).save(any());
+    }
+
+    @Test
+    void pagar_sacaDelCarritoSoloLoComprado() {
+        // El carrito ya no se vacía al confirmar: lo comprado sale recién al cobrar.
+        Producto proteina = Producto.builder().id(2L).build();
+        Producto creatina = Producto.builder().id(3L).build();
+        Variante chocolate = Variante.builder().id(1L).producto(proteina).stock(10).build();
+        ItemPedido comprado = ItemPedido.builder()
+                .producto(proteina).variante(chocolate).cantidad(2).precioProducto(200.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, comprado);
+
+        Carrito carrito = Carrito.builder().id(1L).build();
+        ItemCarrito mismoQueElPedido = ItemCarrito.builder().carrito(carrito)
+                .producto(proteina).variante(chocolate).cantidad(2).build();
+        // Lo agregó después de confirmar el pedido: tiene que quedar.
+        ItemCarrito agregadoDespues = ItemCarrito.builder().carrito(carrito)
+                .producto(creatina).cantidad(1).build();
+        carrito.getItems().add(mismoQueElPedido);
+        carrito.getItems().add(agregadoDespues);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carrito));
+
+        pedidoService.pagar(1L, new PagoRequest(TipoFactura.B));
+
+        assertThat(carrito.getItems()).containsExactly(agregadoDespues);
+        verify(carritoRepository).save(carrito);
+    }
+
+    @Test
+    void cancelarPendientesSinIntentoDePago_losCancelaYDevuelveElCupon() {
+        Cupon cupon = Cupon.builder().id(4L).codigo("BIENVENIDA").build();
+        Pedido abandonado = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
+        abandonado.setCupon(cupon);
+        when(pedidoRepository.findPendientesSinIntentoDePago(1L)).thenReturn(List.of(abandonado));
+
+        pedidoService.cancelarPendientesSinIntentoDePago(1L);
+
+        assertThat(abandonado.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+        verify(cuponService).devolverUso(cupon);
+        verify(pedidoRepository).save(abandonado);
     }
 
     @Test

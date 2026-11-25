@@ -3,6 +3,7 @@ package com.BlandiArruti.E_commerce.pedido.dto.response;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
 import com.BlandiArruti.E_commerce.cliente.dto.response.DireccionResponse;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
 
@@ -27,5 +28,10 @@ public record PedidoResponse(
         /** Dirección elegida en el checkout. A diferencia de envio, existe desde que se crea el pedido. */
         DireccionResponse direccionEnvio,
         EnvioResponse envio,
-        FacturaResponse factura
+        FacturaResponse factura,
+        /** RF03: lo que respondió el cliente sobre el pedido entregado. Null = todavía no respondió. */
+        ConfirmacionRecepcion confirmacionRecepcion,
+        LocalDateTime fechaConfirmacionRecepcion,
+        /** Lo que contó el cliente cuando no le llegó. */
+        String comentarioRecepcion
 ) {}

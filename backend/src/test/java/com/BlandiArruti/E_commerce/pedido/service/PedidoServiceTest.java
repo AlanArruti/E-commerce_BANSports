@@ -14,6 +14,7 @@ import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.envio.mapper.EnvioMapper;
 import com.BlandiArruti.E_commerce.envio.repository.EnvioRepository;
 import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
@@ -28,6 +29,7 @@ import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
@@ -701,6 +703,91 @@ class PedidoServiceTest {
         assertThatThrownBy(() -> pedidoService.obtenerFacturaPdf(1L))
                 .isInstanceOf(ConflictoException.class)
                 .hasMessageContaining("aún no tiene factura");
+    }
+
+    // ─── confirmarRecepcion() (RF03) ─────────────────────────────────────────
+
+    @Test
+    void confirmarRecepcion_recibido_loGuardaConFecha() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, "ignorado"));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.RECIBIDO);
+        assertThat(pedido.getFechaConfirmacionRecepcion()).isNotNull();
+        assertThat(pedido.getComentarioRecepcion()).isNull();
+    }
+
+    @Test
+    void confirmarRecepcion_noRecibido_guardaElComentario() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(false, "  No vino nadie  "));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.NO_RECIBIDO);
+        assertThat(pedido.getComentarioRecepcion()).isEqualTo("No vino nadie");
+    }
+
+    @Test
+    void confirmarRecepcion_noRecibidoYDespuesRecibido_seActualiza() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        pedido.setConfirmacionRecepcion(ConfirmacionRecepcion.NO_RECIBIDO);
+        pedido.setComentarioRecepcion("No llegó");
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.RECIBIDO);
+        assertThat(pedido.getComentarioRecepcion()).isNull();
+    }
+
+    @Test
+    void confirmarRecepcion_yaRecibido_lanzaConflicto() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        pedido.setConfirmacionRecepcion(ConfirmacionRecepcion.RECIBIDO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(false, null)))
+                .isInstanceOf(ConflictoException.class)
+                .hasMessageContaining("Ya confirmaste");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmarRecepcion_pedidoNoEntregado_lanzaNoModificable() {
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.DESPACHADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(PedidoNoModificableException.class)
+                .hasMessageContaining("entregado");
+    }
+
+    @Test
+    void confirmarRecepcion_deOtroCliente_lanzaAccessDenied() {
+        autenticarComoCliente(2L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.ENTREGADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmarRecepcion_admin_lanzaAccessDenied() {
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.ENTREGADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

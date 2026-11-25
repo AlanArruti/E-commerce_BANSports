@@ -9,13 +9,14 @@ import { FavoritoService } from '../../services/favorito.service';
 import { ArrastrarScroll } from '../../directivas/arrastrar-scroll';
 import { BuscadorProductos } from '../buscador-productos/buscador-productos';
 import { PerfilModal } from '../perfil-modal/perfil-modal';
+import { CampanaNotificaciones } from '../campana-notificaciones/campana-notificaciones';
 
 /** Cuántas categorías entran en la barra del header. El resto se ve en el catálogo y en el menú del celular. */
 const CATEGORIAS_EN_HEADER = 4;
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, BuscadorProductos, PerfilModal, ArrastrarScroll],
+  imports: [RouterLink, RouterLinkActive, BuscadorProductos, PerfilModal, ArrastrarScroll, CampanaNotificaciones],
   templateUrl: './header.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './header.css',

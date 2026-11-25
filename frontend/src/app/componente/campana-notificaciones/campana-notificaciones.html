@@ -1,0 +1,72 @@
+<button
+  type="button"
+  class="btn-icono campana"
+  aria-haspopup="true"
+  aria-controls="panel-notificaciones"
+  [attr.aria-expanded]="abierto()"
+  [attr.aria-label]="'Notificaciones, ' + notificacionService.noLeidas() + ' sin leer'"
+  (click)="alternar()"
+>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+  @if (notificacionService.noLeidas()) {
+    <span class="contador" aria-hidden="true">{{ notificacionService.noLeidas() > 99 ? '99+' : notificacionService.noLeidas() }}</span>
+  }
+</button>
+
+@if (abierto()) {
+  <section id="panel-notificaciones" class="panel" aria-label="Notificaciones">
+    <header class="panel-cabecera">
+      <h2>Notificaciones</h2>
+      @if (notificacionService.noLeidas()) {
+        <button type="button" class="btn-link" (click)="notificacionService.marcarTodasLeidas()">
+          Marcar todas como leídas
+        </button>
+      }
+    </header>
+
+    @if (cargando() && !notificacionService.notificaciones()) {
+      <p class="panel-estado">Cargando…</p>
+    } @else if (error()) {
+      <div class="panel-estado">
+        <p>No pudimos cargar tus notificaciones.</p>
+        <button type="button" class="btn-link" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else {
+      @let lista = notificacionService.notificaciones() ?? [];
+      @if (lista.length === 0) {
+        <p class="panel-estado">
+          Todavía no tenés notificaciones. Acá te avisamos cuando despachemos tus pedidos o haya ofertas nuevas.
+        </p>
+      } @else {
+        <ul class="lista">
+          @for (notificacion of lista; track notificacion.id) {
+            <li>
+              <button
+                type="button"
+                class="item"
+                [class.no-leida]="!notificacion.leida"
+                (click)="abrir(notificacion)"
+              >
+                <span class="icono" [class.oferta]="notificacion.tipo === 'OFERTA'" aria-hidden="true">
+                  @if (notificacion.tipo === 'OFERTA') {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                  } @else {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>
+                  }
+                </span>
+                <span class="texto">
+                  <span class="titulo">{{ notificacion.titulo }}</span>
+                  <span class="mensaje">{{ notificacion.mensaje }}</span>
+                  <span class="fecha">{{ notificacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </span>
+                @if (!notificacion.leida) {
+                  <span class="punto" aria-label="Sin leer"></span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+}

@@ -33,6 +33,11 @@
 .categorias {
   display: flex;
   gap: var(--espacio-5);
+  /* Con sesión iniciada (saludo, cerrar sesión, campanita) la fila no entra en 1366 px:
+     las categorías se achican y se deslizan (appArrastrarScroll) en vez de empujar el header afuera. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
@@ -63,6 +68,7 @@
 }
 
 .acciones {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--espacio-2);
@@ -223,21 +229,10 @@
     display: none;
   }
 
-  /* "Cerrar sesión" pasa a ser un ícono para que el carrito entre en la fila. */
+  /* "Cerrar sesión" sale de la fila (sigue en el menú hamburguesa) para que entren la campanita
+     y el carrito sin que el header quede más ancho que la pantalla. */
   .btn-salir {
-    width: 44px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .btn-salir span {
     display: none;
-  }
-
-  .icono-salir {
-    display: block;
   }
 
   .buscador {

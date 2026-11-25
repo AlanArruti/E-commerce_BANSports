@@ -66,6 +66,9 @@
         </a>
         <a routerLink="/registro" class="btn-texto link-registro">Registrarse</a>
       }
+      @if (authService.esCliente()) {
+        <app-campana-notificaciones />
+      }
       <a
         routerLink="/perfil/favoritos"
         class="btn-icono favoritos"

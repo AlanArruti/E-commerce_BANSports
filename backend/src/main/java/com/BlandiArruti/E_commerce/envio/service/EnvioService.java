@@ -12,6 +12,7 @@ import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
@@ -30,6 +31,7 @@ public class EnvioService implements IEnvioService {
     private final EnvioMapper envioMapper;
     private final PedidoRepository pedidoRepository;
     private final NotificacionService notificacionService;
+    private final NotificacionClienteService notificacionClienteService;
 
     @Transactional(readOnly = true)
     public List<EnvioResponse> listarTodos(EstadoEnvio estado) {
@@ -81,6 +83,7 @@ public class EnvioService implements IEnvioService {
         pedidoRepository.save(pedido);
 
         notificacionService.notificarEnvioActualizado(envio);
+        notificacionClienteService.avisarEnvio(envio);
 
         return envioMapper.toResponse(envio);
     }
@@ -113,6 +116,7 @@ public class EnvioService implements IEnvioService {
 
         envioRepository.save(envio);
         notificacionService.notificarEnvioActualizado(envio);
+        notificacionClienteService.avisarEnvio(envio);
 
         return envioMapper.toResponse(envio);
     }

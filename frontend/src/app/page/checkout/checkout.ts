@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
@@ -45,7 +45,8 @@ export class Checkout implements OnInit {
 
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<ErrorTraducido | null>(null);
-  protected readonly direcciones = signal<Direccion[]>([]);
+  /** Salen de la sesión (las mantiene DireccionService): así un alta o baja desde el perfil se ve acá también. */
+  protected readonly direcciones = computed(() => this.authService.cliente()?.direcciones ?? []);
   protected readonly idDireccionElegida = signal<number | null>(null);
   /** Formulario de dirección abierto. Siempre lo está si el cliente no tiene ninguna. */
   protected readonly agregandoDireccion = signal(false);
@@ -102,6 +103,20 @@ export class Checkout implements OnInit {
     this.unidadesDelPedido = computed(
       () => this.pedido()?.items.reduce((total, item) => total + item.cantidad, 0) ?? 0
     );
+    // Si borran desde el perfil la dirección elegida, se pasa a la primera que quede.
+    effect(() => {
+      const elegida = this.idDireccionElegida();
+      const direcciones = this.direcciones();
+      if (this.cargando() || elegida === null || direcciones.some((direccion) => direccion.id === elegida)) {
+        return;
+      }
+      const primera = direcciones[0]?.id ?? null;
+      untracked(() => {
+        this.idDireccionElegida.set(primera);
+        this.agregandoDireccion.set(primera === null);
+        this.cargarCotizacion(primera);
+      });
+    });
   }
 
   ngOnInit(): void {
@@ -115,7 +130,6 @@ export class Checkout implements OnInit {
     forkJoin([this.carritoService.cargar(), this.direccionService.listar()]).subscribe({
       next: ([, direcciones]) => {
         this.cargando.set(false);
-        this.direcciones.set(direcciones);
         this.idDireccionElegida.set(direcciones[0]?.id ?? null);
         this.agregandoDireccion.set(direcciones.length === 0);
         this.cargarCotizacion(direcciones[0]?.id ?? null);
@@ -172,9 +186,8 @@ export class Checkout implements OnInit {
     this.errorConfirmar.set(null);
   }
 
-  /** La dirección nueva se suma a la lista sin recargar y queda elegida. */
+  /** DireccionService ya la sumó a la lista; queda elegida. */
   direccionGuardada(direccion: Direccion): void {
-    this.direcciones.update((direcciones) => [...direcciones, direccion]);
     this.idDireccionElegida.set(direccion.id);
     this.agregandoDireccion.set(false);
     this.errorConfirmar.set(null);

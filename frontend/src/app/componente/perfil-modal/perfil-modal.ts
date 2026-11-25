@@ -147,6 +147,8 @@ export class PerfilModal implements OnInit {
   }
 
   ngOnInit(): void {
+    // La sesión puede tener la lista vieja (por ejemplo, si se cargó una dirección desde otra pestaña).
+    this.direccionService.listar().subscribe({ error: () => undefined });
     if (this.inicio() === 'editar') {
       this.editar();
     } else if (this.inicio() === 'password') {
@@ -315,9 +317,9 @@ export class PerfilModal implements OnInit {
     this.agregandoDireccion.set(true);
   }
 
-  protected direccionGuardada(direccion: Direccion): void {
+  /** El servicio ya la sumó a la sesión. */
+  protected direccionGuardada(): void {
     this.agregandoDireccion.set(false);
-    this.cambiarDirecciones((direcciones) => [...direcciones, direccion]);
   }
 
   protected pedirBaja(id: number): void {
@@ -329,29 +331,21 @@ export class PerfilModal implements OnInit {
     this.eliminandoDireccion.set(id);
     this.errorDireccion.set(null);
     this.direccionService.eliminar(id).subscribe({
-      next: () => this.quitarDireccion(id),
+      next: () => this.terminarBaja(),
       error: (error) => {
-        this.eliminandoDireccion.set(null);
+        this.terminarBaja();
         // 404: ya estaba dada de baja (por ejemplo, desde otra pestaña).
         if (error.status === 404) {
-          this.quitarDireccion(id);
+          this.direccionService.quitarDeLaSesion(id);
         }
         this.errorDireccion.set(traducirErrorBajaDireccion(error));
       }
     });
   }
 
-  private quitarDireccion(id: number): void {
+  private terminarBaja(): void {
     this.eliminandoDireccion.set(null);
     this.confirmandoBaja.set(null);
-    this.cambiarDirecciones((direcciones) => direcciones.filter((direccion) => direccion.id !== id));
-  }
-
-  /** Las direcciones del perfil salen de la sesión: se actualizan ahí para que el resto de la app las vea. */
-  private cambiarDirecciones(cambio: (direcciones: Direccion[]) => Direccion[]): void {
-    this.authService.cliente.update((cliente) =>
-      cliente ? { ...cliente, direcciones: cambio(cliente.direcciones ?? []) } : cliente
-    );
   }
 
   protected direccionTexto(direccion: Direccion): string {

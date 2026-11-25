@@ -303,7 +303,7 @@
       }
 
       @if (agregandoDireccion()) {
-        <app-form-direccion (guardada)="direccionGuardada($event)" (cancelar)="agregandoDireccion.set(false)" />
+        <app-form-direccion (guardada)="direccionGuardada()" (cancelar)="agregandoDireccion.set(false)" />
       }
 
       @if ((cliente()?.direcciones?.length ?? 0) > 0) {

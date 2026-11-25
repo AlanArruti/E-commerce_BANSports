@@ -112,7 +112,9 @@ public class PagoService {
      * muchas veces (webhooks repetidos, el cliente recargando la página) sin cobrar dos veces.
      */
     private void actualizar(Pago pago) {
-        if (pago.getEstado() == EstadoPago.APROBADO || pago.getIdExterno() == null) {
+        // Aprobado o ya devuelto: no hay nada más que consultar (un aviso tardío no lo cambia).
+        if (pago.getEstado() == EstadoPago.APROBADO || pago.getEstado() == EstadoPago.REEMBOLSADO
+                || pago.getIdExterno() == null) {
             return;
         }
 

@@ -1,0 +1,98 @@
+@let p = pedido();
+@if (p.estadoReembolso || puedePedir()) {
+  <div
+    class="reembolso"
+    [class.pendiente]="p.estadoReembolso === 'SOLICITADO'"
+    [class.ok]="p.estadoReembolso === 'APROBADO'"
+    [class.problema]="p.estadoReembolso === 'RECHAZADO'"
+    role="group"
+    [attr.aria-label]="'Reembolso del pedido #' + p.id"
+  >
+    @switch (p.estadoReembolso) {
+      @case ('SOLICITADO') {
+        <div class="texto">
+          <p class="estado">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Pediste el reembolso
+            @if (p.fechaSolicitudReembolso) {
+              <span class="fecha">el {{ p.fechaSolicitudReembolso | date: 'dd/MM/yyyy' }}</span>
+            }
+          </p>
+          <p class="detalle">La tienda lo está revisando. Te avisamos por acá cuando lo resuelva.</p>
+        </div>
+      }
+      @case ('APROBADO') {
+        <div class="texto">
+          <p class="estado">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+            Reembolso aprobado
+          </p>
+          <p class="detalle">
+            @if (p.tipoReembolso === 'MANUAL') {
+              La tienda se va a comunicar con vos para devolverte {{ p.montoReembolsado | precio }}.
+            } @else {
+              Te devolvimos {{ p.montoReembolsado | precio }} en Mercado Pago. Puede tardar unos días en verse en tu medio de pago.
+            }
+          </p>
+          @if (p.respuestaReembolso) {
+            <p class="comentario">“{{ p.respuestaReembolso }}”</p>
+          }
+        </div>
+      }
+      @case ('RECHAZADO') {
+        <div class="texto">
+          <p class="estado">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
+            Reembolso rechazado
+          </p>
+          @if (p.respuestaReembolso) {
+            <p class="comentario">“{{ p.respuestaReembolso }}”</p>
+          }
+          <p class="detalle">Si no estás de acuerdo, escribinos.</p>
+        </div>
+      }
+      @default {
+        @if (!escribiendo()) {
+          <p class="pregunta">
+            ¿Te arrepentiste de la compra?
+            <span class="fecha">Podés pedir el reembolso hasta el {{ p.fechaLimiteReembolso | date: 'dd/MM/yyyy' }}.</span>
+          </p>
+          <button type="button" class="btn btn-secundario btn-chico" (click)="abrir()">Solicitar reembolso</button>
+        } @else {
+          <div class="formulario">
+            <label class="etiqueta" [attr.for]="'motivo-reembolso-' + p.id">¿Por qué querés el reembolso?</label>
+            <textarea
+              class="input area"
+              [class.invalido]="intento() && motivoCorto()"
+              [id]="'motivo-reembolso-' + p.id"
+              rows="3"
+              [maxLength]="maximo"
+              placeholder="Por ejemplo: el talle no me quedó bien, o llegó distinto a lo que pedí."
+              [value]="motivo()"
+              (input)="escribir($event)"
+              [attr.aria-invalid]="intento() && motivoCorto()"
+              [attr.aria-describedby]="'ayuda-reembolso-' + p.id"
+            ></textarea>
+            <p class="ayuda" [id]="'ayuda-reembolso-' + p.id" [class.error-campo]="intento() && motivoCorto()">
+              @if (intento() && motivoCorto()) {
+                Contanos un poco más (al menos {{ minimo }} caracteres).
+              } @else {
+                La tienda lo revisa y, si lo aprueba, te devolvemos {{ p.total | precio }} en Mercado Pago.
+              }
+            </p>
+            <div class="botones">
+              <button type="button" class="btn btn-primario btn-chico" [disabled]="enviando()" (click)="enviar()">
+                {{ enviando() ? 'Enviando…' : 'Enviar pedido de reembolso' }}
+              </button>
+              <button type="button" class="btn-link" [disabled]="enviando()" (click)="volver()">Volver</button>
+            </div>
+          </div>
+        }
+      }
+    }
+
+    @if (error(); as e) {
+      <p class="error" role="alert"><strong>{{ e.titulo }}.</strong> {{ e.detalle }}</p>
+    }
+  </div>
+}

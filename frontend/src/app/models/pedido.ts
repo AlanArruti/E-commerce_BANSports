@@ -80,9 +80,22 @@ export function numeroFactura(factura: Factura): string {
   return `0001-${String(factura.id).padStart(8, '0')}`;
 }
 
-/** El cliente cancela solo lo que todavía no pagó (lo cobrado lo cancela la tienda). */
+/** RF04: el cliente cancela mientras el pedido no salió (pagado o no). Despachado, ya lo resuelve la tienda. */
 export function clientePuedeCancelar(estado: EstadoPedido): boolean {
-  return estado === 'PENDIENTE_PAGO' || estado === 'EN_PREPARACION';
+  return estado === 'PENDIENTE_PAGO' || estado === 'EN_PREPARACION' || estado === 'PAGADO';
+}
+
+/** Qué pasó con la plata al cancelar (RF04). */
+export type TipoReembolso = 'NO_CORRESPONDE' | 'AUTOMATICO' | 'MANUAL';
+
+/** Respuesta de PATCH /pedido/{id}/cancelar. */
+export interface CancelacionPedido {
+  idPedido: number;
+  estado: EstadoPedido;
+  /** AUTOMATICO: se devolvió en Mercado Pago. MANUAL: se pagó por fuera y lo devuelve la tienda. */
+  reembolso: TipoReembolso;
+  montoReembolsado: number;
+  mensaje: string;
 }
 
 // Respuesta de POST /cliente/{id}/carrito/checkout, GET /pedido/{id} y del historial (PedidoResponse).
@@ -110,6 +123,32 @@ export interface Pedido {
   fechaConfirmacionRecepcion?: string | null;
   /** Lo que contó el cliente cuando no le llegó. */
   comentarioRecepcion?: string | null;
+  /** Cuándo se entregó. Null si todavía no (o en pedidos entregados antes del RF05). */
+  fechaEntrega?: string | null;
+  /** RF05: hasta cuándo se puede pedir el reembolso (10 días desde la entrega). */
+  fechaLimiteReembolso?: string | null;
+  /** RF05: null si el cliente no pidió reembolso. */
+  estadoReembolso?: EstadoReembolso | null;
+  motivoReembolso?: string | null;
+  fechaSolicitudReembolso?: string | null;
+  /** Lo que contestó el admin (motivo del rechazo, o un comentario al aprobar). */
+  respuestaReembolso?: string | null;
+  fechaResolucionReembolso?: string | null;
+  /** Si se aprobó: AUTOMATICO (Mercado Pago) o MANUAL (lo devuelve la tienda). */
+  tipoReembolso?: TipoReembolso | null;
+  montoReembolsado?: number | null;
+}
+
+export type EstadoReembolso = 'SOLICITADO' | 'APROBADO' | 'RECHAZADO';
+
+/** RF05: el cliente puede pedir el reembolso de un pedido entregado, una vez y dentro del plazo. */
+export function puedeSolicitarReembolso(pedido: Pedido, ahora: Date = new Date()): boolean {
+  return (
+    pedido.estado === 'ENTREGADO' &&
+    !pedido.estadoReembolso &&
+    !!pedido.fechaLimiteReembolso &&
+    ahora.getTime() <= new Date(pedido.fechaLimiteReembolso).getTime()
+  );
 }
 
 export type ConfirmacionRecepcion = 'RECIBIDO' | 'NO_RECIBIDO';
@@ -125,7 +164,7 @@ export interface EnvioRequest {
   fechaLlegada: string;
 }
 
-/** Si el pedido ya se había cobrado, el back devuelve el stock al cancelarlo. */
+/** Si el pedido ya se había cobrado, el back devuelve el stock y la plata (Mercado Pago) al cancelarlo. */
 export function cancelarDevuelveStock(estado: EstadoPedido): boolean {
   return estado === 'PAGADO' || estado === 'DESPACHADO';
 }

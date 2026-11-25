@@ -59,6 +59,10 @@
                 @if (pedido.confirmacionRecepcion === 'NO_RECIBIDO') {
                   <span class="no-recibido" title="El cliente avisó que no le llegó el pedido">No lo recibió</span>
                 }
+                <!-- RF05: el cliente pidió el reembolso y falta resolverlo. -->
+                @if (pedido.estadoReembolso === 'SOLICITADO') {
+                  <span class="no-recibido reembolso-pedido" title="El cliente pidió el reembolso: aprobalo o rechazalo">Pide reembolso</span>
+                }
               </td>
             </tr>
           } @empty {

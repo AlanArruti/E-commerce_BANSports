@@ -1,0 +1,29 @@
+@if (dolarService.cotizacion(); as c) {
+  <div class="dolar" tabindex="0" aria-describedby="dolar-detalle">
+    <svg class="icono" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.7 8A3 3 0 0 0 14 6h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4a3 3 0 0 1-2.7-2M12 3v3m0 12v3"/></svg>
+    <span class="resumen">
+      <span class="nombre">{{ nombre() }}</span>
+      <span class="nombre-corto">Dólar</span>
+      <strong>{{ c.venta | precio }}</strong>
+    </span>
+    @if (variacion(); as v) {
+      <span class="variacion">· {{ v.texto }} <span class="variacion-texto">desde el último ajuste</span></span>
+    }
+
+    <div id="dolar-detalle" class="detalle" role="tooltip">
+      <p class="detalle-titulo">{{ nombre() }}</p>
+      <p class="detalle-valores">
+        @if (c.compra !== null) {
+          Compra {{ c.compra | precio }} ·
+        }
+        Venta <strong>{{ c.venta | precio }}</strong>
+      </p>
+      @if (actualizado()) {
+        <p class="detalle-nota">Actualizado {{ actualizado() }} · Fuente: DolarApi</p>
+      }
+      @if (c.cotizacionReferencia !== null && ultimoAjuste()) {
+        <p class="detalle-nota">Los precios se ajustaron con {{ c.cotizacionReferencia | precio }} ({{ ultimoAjuste() }}).</p>
+      }
+    </div>
+  </div>
+}

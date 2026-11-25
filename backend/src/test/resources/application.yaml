@@ -23,3 +23,7 @@ correo-argentino:
 
 notificaciones:
   remitente: no-reply@test.com
+
+# En los tests no se consulta la API real del dólar.
+dolar:
+  actualizacion-automatica: false

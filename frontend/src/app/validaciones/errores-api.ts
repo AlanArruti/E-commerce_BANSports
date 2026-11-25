@@ -534,14 +534,21 @@ export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
 
 /** Cuando el cliente cancela un pedido desde "Mis pedidos". */
 export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  // RF04: Mercado Pago no devolvió la plata. No es una falla del servidor: el pedido sigue como estaba.
+  if (error.status === 503 && mensaje) {
+    return {
+      titulo: 'No pudimos devolver el pago',
+      detalle: `${mensaje} El pedido no se canceló. Probá de nuevo en unos minutos.`
+    };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;
   }
-  const mensaje = mensajeDelBack(error);
-  if (mensaje.includes('ya fue cobrado')) {
+  if (mensaje.includes('ya fue despachado')) {
     return {
-      titulo: 'Este pedido ya está pago',
+      titulo: 'Este pedido ya salió',
       detalle: 'Ya no se puede cancelar desde acá. Escribinos y lo resolvemos con la devolución del dinero.'
     };
   }
@@ -553,6 +560,31 @@ export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTrad
   }
   return {
     titulo: 'No pudimos cancelar el pedido',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/** El cliente pide el reembolso de un pedido entregado (RF05). */
+export function traducirErrorReembolso(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 409) {
+    return { titulo: 'Ya pediste el reembolso', detalle: mensaje || 'Actualizamos el estado de tu pedido.' };
+  }
+  if (mensaje.includes('días desde la entrega')) {
+    return { titulo: 'Se venció el plazo', detalle: mensaje };
+  }
+  if (mensaje.includes('entregado')) {
+    return { titulo: 'Este pedido todavía no figura entregado', detalle: 'Vas a poder pedir el reembolso cuando llegue.' };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return { titulo: 'No encontramos ese pedido', detalle: 'Puede que no sea de tu cuenta. Volvé a Mis pedidos.' };
+  }
+  return {
+    titulo: 'No pudimos enviar el pedido de reembolso',
     detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }
@@ -581,11 +613,15 @@ export function traducirErrorRecepcion(error: HttpErrorResponse): ErrorTraducido
 
 /** Para el panel de pedidos: listado, detalle y cambios de estado. */
 export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  // RF04: Mercado Pago no devolvió la plata del pedido que se quería cancelar; el pedido sigue igual.
+  if (error.status === 503 && mensaje) {
+    return { titulo: 'No se pudo devolver el pago', detalle: `${mensaje} El pedido no se canceló.` };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;
   }
-  const mensaje = mensajeDelBack(error);
   if (error.status === 404) {
     return { titulo: 'Ese pedido ya no existe', detalle: 'Volvé al listado y elegí otro.' };
   }
@@ -801,6 +837,25 @@ export function traducirErrorGuardarCupon(error: HttpErrorResponse): ErrorTraduc
   }
   return {
     titulo: 'No pudimos guardar el cupón',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
+/**
+ * Cotización del dólar en el panel (RF01). El 503 no es una falla del servidor: es la API del
+ * dólar que no respondió (o que el back todavía no leyó ninguna), y el back explica cuál.
+ */
+export function traducirErrorDolar(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 503 && mensaje) {
+    return { titulo: 'No pudimos consultar el dólar', detalle: mensaje };
+  }
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos consultar el dólar',
     detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }

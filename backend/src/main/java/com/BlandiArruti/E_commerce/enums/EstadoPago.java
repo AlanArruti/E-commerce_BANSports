@@ -12,9 +12,11 @@ public enum EstadoPago {
     /** Cobrado. Es el único estado que pasa el pedido a PAGADO. */
     APROBADO,
     /** Rechazado, vencido o cancelado. El cliente puede intentar de nuevo. */
-    RECHAZADO;
+    RECHAZADO,
+    /** Estaba cobrado y se le devolvió la plata al cliente (RF04: cancelación de un pedido pagado). */
+    REEMBOLSADO;
 
     public boolean esFinal() {
-        return this == APROBADO || this == RECHAZADO;
+        return this == APROBADO || this == RECHAZADO || this == REEMBOLSADO;
     }
 }

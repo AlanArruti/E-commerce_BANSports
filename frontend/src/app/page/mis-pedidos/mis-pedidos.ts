@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
 import { ConfirmarRecepcion } from '../../componente/confirmar-recepcion/confirmar-recepcion';
+import { SolicitarReembolso } from '../../componente/solicitar-reembolso/solicitar-reembolso';
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
@@ -19,7 +20,7 @@ interface FiltroEstado {
 /** Historial de pedidos del cliente, filtrable por estado (SCRUM-121). */
 @Component({
   selector: 'app-mis-pedidos',
-  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PrecioPipe, ConfirmarRecepcion],
+  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PrecioPipe, ConfirmarRecepcion, SolicitarReembolso],
   templateUrl: './mis-pedidos.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mis-pedidos.css'

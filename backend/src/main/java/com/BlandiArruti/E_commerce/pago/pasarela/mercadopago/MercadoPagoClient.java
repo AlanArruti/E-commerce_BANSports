@@ -82,6 +82,30 @@ public class MercadoPagoClient {
     }
 
     /**
+     * Devuelve el total de una order cobrada (POST /v1/orders/{id}/refund sin body = reembolso total).
+     * La clave de idempotencia depende solo de la order: si se reintenta, MercadoPago no devuelve dos veces.
+     */
+    public OrdenMercadoPago reembolsarOrden(String idOrden) {
+        try {
+            return restClient.post()
+                    .uri("/v1/orders/{id}/refund", idOrden)
+                    .headers(h -> {
+                        h.setBearerAuth(properties.getAccessToken());
+                        h.set("X-Idempotency-Key", "reembolso-" + idOrden);
+                    })
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(OrdenMercadoPago.class);
+        } catch (RestClientResponseException e) {
+            log.error("MercadoPago rechazó la devolución de la order {} ({}): {}",
+                    idOrden, e.getStatusCode(), e.getResponseBodyAsString());
+            throw traducir("devolver el pago", e);
+        } catch (RestClientException e) {
+            throw new ServicioExternoException("No se pudo conectar con Mercado Pago para devolver el pago (sin respuesta).", e);
+        }
+    }
+
+    /**
      * Error de la API de MercadoPago → mensaje puntual para el cliente. Se muestra el motivo que
      * da MercadoPago cuando rechaza los datos (no tiene información sensible); el token y los
      * detalles internos quedan solo en el log.
@@ -101,7 +125,8 @@ public class MercadoPagoClient {
                     "No se pudo " + accion + ": Mercado Pago no responde (error " + codigo + "). Probá de nuevo en unos minutos.", e);
         }
         String motivo = motivoDeMercadoPago(e.getResponseBodyAsString());
-        return new ServicioExternoException("Mercado Pago rechazó " + (accion.startsWith("crear") ? "el cobro" : "la consulta")
+        String que = accion.startsWith("crear") ? "el cobro" : accion.startsWith("devolver") ? "la devolución" : "la consulta";
+        return new ServicioExternoException("Mercado Pago rechazó " + que
                 + (motivo.isEmpty() ? " (error " + codigo + ")." : ": " + motivo), e);
     }
 

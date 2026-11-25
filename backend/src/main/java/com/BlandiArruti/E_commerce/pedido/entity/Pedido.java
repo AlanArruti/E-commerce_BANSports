@@ -6,12 +6,15 @@ import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
+import com.BlandiArruti.E_commerce.enums.EstadoReembolso;
+import com.BlandiArruti.E_commerce.enums.TipoReembolso;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -95,6 +98,59 @@ public class Pedido {
     /** Lo que contó el cliente cuando no le llegó, para que lo revise la tienda. */
     @Column(name = "comentario_recepcion", length = 500)
     private String comentarioRecepcion;
+
+    // Cuándo pasó a ENTREGADO. Lo usa el plazo para pedir el reembolso (RF05).
+    @Column(name = "fecha_entrega")
+    private LocalDateTime fechaEntrega;
+
+    // RF05: reembolso de un pedido entregado. Null = el cliente no lo pidió.
+    // Columnas opcionales: ddl-auto=update las agrega sin problema sobre pedidos existentes.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_reembolso", length = 20)
+    private EstadoReembolso estadoReembolso;
+
+    /** Por qué lo pide el cliente. */
+    @Column(name = "motivo_reembolso", length = 500)
+    private String motivoReembolso;
+
+    @Column(name = "fecha_solicitud_reembolso")
+    private LocalDateTime fechaSolicitudReembolso;
+
+    /** Lo que contestó el admin (obligatorio si lo rechaza). */
+    @Column(name = "respuesta_reembolso", length = 500)
+    private String respuestaReembolso;
+
+    @Column(name = "fecha_resolucion_reembolso")
+    private LocalDateTime fechaResolucionReembolso;
+
+    /** Si se aprobó: si se devolvió en Mercado Pago (AUTOMATICO) o lo devuelve la tienda (MANUAL). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_reembolso", length = 20)
+    private TipoReembolso tipoReembolso;
+
+    @Column(name = "monto_reembolsado")
+    private Double montoReembolsado;
+
+    /** Días desde la entrega en que el cliente puede pedir el reembolso (derecho de arrepentimiento). */
+    public static final int PLAZO_REEMBOLSO_DIAS = 10;
+
+    /** Pasa el pedido a ENTREGADO y guarda cuándo, para el plazo del reembolso. */
+    public void marcarEntregado() {
+        this.estadoPedido = EstadoPedido.ENTREGADO;
+        this.fechaEntrega = LocalDateTime.now();
+    }
+
+    /**
+     * Hasta cuándo se puede pedir el reembolso. Los pedidos entregados antes del RF05 no tienen
+     * fechaEntrega: se usa la llegada prevista del envío. Null si no hay ninguna de las dos.
+     */
+    public LocalDateTime getFechaLimiteReembolso() {
+        LocalDateTime entrega = fechaEntrega;
+        if (entrega == null && envio != null && envio.getFechaLlegada() != null) {
+            entrega = envio.getFechaLlegada().atTime(LocalTime.MAX);
+        }
+        return entrega == null ? null : entrega.plusDays(PLAZO_REEMBOLSO_DIAS);
+    }
 
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Envio envio;

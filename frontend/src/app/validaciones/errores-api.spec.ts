@@ -1,9 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  traducirErrorCancelarPedido,
   traducirErrorCarrito,
   traducirErrorCheckout,
   traducirErrorCupon,
   traducirErrorDireccion,
+  traducirErrorGestionPedido,
   traducirErrorVariante
 } from './errores-api';
 
@@ -26,6 +28,33 @@ describe('traductores de errores del back', () => {
       const traducido = traducirErrorVariante(errorDelBack(503));
       expect(traducido.titulo).toBe('Ocurrió un error en el servidor');
       expect(traducido.general).toBeTrue();
+    });
+  });
+
+  describe('cancelar un pedido (RF04)', () => {
+    it('si Mercado Pago no devuelve la plata, avisa que el pedido sigue activo', () => {
+      const traducido = traducirErrorCancelarPedido(errorDelBack(503, 'Mercado Pago rechazó la devolución: order already refunded'));
+      expect(traducido.titulo).toBe('No pudimos devolver el pago');
+      expect(traducido.detalle).toContain('order already refunded');
+      expect(traducido.detalle).toContain('no se canceló');
+      expect(traducido.general).toBeUndefined();
+    });
+
+    it('un pedido despachado ya no lo cancela el cliente', () => {
+      const traducido = traducirErrorCancelarPedido(
+        errorDelBack(400, 'El pedido con id 4 ya fue despachado (estado: DESPACHADO). Para cancelarlo, comunicate con la tienda.')
+      );
+      expect(traducido.titulo).toBe('Este pedido ya salió');
+    });
+
+    it('en el panel también explica que no se canceló', () => {
+      const traducido = traducirErrorGestionPedido(errorDelBack(503, 'Mercado Pago rechazó la devolución (error 400).'));
+      expect(traducido.titulo).toBe('No se pudo devolver el pago');
+      expect(traducido.detalle).toContain('no se canceló');
+    });
+
+    it('un 503 sin mensaje sigue siendo un error general del servidor', () => {
+      expect(traducirErrorCancelarPedido(errorDelBack(503)).general).toBeTrue();
     });
   });
 

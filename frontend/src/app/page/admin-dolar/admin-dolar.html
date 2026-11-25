@@ -1,0 +1,177 @@
+<section class="contenedor seccion">
+  <header class="encabezado">
+    <div class="encabezado-texto">
+      <h1 class="titulo-display titulo">Cotización del <span class="acento">dólar</span></h1>
+      <p class="bajada">
+        {{ nombre() }} · se consulta sola cada 30 minutos. Los precios se ajustan cuando el dólar se mueve lo suficiente.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primario btn-actualizar"
+      [disabled]="actualizando() || cargando()"
+      (click)="actualizar()"
+    >
+      <svg [class.girando]="actualizando()" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11A8 8 0 0 0 5.6 6.6L4 8M4 4v4h4M4 13a8 8 0 0 0 14.4 4.4L20 16m0 4v-4h-4"/></svg>
+      {{ actualizando() ? 'Consultando…' : 'Actualizar ahora' }}
+    </button>
+  </header>
+
+  <!-- Resultado de "Actualizar ahora" -->
+  @if (errorAccion(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+    </div>
+  } @else if (resultado(); as r) {
+    @if (r.resultado !== 'REQUIERE_CONFIRMACION') {
+      <div class="alerta-ok" role="status">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-ok-titulo">
+            @switch (r.resultado) {
+              @case ('AJUSTADO') { Precios ajustados: {{ r.productosAjustados }} productos }
+              @case ('BASE') { Cotización de referencia guardada }
+              @default { Cotización actualizada }
+            }
+          </div>
+          <div class="alerta-error-texto">{{ r.mensaje }}</div>
+        </div>
+      </div>
+    }
+  }
+
+  @if (cargando()) {
+    <div class="kpis" aria-busy="true">
+      @for (tarjeta of [1, 2, 3]; track tarjeta) {
+        <div class="esqueleto esqueleto-kpi"></div>
+      }
+    </div>
+    <div class="esqueleto esqueleto-panel" aria-hidden="true"></div>
+  } @else if (errorCarga(); as error) {
+    <div class="alerta-error" role="alert">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div class="alerta-cuerpo">
+        <div class="alerta-error-titulo">{{ error.titulo }}</div>
+        <div class="alerta-error-texto">{{ error.detalle }}</div>
+      </div>
+      <button type="button" class="btn-texto" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cotizacion(); as c) {
+    <!-- ── Números ── -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-titulo">Cotización actual</span>
+        <span class="kpi-numero">{{ c.venta | precio }}</span>
+        <span class="kpi-detalle">
+          @if (c.compra !== null) { Compra {{ c.compra | precio }} · }
+          actualizado {{ formatearFecha(c.fechaActualizacion ?? c.fechaConsulta) }}
+        </span>
+      </div>
+
+      <div class="kpi">
+        <span class="kpi-titulo">Referencia de precios</span>
+        <span class="kpi-numero">{{ c.cotizacionReferencia | precio }}</span>
+        <span class="kpi-detalle">
+          @if (c.fechaUltimoAjuste) {
+            Último ajuste {{ formatearFecha(c.fechaUltimoAjuste) }}
+          } @else {
+            Todavía no hubo ajustes
+          }
+        </span>
+      </div>
+
+      <div class="kpi">
+        <span class="kpi-titulo">Variación desde el ajuste</span>
+        @if (variacion(); as v) {
+          <span [class]="'kpi-numero tendencia-' + v.tendencia">{{ v.texto }}</span>
+          <span
+            class="barra-pista"
+            role="progressbar"
+            aria-label="Avance hacia el próximo ajuste de precios"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="v.progreso"
+          >
+            <span class="barra-relleno" [class.barra-llena]="v.progreso >= 100" [style.width.%]="v.progreso"></span>
+          </span>
+          <span class="kpi-detalle">Los precios se ajustan al llegar a ±{{ c.ajusteMinimoPorcentaje }}%</span>
+        } @else {
+          <span class="kpi-numero">—</span>
+          <span class="kpi-detalle">Sin cotización de referencia</span>
+        }
+      </div>
+    </div>
+
+    <!-- ── Salto mayor al máximo: lo confirma el admin ── -->
+    @if (variacion()?.superaMaximo || resultado()?.resultado === 'REQUIERE_CONFIRMACION') {
+      <div class="alerta-aviso" role="alert">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <div class="alerta-cuerpo">
+          <div class="alerta-aviso-titulo">El dólar se movió más de {{ c.variacionMaximaPorcentaje }}%</div>
+          <div class="alerta-aviso-texto">
+            Pasó de {{ c.cotizacionReferencia | precio }} a {{ c.venta | precio }} ({{ variacion()?.texto }}). Los precios
+            no se ajustaron solos por si es un dato erróneo de la API.
+          </div>
+        </div>
+        @if (confirmandoForzar()) {
+          <div class="confirmar" role="group" aria-label="Confirmar el ajuste de precios">
+            <span>¿Ajustar todos los precios {{ variacion()?.porcentajeExacto }}%?</span>
+            <button type="button" class="btn-texto btn-aviso" [disabled]="actualizando()" (click)="actualizar(true)">
+              {{ actualizando() ? 'Ajustando…' : 'Sí, ajustar' }}
+            </button>
+            <button type="button" class="btn-texto" [disabled]="actualizando()" (click)="confirmandoForzar.set(false)">
+              Cancelar
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="btn-texto btn-aviso" (click)="confirmandoForzar.set(true)">Aplicar igual</button>
+        }
+      </div>
+    }
+
+    <!-- ── Historial ── -->
+    <article class="panel">
+      <header class="panel-encabezado">
+        <h2 class="panel-titulo">Historial de ajustes de precios</h2>
+        <p class="panel-bajada">Cada vez que el dólar movió los precios de la tienda</p>
+      </header>
+      @if (historialFilas().length === 0) {
+        <p class="panel-vacio">Todavía no hubo ajustes de precios.</p>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Dólar</th>
+                <th scope="col">Ajuste</th>
+                <th scope="col" class="numero">Productos</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of historialFilas(); track fila.clave) {
+                <tr>
+                  <td>{{ fila.fecha }}</td>
+                  <td>{{ fila.venta | precio }}</td>
+                  <td>
+                    @if (fila.esBase) {
+                      <span class="etiqueta-base">Referencia inicial</span>
+                    } @else {
+                      <span [class]="'tendencia-' + fila.tendencia">{{ fila.variacion }}</span>
+                    }
+                  </td>
+                  <td class="numero">{{ fila.esBase ? '—' : fila.productosAjustados }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+</section>

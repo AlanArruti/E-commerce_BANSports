@@ -27,6 +27,7 @@ export class HeaderAdmin {
     { ruta: '/admin/categorias', etiqueta: 'Categorías' },
     { ruta: '/admin/cupones', etiqueta: 'Cupones' },
     { ruta: '/admin/stock-bajo', etiqueta: 'Stock' },
+    { ruta: '/admin/dolar', etiqueta: 'Dólar' },
     { ruta: '/admin/clientes', etiqueta: 'Clientes' },
     { ruta: '/admin/administradores', etiqueta: 'Admins' }
   ];

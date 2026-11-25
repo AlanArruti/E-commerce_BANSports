@@ -5,6 +5,8 @@ import com.BlandiArruti.E_commerce.cliente.dto.response.DireccionResponse;
 import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
+import com.BlandiArruti.E_commerce.enums.EstadoReembolso;
+import com.BlandiArruti.E_commerce.enums.TipoReembolso;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
 
 import java.time.LocalDateTime;
@@ -33,5 +35,19 @@ public record PedidoResponse(
         ConfirmacionRecepcion confirmacionRecepcion,
         LocalDateTime fechaConfirmacionRecepcion,
         /** Lo que contó el cliente cuando no le llegó. */
-        String comentarioRecepcion
+        String comentarioRecepcion,
+        /** Cuándo se entregó. Null si todavía no (o si se entregó antes del RF05). */
+        LocalDateTime fechaEntrega,
+        /** RF05: hasta cuándo puede pedir el reembolso (10 días desde la entrega). Null si no se entregó. */
+        LocalDateTime fechaLimiteReembolso,
+        /** RF05: null si el cliente no pidió reembolso. */
+        EstadoReembolso estadoReembolso,
+        String motivoReembolso,
+        LocalDateTime fechaSolicitudReembolso,
+        /** Lo que contestó el admin (motivo del rechazo, o un comentario al aprobar). */
+        String respuestaReembolso,
+        LocalDateTime fechaResolucionReembolso,
+        /** Si se aprobó: AUTOMATICO (Mercado Pago) o MANUAL (lo devuelve la tienda). */
+        TipoReembolso tipoReembolso,
+        Double montoReembolsado
 ) {}

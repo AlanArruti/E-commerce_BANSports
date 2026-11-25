@@ -197,6 +197,12 @@ export const routes: Routes = [
         path: 'envios',
         loadComponent: () => import('./page/admin-envios/admin-envios').then((m) => m.AdminEnvios),
         title: 'Envíos | Panel BAN Sports'
+      },
+      {
+        // RF01: cotización del dólar y ajuste automático de precios.
+        path: 'dolar',
+        loadComponent: () => import('./page/admin-dolar/admin-dolar').then((m) => m.AdminDolar),
+        title: 'Dólar | Panel BAN Sports'
       }
     ]
   },

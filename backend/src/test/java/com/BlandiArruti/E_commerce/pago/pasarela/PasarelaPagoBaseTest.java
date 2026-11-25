@@ -124,6 +124,31 @@ class PasarelaPagoBaseTest {
                 .isInstanceOf(ServicioExternoException.class);
     }
 
+    // ─── reembolsar ──────────────────────────────────────────────────────────
+
+    @Test
+    void reembolsar_pasarelaSinDevolucionAutomatica_fallaConMensajeClaro() {
+        // La falsa no sobreescribe devolverCobro: es una pasarela que no permite devoluciones.
+        assertThatThrownBy(() -> pasarela.reembolsar("EXT-1"))
+                .isInstanceOf(ServicioExternoException.class)
+                .hasMessageContaining("no permite devolver");
+    }
+
+    @Test
+    void reembolsar_sinId_rechaza() {
+        assertThatThrownBy(() -> pasarela.reembolsar(""))
+                .isInstanceOf(EcommerceException.class);
+    }
+
+    @Test
+    void reembolsar_pasarelaSinCredenciales_rechaza() {
+        pasarela.disponible = false;
+
+        assertThatThrownBy(() -> pasarela.reembolsar("EXT-1"))
+                .isInstanceOf(ServicioExternoException.class)
+                .hasMessageContaining("credenciales");
+    }
+
     // ─── leerNotificacion ────────────────────────────────────────────────────
 
     @Test

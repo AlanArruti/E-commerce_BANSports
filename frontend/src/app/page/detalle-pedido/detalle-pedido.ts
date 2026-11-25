@@ -7,10 +7,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
 import { ConfirmarRecepcion } from '../../componente/confirmar-recepcion/confirmar-recepcion';
+import { SolicitarReembolso } from '../../componente/solicitar-reembolso/solicitar-reembolso';
 import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { localidadDeDireccion } from '../../models/direccion';
 import {
+  CancelacionPedido,
   ETIQUETAS_ESTADO_PEDIDO,
   Factura,
   ItemPedido,
@@ -20,7 +22,7 @@ import {
   numeroFactura
 } from '../../models/pedido';
 import { atributosOrdenados } from '../../models/variante';
-import { PrecioPipe } from '../../pipes/precio.pipe';
+import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
 import { ErrorTraducido, traducirErrorCancelarPedido, traducirErrorMisPedidos } from '../../validaciones/errores-api';
 
@@ -39,13 +41,26 @@ interface PasoAvance {
 
 const CARGANDO: EstadoDetalle = { cargando: true, pedido: null, noEncontrado: false, error: null };
 
+/** Lo que se le dice al cliente después de cancelar, según qué pasó con la plata (RF04). */
+export function avisoCancelacion(c: CancelacionPedido): string {
+  const monto = formatearPrecio(c.montoReembolsado);
+  switch (c.reembolso) {
+    case 'AUTOMATICO':
+      return `Cancelaste el pedido #${c.idPedido}. Te devolvimos ${monto} en Mercado Pago: puede tardar unos días en verse en tu medio de pago.`;
+    case 'MANUAL':
+      return `Cancelaste el pedido #${c.idPedido}. Como el pago no se hizo por Mercado Pago, la tienda se va a comunicar con vos para devolverte ${monto}.`;
+    default:
+      return `Cancelaste el pedido #${c.idPedido}.`;
+  }
+}
+
 /**
  * Detalle de un pedido del cliente: avance, ítems, dirección y total (SCRUM-121).
  * Seguimiento del envío, factura y cancelación (SCRUM-140).
  */
 @Component({
   selector: 'app-detalle-pedido',
-  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe, ConfirmarRecepcion, PagarPedido],
+  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe, ConfirmarRecepcion, SolicitarReembolso, PagarPedido],
   templateUrl: './detalle-pedido.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-pedido.css',
@@ -152,10 +167,10 @@ export class DetallePedido {
   confirmarCancelacion(pedido: Pedido): void {
     this.cancelando.set(true);
     this.clienteService.cancelarPedido(pedido.id).subscribe({
-      next: () => {
+      next: (cancelacion) => {
         this.cancelando.set(false);
         this.confirmando.set(false);
-        this.aviso.set(`Cancelaste el pedido #${pedido.id}.`);
+        this.aviso.set(avisoCancelacion(cancelacion));
         this.recargar$.next();
       },
       error: (e: unknown) => {

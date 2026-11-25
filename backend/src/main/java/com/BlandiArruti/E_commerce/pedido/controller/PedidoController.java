@@ -11,6 +11,9 @@ import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ResolucionReembolsoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.SolicitudReembolsoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.service.IPedidoService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
@@ -65,11 +68,12 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoService.crear(request, principal));
     }
 
-    @Operation(summary = "Cancelar pedido")
+    @Operation(summary = "Cancelar pedido",
+            description = "RF04: el cliente lo cancela mientras no esté despachado. Si ya estaba cobrado con "
+                    + "Mercado Pago, se devuelve la plata antes de cancelarlo (si la devolución falla, no se cancela).")
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id) {
-        pedidoService.cancelar(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<CancelacionPedidoResponse> cancelar(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.cancelar(id));
     }
 
     // El cliente paga con una pasarela: ver PagoController (/api/v1/pago).
@@ -98,6 +102,25 @@ public class PedidoController {
     public ResponseEntity<PedidoResponse> confirmarRecepcion(@PathVariable Long id,
                                                              @Valid @RequestBody ConfirmarRecepcionRequest request) {
         return ResponseEntity.ok(pedidoService.confirmarRecepcion(id, request));
+    }
+
+    @Operation(summary = "Pedir el reembolso de un pedido entregado (solo el cliente dueño)",
+            description = "RF05. { motivo }. Hasta 10 días después de la entrega y una sola vez. "
+                    + "Queda SOLICITADO hasta que lo resuelva el admin.")
+    @PostMapping("/{id}/reembolso")
+    public ResponseEntity<PedidoResponse> solicitarReembolso(@PathVariable Long id,
+                                                             @Valid @RequestBody SolicitudReembolsoRequest request) {
+        return ResponseEntity.ok(pedidoService.solicitarReembolso(id, request));
+    }
+
+    @Operation(summary = "Aprobar o rechazar el reembolso pedido (solo ADMIN)",
+            description = "RF05. { aprobar, respuesta? }. Al aprobar se devuelve la plata en Mercado Pago "
+                    + "(si falla, sigue SOLICITADO). Al rechazar, la respuesta es obligatoria. El stock no vuelve.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/reembolso")
+    public ResponseEntity<PedidoResponse> resolverReembolso(@PathVariable Long id,
+                                                            @Valid @RequestBody ResolucionReembolsoRequest request) {
+        return ResponseEntity.ok(pedidoService.resolverReembolso(id, request));
     }
 
     @Operation(summary = "Obtener factura del pedido")

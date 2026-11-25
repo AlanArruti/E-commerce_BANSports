@@ -55,7 +55,13 @@
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar">
         <h2 class="titulo-display titulo-modal" id="titulo-cancelar">¿Cancelar el pedido #{{ pedido.id }}?</h2>
         <p class="texto-modal">
-          Todavía no lo pagaste, así que no se te cobra nada. No se puede deshacer: si lo querés de nuevo, tenés que volver a comprarlo.
+          @if (pedido.estado === 'PAGADO') {
+            Ya lo pagaste: te devolvemos <strong>{{ pedido.total | precio }}</strong> en Mercado Pago (puede tardar unos días en
+            verse en tu medio de pago).
+          } @else {
+            Todavía no lo pagaste, así que no se te cobra nada.
+          }
+          No se puede deshacer: si lo querés de nuevo, tenés que volver a comprarlo.
         </p>
         <div class="acciones-modal">
           <button type="button" class="btn btn-secundario" [disabled]="cancelando()" (click)="cerrarCancelacion()">Volver</button>
@@ -129,6 +135,8 @@
         <!-- ── RF03: "Lo recibí" / "No lo recibí" ───────── -->
         @if (pedido.estado === 'ENTREGADO') {
           <app-confirmar-recepcion [pedido]="pedido" (confirmado)="reintentar()" />
+          <!-- ── RF05: pedir el reembolso (10 días desde la entrega) y ver cómo se resolvió ── -->
+          <app-solicitar-reembolso [pedido]="pedido" (solicitado)="reintentar()" />
         }
 
         <section class="panel" aria-labelledby="titulo-entrega">
@@ -232,10 +240,15 @@
           </section>
         }
 
-        <!-- ── Cancelar (SCRUM-140): solo lo que todavía no se cobró ── -->
+        <!-- ── Cancelar (RF04): mientras no se despachó. Si ya está pago, se devuelve la plata. ── -->
         @if (puedeCancelar(pedido)) {
           <button type="button" class="btn btn-peligro btn-bloque" (click)="pedirCancelacion()">Cancelar pedido</button>
-          <p class="nota">Podés cancelarlo mientras no esté pagado.</p>
+          <p class="nota">
+            Podés cancelarlo mientras no esté despachado.
+            @if (pedido.estado === 'PAGADO') {
+              Te devolvemos lo que pagaste.
+            }
+          </p>
         }
       </div>
     </div>

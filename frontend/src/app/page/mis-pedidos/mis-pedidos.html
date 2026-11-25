@@ -74,6 +74,8 @@
           }
           @if (pedido.estado === 'ENTREGADO') {
             <app-confirmar-recepcion class="recepcion" [pedido]="pedido" (confirmado)="actualizar($event)" />
+            <!-- RF05: pedir el reembolso y ver su estado. -->
+            <app-solicitar-reembolso class="recepcion" [pedido]="pedido" (solicitado)="actualizar($event)" />
           }
         </li>
       }

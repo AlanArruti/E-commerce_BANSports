@@ -37,6 +37,24 @@ class MercadoPagoPasarelaTest {
     }
 
     @Test
+    void reembolsar_pideLaDevolucionTotalDeLaOrder() {
+        when(properties.estaConfigurado()).thenReturn(true);
+
+        pasarela.reembolsar("ORD1");
+
+        verify(client).reembolsarOrden("ORD1");
+    }
+
+    @Test
+    void reembolsar_sinCredenciales_noLlamaAMercadoPago() {
+        when(properties.estaConfigurado()).thenReturn(false);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> pasarela.reembolsar("ORD1"))
+                .isInstanceOf(com.BlandiArruti.E_commerce.exception.ServicioExternoException.class);
+        verifyNoInteractions(client);
+    }
+
+    @Test
     void crearCobro_armaLaOrderConUnaLineaPorProductoYElTotalExacto() {
         when(properties.estaConfigurado()).thenReturn(true);
         when(client.crearOrden(any())).thenReturn(orden("created", "created", null));
@@ -75,7 +93,7 @@ class MercadoPagoPasarelaTest {
             "failed, rejected, RECHAZADO",
             "expired, expired, RECHAZADO",
             "canceled, canceled, RECHAZADO",
-            "refunded, refunded, RECHAZADO"
+            "refunded, refunded, REEMBOLSADO"
     })
     void buscarCobro_traduceLosEstadosDeMercadoPago(String status, String detalle, EstadoPago esperado) {
         when(client.obtenerOrden("ORD1")).thenReturn(orden(status, detalle, "1500.50"));

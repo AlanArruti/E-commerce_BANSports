@@ -33,6 +33,12 @@ public interface PasarelaPago {
     ResultadoCobro consultarCobro(String idExterno);
 
     /**
+     * Devuelve el total de un cobro aprobado al cliente (RF04). Lanza si la pasarela no lo
+     * permite o lo rechaza: en ese caso no hay que dar por cancelado el pedido.
+     */
+    void reembolsar(String idExterno);
+
+    /**
      * Lee el aviso que manda la pasarela al webhook y devuelve el id del cobro que cambió.
      * Vacío si el aviso no es de un cobro (otros tópicos) o no se entiende.
      */

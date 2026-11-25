@@ -11,6 +11,7 @@ import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.service.IPedidoService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
@@ -65,11 +66,12 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoService.crear(request, principal));
     }
 
-    @Operation(summary = "Cancelar pedido")
+    @Operation(summary = "Cancelar pedido",
+            description = "RF04: el cliente lo cancela mientras no esté despachado. Si ya estaba cobrado con "
+                    + "Mercado Pago, se devuelve la plata antes de cancelarlo (si la devolución falla, no se cancela).")
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id) {
-        pedidoService.cancelar(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<CancelacionPedidoResponse> cancelar(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.cancelar(id));
     }
 
     // El cliente paga con una pasarela: ver PagoController (/api/v1/pago).

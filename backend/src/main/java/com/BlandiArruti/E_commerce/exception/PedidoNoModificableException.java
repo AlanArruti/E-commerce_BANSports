@@ -15,10 +15,10 @@ public class PedidoNoModificableException extends EcommerceException {
         );
     }
 
-    // Un cliente solo cancela lo que todavía no pagó: lo cobrado lo cancela el admin (devuelve stock y gestiona el reintegro).
+    // RF04: el cliente cancela mientras el pedido no salió. Despachado, ya lo resuelve la tienda.
     public static PedidoNoModificableException clienteNoPuedeCancelar(Long idPedido, EstadoPedido estado) {
         return new PedidoNoModificableException(
-                "El pedido con id " + idPedido + " ya fue cobrado (estado: " + estado + "). "
+                "El pedido con id " + idPedido + " ya fue despachado (estado: " + estado + "). "
                 + "Para cancelarlo, comunicate con la tienda."
         );
     }

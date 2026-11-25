@@ -20,6 +20,9 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
+import com.BlandiArruti.E_commerce.enums.TipoReembolso;
+import com.BlandiArruti.E_commerce.exception.ServicioExternoException;
+import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
@@ -86,6 +89,7 @@ class PedidoServiceTest {
     @Mock CarritoRepository carritoRepository;
     @Mock FacturaPdfGenerator facturaPdfGenerator;
     @Mock NotificacionClienteService notificacionClienteService;
+    @Mock IReembolsoPagos reembolsoPagos;
 
     @InjectMocks
     PedidoService pedidoService;
@@ -136,6 +140,7 @@ class PedidoServiceTest {
 
         autenticarComoAdmin();
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(reembolsoPagos.reembolsarCobros(pedido)).thenReturn(1500.0);
 
         pedidoService.cancelar(1L);
 
@@ -151,6 +156,7 @@ class PedidoServiceTest {
 
         autenticarComoAdmin();
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(reembolsoPagos.reembolsarCobros(pedido)).thenReturn(1500.0);
 
         pedidoService.cancelar(1L);
 
@@ -158,30 +164,86 @@ class PedidoServiceTest {
     }
 
     @Test
-    void cancelar_clienteDesdePendientePago_cancela() {
+    void cancelar_clienteDesdePendientePago_cancelaSinReembolso() {
         Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
 
         autenticarComoCliente(1L);
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
 
-        pedidoService.cancelar(1L);
+        CancelacionPedidoResponse respuesta = pedidoService.cancelar(1L);
 
         assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+        assertThat(respuesta.reembolso()).isEqualTo(TipoReembolso.NO_CORRESPONDE);
+        verify(reembolsoPagos, never()).reembolsarCobros(any());
+    }
+
+    // ─── RF04: el cliente cancela un pedido pagado y no despachado ───────────
+
+    @Test
+    void cancelar_clienteDesdePagado_devuelveLaPlataElStockYCancela() {
+        Variante variante = variante(7);
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, itemDe(1500.0, variante, 3));
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(reembolsoPagos.reembolsarCobros(pedido)).thenReturn(1500.0);
+
+        CancelacionPedidoResponse respuesta = pedidoService.cancelar(1L);
+
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+        assertThat(variante.getStock()).isEqualTo(10);
+        assertThat(respuesta.reembolso()).isEqualTo(TipoReembolso.AUTOMATICO);
+        assertThat(respuesta.montoReembolsado()).isEqualTo(1500.0);
+        assertThat(respuesta.mensaje()).contains("Mercado Pago");
+        // Lo canceló el propio cliente: no se le manda aviso.
+        verify(notificacionClienteService, never()).avisarPedido(any());
     }
 
     @Test
-    void cancelar_clienteDesdePagado_lanzaExcepcionYNoTocaStock() {
-        Variante variante = Variante.builder().id(1L).stock(7).build();
-        ItemPedido item = ItemPedido.builder().variante(variante).cantidad(3).build();
-        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, item);
+    void cancelar_clienteDesdeDespachado_lanzaExcepcionYNoDevuelveNada() {
+        Variante variante = variante(7);
+        Pedido pedido = pedidoConEstado(EstadoPedido.DESPACHADO, itemDe(1500.0, variante, 3));
 
         autenticarComoCliente(1L);
         when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
 
         assertThatThrownBy(() -> pedidoService.cancelar(1L))
-                .isInstanceOf(PedidoNoModificableException.class);
+                .isInstanceOf(PedidoNoModificableException.class)
+                .hasMessageContaining("despachado");
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.DESPACHADO);
+        assertThat(variante.getStock()).isEqualTo(7);
+        verify(reembolsoPagos, never()).reembolsarCobros(any());
+    }
+
+    @Test
+    void cancelar_siMercadoPagoRechazaLaDevolucion_elPedidoQuedaComoEstaba() {
+        Variante variante = variante(7);
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, itemDe(1500.0, variante, 3));
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(reembolsoPagos.reembolsarCobros(pedido))
+                .thenThrow(new ServicioExternoException("Mercado Pago rechazó la devolución"));
+
+        assertThatThrownBy(() -> pedidoService.cancelar(1L)).isInstanceOf(ServicioExternoException.class);
         assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.PAGADO);
         assertThat(variante.getStock()).isEqualTo(7);
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelar_pagadoSinPasarela_cancelaYAvisaQueLaDevolucionEsManual() {
+        Pedido pedido = pedidoConEstado(EstadoPedido.PAGADO, itemDe(1500.0, variante(7), 3));
+
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(reembolsoPagos.reembolsarCobros(pedido)).thenReturn(0.0);
+
+        CancelacionPedidoResponse respuesta = pedidoService.cancelar(1L);
+
+        assertThat(pedido.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+        assertThat(respuesta.reembolso()).isEqualTo(TipoReembolso.MANUAL);
+        assertThat(respuesta.montoReembolsado()).isEqualTo(1500.0);
     }
 
     @Test

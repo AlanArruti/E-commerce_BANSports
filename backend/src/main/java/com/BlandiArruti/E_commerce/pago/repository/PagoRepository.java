@@ -1,5 +1,6 @@
 package com.BlandiArruti.E_commerce.pago.repository;
 
+import com.BlandiArruti.E_commerce.enums.EstadoPago;
 import com.BlandiArruti.E_commerce.pago.entity.Pago;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,4 +13,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     Optional<Pago> findByPasarelaAndIdExterno(String pasarela, String idExterno);
 
     List<Pago> findByPedidoIdOrderByFechaCreacionDesc(Long idPedido);
+
+    /** Los cobros aprobados de un pedido: los que hay que devolver si se cancela (RF04). */
+    List<Pago> findByPedidoIdAndEstado(Long idPedido, EstadoPago estado);
 }

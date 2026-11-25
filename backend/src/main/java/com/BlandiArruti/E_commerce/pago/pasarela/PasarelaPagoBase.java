@@ -58,6 +58,19 @@ public abstract class PasarelaPagoBase implements PasarelaPago {
     }
 
     @Override
+    public final void reembolsar(String idExterno) {
+        if (esVacio(idExterno)) {
+            throw new EcommerceException("Falta el id del cobro a devolver.");
+        }
+        if (!estaDisponible()) {
+            throw new ServicioExternoException(
+                    "No se pudo devolver el pago con " + nombre() + ": la tienda no tiene cargadas sus credenciales.");
+        }
+        devolverCobro(idExterno);
+        log.info("Cobro {} devuelto en {}.", idExterno, codigo());
+    }
+
+    @Override
     public final Optional<String> leerNotificacion(Map<String, Object> cuerpo, Map<String, String> parametros) {
         try {
             return extraerIdDeNotificacion(cuerpo == null ? Map.of() : cuerpo,
@@ -81,6 +94,15 @@ public abstract class PasarelaPagoBase implements PasarelaPago {
     /** Saca el id del cobro del aviso, en el formato propio de la pasarela. */
     protected abstract Optional<String> extraerIdDeNotificacion(Map<String, Object> cuerpo,
                                                                  Map<String, String> parametros);
+
+    /**
+     * Devuelve el total del cobro en la API de la pasarela. Por defecto no se puede: la pasarela
+     * que permita devoluciones automáticas lo sobreescribe (Gancho del Template Method).
+     */
+    protected void devolverCobro(String idExterno) {
+        throw new ServicioExternoException(
+                nombre() + " no permite devolver pagos automáticamente. La devolución la tiene que hacer la tienda.");
+    }
 
     // ── Utilidades para las hijas ────────────────────────────────────────────
 

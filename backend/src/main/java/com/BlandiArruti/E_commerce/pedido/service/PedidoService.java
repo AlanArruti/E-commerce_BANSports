@@ -18,6 +18,8 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
+import com.BlandiArruti.E_commerce.enums.TipoReembolso;
+import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
@@ -79,6 +81,7 @@ public class PedidoService implements IPedidoService {
     private final FacturaPdfGenerator facturaPdfGenerator;
     private final NotificacionClienteService notificacionClienteService;
     private final CarritoRepository carritoRepository;
+    private final IReembolsoPagos reembolsoPagos;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -228,7 +231,12 @@ public class PedidoService implements IPedidoService {
         return cotizacionEnvioService.precioDeOpcion(direccionEnvio.getId(), request.opcionEnvio());
     }
 
-    public void cancelar(Long id) {
+    /**
+     * RF04: el cliente cancela su pedido mientras no esté despachado (pagado o no); el admin,
+     * también uno despachado. Si ya estaba cobrado, primero se devuelve la plata en la pasarela:
+     * si eso falla, el pedido no se cancela.
+     */
+    public CancelacionPedidoResponse cancelar(Long id) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
         verificarPropietario(pedido);
@@ -239,12 +247,26 @@ public class PedidoService implements IPedidoService {
             throw PedidoNoModificableException.noCancelable(id, estado);
         }
 
-        if (getPrincipal().getRol() == Rol.CLIENTE
-                && estado != EstadoPedido.PENDIENTE_PAGO && estado != EstadoPedido.EN_PREPARACION) {
+        if (getPrincipal().getRol() == Rol.CLIENTE && !clientePuedeCancelar(estado)) {
             throw PedidoNoModificableException.clienteNoPuedeCancelar(id, estado);
         }
 
-        if (estado == EstadoPedido.PAGADO || estado == EstadoPedido.DESPACHADO) {
+        boolean estabaCobrado = estado == EstadoPedido.PAGADO || estado == EstadoPedido.DESPACHADO;
+
+        // La devolución va antes que todo lo demás: si la pasarela la rechaza, no se tocó nada.
+        TipoReembolso reembolso = TipoReembolso.NO_CORRESPONDE;
+        double montoReembolsado = 0;
+        if (estabaCobrado) {
+            montoReembolsado = reembolsoPagos.reembolsarCobros(pedido);
+            reembolso = montoReembolsado > 0 ? TipoReembolso.AUTOMATICO : TipoReembolso.MANUAL;
+            if (reembolso == TipoReembolso.MANUAL) {
+                // Lo marcó pagado el admin, sin pasarela: la tienda tiene que devolverlo por su cuenta.
+                montoReembolsado = calcularTotal(pedido);
+                log.warn("Pedido {} cancelado ya cobrado sin pasarela: hay que devolver ${} a mano.", id, montoReembolsado);
+            }
+        }
+
+        if (estabaCobrado) {
             for (ItemPedido item : pedido.getItems()) {
                 Variante variante = item.getVariante();
                 if (variante != null) {
@@ -266,7 +288,31 @@ public class PedidoService implements IPedidoService {
         if (getPrincipal().getRol() == Rol.ADMIN) {
             notificacionClienteService.avisarPedido(pedido);
         }
+
+        return new CancelacionPedidoResponse(id, EstadoPedido.CANCELADO, reembolso, montoReembolsado,
+                mensajeCancelacion(id, reembolso, montoReembolsado));
     }
+
+    /** RF04: el cliente cancela mientras el pedido no salió (pagado o no). Despachado, ya no. */
+    static boolean clientePuedeCancelar(EstadoPedido estado) {
+        return estado == EstadoPedido.PENDIENTE_PAGO
+                || estado == EstadoPedido.EN_PREPARACION
+                || estado == EstadoPedido.PAGADO;
+    }
+
+    private static String mensajeCancelacion(Long id, TipoReembolso reembolso, double monto) {
+        String importe = FORMATO_PESOS.format(monto);
+        return switch (reembolso) {
+            case AUTOMATICO -> "Pedido #" + id + " cancelado. Se devolvieron " + importe
+                    + " en Mercado Pago; puede tardar unos días en verse en el medio de pago.";
+            case MANUAL -> "Pedido #" + id + " cancelado. El pago se registró fuera de Mercado Pago: "
+                    + "la tienda tiene que devolver " + importe + " por su cuenta.";
+            case NO_CORRESPONDE -> "Pedido #" + id + " cancelado. No se había cobrado nada.";
+        };
+    }
+
+    private static final java.text.NumberFormat FORMATO_PESOS =
+            java.text.NumberFormat.getCurrencyInstance(java.util.Locale.forLanguageTag("es-AR"));
 
     // ── Lo que necesita PagoService (pasarelas de pago) ──────────────────────
     // El pago con pasarelas vive en el paquete pago/. Acá queda solo lo que es del pedido

@@ -87,6 +87,12 @@ public class MercadoPagoPasarela extends PasarelaPagoBase {
         return new ResultadoCobro(orden.id(), traducirEstado(orden), orden.montoPagado(), orden.externalReference());
     }
 
+    /** Reembolso total de la order (RF04). Si MercadoPago lo rechaza, el client lanza con el motivo. */
+    @Override
+    protected void devolverCobro(String idExterno) {
+        client.reembolsarOrden(idExterno);
+    }
+
     /**
      * Aviso del tópico "order": {@code ?type=order&data.id=ORD...} y el mismo dato en el body.
      * Los avisos de otros tópicos se ignoran.
@@ -111,7 +117,8 @@ public class MercadoPagoPasarela extends PasarelaPagoBase {
         String estado = orden.status() == null ? "" : orden.status();
         return switch (estado) {
             case "created" -> EstadoPago.CREADO;
-            case "failed", "expired", "canceled", "cancelled", "refunded", "charged_back" -> EstadoPago.RECHAZADO;
+            case "refunded" -> EstadoPago.REEMBOLSADO;
+            case "failed", "expired", "canceled", "cancelled", "charged_back" -> EstadoPago.RECHAZADO;
             // processing, action_required, processed sin acreditar, o un estado nuevo que no conocemos.
             default -> EstadoPago.PENDIENTE;
         };

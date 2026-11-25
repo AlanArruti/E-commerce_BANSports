@@ -143,6 +143,7 @@ Base URL: `http://localhost:8080/api/v1`
 | `PUT` | `/cliente/{id}` | Editar perfil (nombre, apellido, email) | CLIENTE / ADMIN |
 | `PATCH` | `/cliente/{id}/password` | Cambiar contraseña (requiere la actual, salvo que la cuenta se haya creado con Google o GitHub y todavía no tenga una) | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/direccion` | Agregar dirección de envío | CLIENTE / ADMIN |
+| `DELETE` | `/cliente/{id}/direccion/{idDireccion}` | Eliminar dirección (baja lógica: los pedidos que la usaron la siguen mostrando) | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/pedido` | Historial de pedidos del cliente | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
@@ -485,7 +486,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **347 tests** (346 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **351 tests** (350 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -511,10 +512,10 @@ Cobertura de tests unitarios:
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 50 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar)
+- `PedidoServiceTest` — 51 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar, dirección dada de baja)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
-- `ClienteServiceTest` — 23 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez)
+- `ClienteServiceTest` — 26 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez, baja lógica de direcciones)
 - `EmailsTest` — 3 tests (minúsculas y equivalencia de casillas de Gmail)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)

@@ -174,6 +174,9 @@ public class PedidoService implements IPedidoService {
             if (!direccionEnvio.getCliente().getId().equals(cliente.getId())) {
                 throw new AccessDeniedException("La dirección de envío no pertenece al cliente del pedido.");
             }
+            if (!direccionEnvio.isActiva()) {
+                throw new EcommerceException("Esa dirección ya no está en tu cuenta. Elegí otra o cargala de nuevo.");
+            }
         }
 
         Pedido pedido = Pedido.builder()

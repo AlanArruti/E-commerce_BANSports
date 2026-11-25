@@ -26,6 +26,11 @@ export class DireccionService {
     return this.http.post<Direccion>(this.url(), direccion);
   }
 
+  /** Baja lógica en el back: los pedidos viejos la siguen mostrando. */
+  eliminar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url()}/${id}`);
+  }
+
   private url(): string {
     return `${this.API_URL}/cliente/${this.authService.cliente()?.id}/direccion`;
   }

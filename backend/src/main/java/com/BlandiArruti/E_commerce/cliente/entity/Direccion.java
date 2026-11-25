@@ -45,6 +45,13 @@ public class Direccion {
             columnDefinition = "varchar(8) default '0000' not null")
     private String codigoPostal;
 
+    // Baja lógica: los pedidos y envíos viejos siguen apuntando a la dirección,
+    // así que borrarla de verdad rompería la FK. Una dirección inactiva no se
+    // lista ni se puede elegir en una compra nueva.
+    @Builder.Default
+    @Column(name = "activa", nullable = false, columnDefinition = "boolean default true not null")
+    private boolean activa = true;
+
     // -------- RELACIONES --------
     // Muchas direcciones pertenecen a UNA ciudad.
     // Esta clase es el LADO DUEÑO: acá vive la FK "id_ciudad".

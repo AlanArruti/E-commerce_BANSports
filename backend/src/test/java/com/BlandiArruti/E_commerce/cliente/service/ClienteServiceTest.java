@@ -8,6 +8,7 @@ import com.BlandiArruti.E_commerce.cliente.dto.request.ClienteUpdateRequest;
 import com.BlandiArruti.E_commerce.cliente.dto.response.ClienteResponse;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.mapper.ClienteMapper;
+import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.mapper.DireccionMapper;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
@@ -352,6 +353,48 @@ class ClienteServiceTest {
                 new ClienteUpdateRequest("Ana", "García", "ana@gmail.com", "30111222")))
                 .isInstanceOf(DuplicadoException.class);
         assertThat(cliente.getDni()).isNull();
+    }
+
+    // ─── direcciones ─────────────────────────────────────────────────────────
+
+    @Test
+    void eliminarDireccion_propia_laDaDeBajaSinBorrarla() {
+        Cliente cliente = Cliente.builder().id(1L).activo(true).build();
+        Direccion direccion = Direccion.builder().id(5L).cliente(cliente).build();
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccion));
+
+        clienteService.eliminarDireccion(1L, 5L);
+
+        assertThat(direccion.isActiva()).isFalse();
+        verify(direccionRepository).save(direccion);
+        verify(direccionRepository, never()).delete(any());
+    }
+
+    @Test
+    void eliminarDireccion_yaDadaDeBaja_lanzaNotFound() {
+        Cliente cliente = Cliente.builder().id(1L).activo(true).build();
+        Direccion direccion = Direccion.builder().id(5L).cliente(cliente).activa(false).build();
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(direccion));
+
+        assertThatThrownBy(() -> clienteService.eliminarDireccion(1L, 5L))
+                .isInstanceOf(EntidadNoEncontradaException.class);
+    }
+
+    @Test
+    void eliminarDireccion_deOtroCliente_lanzaAccessDenied() {
+        Cliente cliente = Cliente.builder().id(1L).activo(true).build();
+        Cliente otro = Cliente.builder().id(2L).activo(true).build();
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(direccionRepository.findById(5L)).thenReturn(Optional.of(Direccion.builder().id(5L).cliente(otro).build()));
+
+        assertThatThrownBy(() -> clienteService.eliminarDireccion(1L, 5L))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(direccionRepository, never()).save(any());
     }
 
     // ─── eliminar ────────────────────────────────────────────────────────────

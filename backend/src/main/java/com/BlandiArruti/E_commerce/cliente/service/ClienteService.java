@@ -215,11 +215,14 @@ public class ClienteService implements IClienteService {
             throw EntidadNoEncontradaException.cliente(idCliente);
         }
         Direccion direccion = direccionRepository.findById(idDireccion)
+                .filter(Direccion::isActiva)
                 .orElseThrow(() -> EntidadNoEncontradaException.direccion(idDireccion));
         if (!direccion.getCliente().getId().equals(idCliente)) {
             throw new AccessDeniedException("La dirección no pertenece al cliente indicado.");
         }
-        direccionRepository.delete(direccion);
+        // Baja lógica: un pedido o envío viejo puede seguir usándola.
+        direccion.setActiva(false);
+        direccionRepository.save(direccion);
     }
 
     @Transactional(readOnly = true)

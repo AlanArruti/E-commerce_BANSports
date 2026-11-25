@@ -39,6 +39,16 @@ export class PedidoService {
     return this.http.patch<CancelacionPedido>(`${this.API_URL}/${id}/cancelar`, {});
   }
 
+  /** RF05: el cliente pide el reembolso de su pedido entregado (hasta 10 días después de la entrega). */
+  solicitarReembolso(id: number, motivo: string): Observable<Pedido> {
+    return this.http.post<Pedido>(`${this.API_URL}/${id}/reembolso`, { motivo });
+  }
+
+  /** RF05 (admin): aprueba (devuelve en Mercado Pago) o rechaza (con respuesta obligatoria) el reembolso. */
+  resolverReembolso(id: number, aprobar: boolean, respuesta?: string): Observable<Pedido> {
+    return this.http.patch<Pedido>(`${this.API_URL}/${id}/reembolso`, { aprobar, respuesta: respuesta || null });
+  }
+
   /** RF03: el cliente dueño confirma si le llegó el pedido entregado. */
   confirmarRecepcion(id: number, recibido: boolean, comentario?: string): Observable<Pedido> {
     return this.http.patch<Pedido>(`${this.API_URL}/${id}/recepcion`, { recibido, comentario: comentario || null });

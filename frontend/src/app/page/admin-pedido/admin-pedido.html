@@ -175,6 +175,93 @@
                 }
               </div>
             }
+
+            <!-- RF05: reembolso que pidió el cliente. Lo aprueba (devuelve en Mercado Pago) o lo rechaza el admin. -->
+            @if (pedido.estadoReembolso; as estadoReembolso) {
+              <div class="recepcion reembolso" [class.problema]="estadoReembolso === 'SOLICITADO'"
+                [class.ok]="estadoReembolso === 'APROBADO'" [class.rechazado]="estadoReembolso === 'RECHAZADO'">
+                <p class="recepcion-titulo">Reembolso</p>
+                <p class="recepcion-estado">
+                  @switch (estadoReembolso) {
+                    @case ('SOLICITADO') { El cliente pidió el reembolso }
+                    @case ('APROBADO') { Reembolso aprobado }
+                    @case ('RECHAZADO') { Reembolso rechazado }
+                  }
+                  @if (pedido.fechaSolicitudReembolso) {
+                    <span class="sin-dato">· pedido el {{ pedido.fechaSolicitudReembolso | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  }
+                </p>
+                @if (pedido.motivoReembolso) {
+                  <p class="recepcion-comentario">“{{ pedido.motivoReembolso }}”</p>
+                }
+
+                @switch (estadoReembolso) {
+                  @case ('APROBADO') {
+                    <p class="recepcion-nota">
+                      @if (pedido.tipoReembolso === 'MANUAL') {
+                        Se pagó fuera de Mercado Pago: tenés que devolverle {{ pedido.montoReembolsado | precio }} por tu cuenta.
+                      } @else {
+                        Se le devolvieron {{ pedido.montoReembolsado | precio }} en Mercado Pago.
+                      }
+                      @if (pedido.fechaResolucionReembolso) { ({{ pedido.fechaResolucionReembolso | date: 'dd/MM/yyyy HH:mm' }}) }
+                    </p>
+                  }
+                  @case ('RECHAZADO') {
+                    <p class="recepcion-nota">
+                      Respuesta: “{{ pedido.respuestaReembolso }}”
+                      @if (pedido.fechaResolucionReembolso) { ({{ pedido.fechaResolucionReembolso | date: 'dd/MM/yyyy HH:mm' }}) }
+                    </p>
+                  }
+                  @case ('SOLICITADO') {
+                    @if (resolucionReembolso() === 'aprobar') {
+                      <div class="reembolso-acciones" role="group" aria-label="Confirmar el reembolso">
+                        <p class="recepcion-nota">
+                          ¿Devolverle {{ pedido.total | precio }} al cliente en Mercado Pago? El stock no vuelve al catálogo.
+                        </p>
+                        <div class="reembolso-botones">
+                          <button type="button" class="btn btn-primario btn-chico" [disabled]="procesando()" (click)="aprobarReembolso(pedido)">
+                            {{ procesando() === 'reembolso' ? 'Devolviendo…' : 'Sí, devolver' }}
+                          </button>
+                          <button type="button" class="btn-texto-chico" [disabled]="procesando()" (click)="resolucionReembolso.set(null)">Volver</button>
+                        </div>
+                      </div>
+                    } @else if (resolucionReembolso() === 'rechazar') {
+                      <div class="reembolso-acciones">
+                        <label class="etiqueta" for="respuesta-reembolso">¿Por qué lo rechazás? (lo ve el cliente)</label>
+                        <textarea
+                          id="respuesta-reembolso"
+                          class="input area"
+                          [class.invalido]="intentoRechazo() && !respuestaReembolso().trim()"
+                          rows="3"
+                          maxlength="500"
+                          placeholder="Por ejemplo: el producto se abrió y se usó."
+                          [value]="respuestaReembolso()"
+                          (input)="escribirRespuesta($event)"
+                        ></textarea>
+                        @if (intentoRechazo() && !respuestaReembolso().trim()) {
+                          <p class="msj-error">Contale al cliente por qué lo rechazás.</p>
+                        }
+                        <div class="reembolso-botones">
+                          <button type="button" class="btn btn-peligro btn-chico" [disabled]="procesando()" (click)="rechazarReembolso(pedido)">
+                            {{ procesando() === 'reembolso' ? 'Guardando…' : 'Rechazar reembolso' }}
+                          </button>
+                          <button type="button" class="btn-texto-chico" [disabled]="procesando()" (click)="resolucionReembolso.set(null)">Volver</button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="reembolso-botones">
+                        <button type="button" class="btn btn-primario btn-chico" [disabled]="procesando()" (click)="resolucionReembolso.set('aprobar')">
+                          Aprobar y devolver {{ pedido.total | precio }}
+                        </button>
+                        <button type="button" class="btn btn-secundario btn-chico" [disabled]="procesando()" (click)="abrirRechazo()">
+                          Rechazar
+                        </button>
+                      </div>
+                    }
+                  }
+                }
+              </div>
+            }
           </section>
         </div>
       </div>

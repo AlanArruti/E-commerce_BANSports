@@ -7,6 +7,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
 import { ConfirmarRecepcion } from '../../componente/confirmar-recepcion/confirmar-recepcion';
+import { SolicitarReembolso } from '../../componente/solicitar-reembolso/solicitar-reembolso';
 import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { localidadDeDireccion } from '../../models/direccion';
@@ -59,7 +60,7 @@ export function avisoCancelacion(c: CancelacionPedido): string {
  */
 @Component({
   selector: 'app-detalle-pedido',
-  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe, ConfirmarRecepcion, PagarPedido],
+  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe, ConfirmarRecepcion, SolicitarReembolso, PagarPedido],
   templateUrl: './detalle-pedido.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-pedido.css',

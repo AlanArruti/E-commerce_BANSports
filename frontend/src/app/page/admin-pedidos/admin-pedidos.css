@@ -124,6 +124,11 @@
 }
 
 /* RF03: entregado pero el cliente avisó que no le llegó. */
+.reembolso-pedido {
+  background: rgb(245 192 74 / 0.12) !important;
+  color: var(--color-aviso) !important;
+}
+
 .no-recibido {
   margin-left: var(--espacio-2);
   padding: 3px 9px;

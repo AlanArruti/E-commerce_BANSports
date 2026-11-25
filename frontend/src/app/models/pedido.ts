@@ -123,6 +123,32 @@ export interface Pedido {
   fechaConfirmacionRecepcion?: string | null;
   /** Lo que contó el cliente cuando no le llegó. */
   comentarioRecepcion?: string | null;
+  /** Cuándo se entregó. Null si todavía no (o en pedidos entregados antes del RF05). */
+  fechaEntrega?: string | null;
+  /** RF05: hasta cuándo se puede pedir el reembolso (10 días desde la entrega). */
+  fechaLimiteReembolso?: string | null;
+  /** RF05: null si el cliente no pidió reembolso. */
+  estadoReembolso?: EstadoReembolso | null;
+  motivoReembolso?: string | null;
+  fechaSolicitudReembolso?: string | null;
+  /** Lo que contestó el admin (motivo del rechazo, o un comentario al aprobar). */
+  respuestaReembolso?: string | null;
+  fechaResolucionReembolso?: string | null;
+  /** Si se aprobó: AUTOMATICO (Mercado Pago) o MANUAL (lo devuelve la tienda). */
+  tipoReembolso?: TipoReembolso | null;
+  montoReembolsado?: number | null;
+}
+
+export type EstadoReembolso = 'SOLICITADO' | 'APROBADO' | 'RECHAZADO';
+
+/** RF05: el cliente puede pedir el reembolso de un pedido entregado, una vez y dentro del plazo. */
+export function puedeSolicitarReembolso(pedido: Pedido, ahora: Date = new Date()): boolean {
+  return (
+    pedido.estado === 'ENTREGADO' &&
+    !pedido.estadoReembolso &&
+    !!pedido.fechaLimiteReembolso &&
+    ahora.getTime() <= new Date(pedido.fechaLimiteReembolso).getTime()
+  );
 }
 
 export type ConfirmacionRecepcion = 'RECIBIDO' | 'NO_RECIBIDO';

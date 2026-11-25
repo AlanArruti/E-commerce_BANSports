@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, combineLatest, map, of, startWith, switchMap, tap } from 'rxjs';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
 import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
@@ -42,7 +42,7 @@ interface EstadoDetalle {
   error: ErrorTraducido | null;
 }
 
-type Accion = 'preparar' | 'avanzar' | 'despachar' | 'cancelar';
+type Accion = 'preparar' | 'avanzar' | 'despachar' | 'cancelar' | 'reembolso';
 type CampoEnvio = 'empresa' | 'numeroSeguimiento' | 'fechaSalida' | 'fechaLlegada';
 const LARGO_DATO_ENVIO = 60;
 
@@ -90,6 +90,10 @@ export class AdminPedido {
   /** Error de la última acción. Se muestra en la página (no en el modal) junto al estado real del pedido. */
   protected readonly errorAccion = signal<ErrorTraducido | null>(null);
   protected readonly procesando = signal<Accion | null>(null);
+  /** RF05: qué está haciendo el admin con el reembolso pedido (confirmar la devolución o escribir el rechazo). */
+  protected readonly resolucionReembolso = signal<'aprobar' | 'rechazar' | null>(null);
+  protected readonly respuestaReembolso = signal('');
+  protected readonly intentoRechazo = signal(false);
 
   protected readonly modal = signal<'despachar' | 'cancelar' | null>(null);
   protected readonly intentoDespachar = signal(false);
@@ -239,6 +243,42 @@ export class AdminPedido {
       this.pedidoService.cancelar(pedido.id),
       (r: CancelacionPedido) => (r.reembolso === 'NO_CORRESPONDE' ? texto : `${texto} ${textoReembolsoAdmin(r)}`)
     );
+  }
+
+  // ── RF05: reembolso que pidió el cliente ──────────────
+
+  abrirRechazo(): void {
+    this.intentoRechazo.set(false);
+    this.respuestaReembolso.set('');
+    this.resolucionReembolso.set('rechazar');
+  }
+
+  escribirRespuesta(evento: Event): void {
+    this.respuestaReembolso.set((evento.target as HTMLTextAreaElement).value);
+  }
+
+  aprobarReembolso(pedido: Pedido): void {
+    // El panel de confirmación se cierra recién cuando sale bien: si falla, el admin puede reintentar.
+    const resuelto$ = this.pedidoService
+      .resolverReembolso(pedido.id, true)
+      .pipe(tap(() => this.resolucionReembolso.set(null)));
+    this.ejecutar('reembolso', resuelto$, (p: Pedido) =>
+      p.tipoReembolso === 'MANUAL'
+        ? `Aprobaste el reembolso del pedido #${pedido.id}. Se pagó fuera de Mercado Pago: tenés que devolverle ${formatearPrecio(p.montoReembolsado ?? 0)} por tu cuenta.`
+        : `Aprobaste el reembolso del pedido #${pedido.id}: se le devolvieron ${formatearPrecio(p.montoReembolsado ?? 0)} en Mercado Pago.`
+    );
+  }
+
+  rechazarReembolso(pedido: Pedido): void {
+    this.intentoRechazo.set(true);
+    const respuesta = this.respuestaReembolso().trim();
+    if (!respuesta) {
+      return;
+    }
+    const resuelto$ = this.pedidoService
+      .resolverReembolso(pedido.id, false, respuesta)
+      .pipe(tap(() => this.resolucionReembolso.set(null)));
+    this.ejecutar('reembolso', resuelto$, `Rechazaste el reembolso del pedido #${pedido.id}. Le avisamos al cliente.`);
   }
 
   errorCampo(campo: CampoEnvio): string | null {

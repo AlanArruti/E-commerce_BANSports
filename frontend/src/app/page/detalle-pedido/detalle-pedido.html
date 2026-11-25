@@ -135,6 +135,8 @@
         <!-- ── RF03: "Lo recibí" / "No lo recibí" ───────── -->
         @if (pedido.estado === 'ENTREGADO') {
           <app-confirmar-recepcion [pedido]="pedido" (confirmado)="reintentar()" />
+          <!-- ── RF05: pedir el reembolso (10 días desde la entrega) y ver cómo se resolvió ── -->
+          <app-solicitar-reembolso [pedido]="pedido" (solicitado)="reintentar()" />
         }
 
         <section class="panel" aria-labelledby="titulo-entrega">

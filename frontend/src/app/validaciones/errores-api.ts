@@ -564,6 +564,31 @@ export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTrad
   };
 }
 
+/** El cliente pide el reembolso de un pedido entregado (RF05). */
+export function traducirErrorReembolso(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 409) {
+    return { titulo: 'Ya pediste el reembolso', detalle: mensaje || 'Actualizamos el estado de tu pedido.' };
+  }
+  if (mensaje.includes('días desde la entrega')) {
+    return { titulo: 'Se venció el plazo', detalle: mensaje };
+  }
+  if (mensaje.includes('entregado')) {
+    return { titulo: 'Este pedido todavía no figura entregado', detalle: 'Vas a poder pedir el reembolso cuando llegue.' };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return { titulo: 'No encontramos ese pedido', detalle: 'Puede que no sea de tu cuenta. Volvé a Mis pedidos.' };
+  }
+  return {
+    titulo: 'No pudimos enviar el pedido de reembolso',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 /** "Lo recibí" / "No lo recibí" de un pedido entregado (RF03). */
 export function traducirErrorRecepcion(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);

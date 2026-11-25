@@ -12,6 +12,8 @@ import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ResolucionReembolsoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.SolicitudReembolsoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.dto.response.PedidoResponse;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
@@ -34,6 +36,8 @@ public interface IPedidoService {
     PedidoResponse pagar(Long id, PagoRequest request);
     PedidoResponse cambiarEstado(Long id, EstadoPedidoRequest request);
     PedidoResponse confirmarRecepcion(Long id, ConfirmarRecepcionRequest request);
+    PedidoResponse solicitarReembolso(Long id, SolicitudReembolsoRequest request);
+    PedidoResponse resolverReembolso(Long id, ResolucionReembolsoRequest request);
     void cancelarPendientesSinIntentoDePago(Long idCliente);
     FacturaResponse obtenerFactura(Long idPedido);
 

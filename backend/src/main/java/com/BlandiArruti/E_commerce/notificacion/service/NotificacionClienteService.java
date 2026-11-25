@@ -4,6 +4,7 @@ import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.enums.TipoNotificacion;
+import com.BlandiArruti.E_commerce.enums.TipoReembolso;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.notificacion.dto.response.NoLeidasResponse;
@@ -84,6 +85,42 @@ public class NotificacionClienteService {
     /** Igual que {@link #avisarPedido}, pero para cambios del envío (EN_CAMINO no cambia el pedido). */
     public void avisarEnvio(Envio envio) {
         avisar(envio.getPedido(), envio);
+    }
+
+    /** RF05: el admin aprobó o rechazó el reembolso que pidió el cliente. */
+    public void avisarReembolso(Pedido pedido) {
+        if (pedido == null || pedido.getCliente() == null || pedido.getEstadoReembolso() == null) {
+            return;
+        }
+        Long numero = pedido.getId();
+        String titulo;
+        String mensaje;
+        switch (pedido.getEstadoReembolso()) {
+            case APROBADO -> {
+                titulo = "Reembolso aprobado";
+                mensaje = pedido.getTipoReembolso() == TipoReembolso.MANUAL
+                        ? "Aprobamos el reembolso del pedido #" + numero + ". Te vamos a contactar para devolverte el dinero."
+                        : "Aprobamos el reembolso del pedido #" + numero + ". Te devolvimos el dinero en Mercado Pago: "
+                                + "puede tardar unos días en verse en tu medio de pago.";
+            }
+            case RECHAZADO -> {
+                titulo = "Reembolso rechazado";
+                mensaje = "No pudimos aprobar el reembolso del pedido #" + numero + "."
+                        + (pedido.getRespuestaReembolso() != null ? " Motivo: " + pedido.getRespuestaReembolso() : "");
+            }
+            // SOLICITADO lo genera el propio cliente: no hace falta avisarle.
+            default -> {
+                return;
+            }
+        }
+        notificacionRepository.save(Notificacion.builder()
+                .cliente(pedido.getCliente())
+                .tipo(TipoNotificacion.PEDIDO)
+                .titulo(titulo)
+                .mensaje(recortar(mensaje, 300))
+                .idReferencia(numero)
+                .fechaCreacion(LocalDateTime.now())
+                .build());
     }
 
     /** Un producto entró en oferta (o mejoró el descuento): les llega a todos los clientes activos. */

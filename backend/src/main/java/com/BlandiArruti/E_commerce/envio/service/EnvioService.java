@@ -110,7 +110,7 @@ public class EnvioService implements IEnvioService {
 
         if (nuevo == EstadoEnvio.ENTREGADO) {
             Pedido pedido = envio.getPedido();
-            pedido.setEstadoPedido(EstadoPedido.ENTREGADO);
+            pedido.marcarEntregado();
             pedidoRepository.save(pedido);
         }
 

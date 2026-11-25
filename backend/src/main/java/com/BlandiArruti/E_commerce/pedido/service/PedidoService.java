@@ -18,7 +18,10 @@ import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
+import com.BlandiArruti.E_commerce.enums.EstadoReembolso;
 import com.BlandiArruti.E_commerce.enums.TipoReembolso;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ResolucionReembolsoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.SolicitudReembolsoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.response.CancelacionPedidoResponse;
 import com.BlandiArruti.E_commerce.exception.*;
 import lombok.extern.slf4j.Slf4j;
@@ -520,7 +523,11 @@ public class PedidoService implements IPedidoService {
             }
         }
 
-        pedido.setEstadoPedido(nuevo);
+        if (nuevo == EstadoPedido.ENTREGADO) {
+            pedido.marcarEntregado();
+        } else {
+            pedido.setEstadoPedido(nuevo);
+        }
         Pedido guardado = pedidoRepository.save(pedido);
         notificacionClienteService.avisarPedido(guardado);
         return pedidoMapper.toResponse(guardado);
@@ -567,6 +574,88 @@ public class PedidoService implements IPedidoService {
                     principal.getId(), id);
         }
         return pedidoMapper.toResponse(pedidoRepository.save(pedido));
+    }
+
+    /**
+     * RF05: el cliente pide el reembolso de su pedido entregado, dentro de los 10 días de la
+     * entrega. Queda SOLICITADO hasta que lo resuelva el admin. Se puede pedir una sola vez.
+     */
+    public PedidoResponse solicitarReembolso(Long id, SolicitudReembolsoRequest request) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
+
+        UsuarioDetails principal = getPrincipal();
+        if (principal.getRol() != Rol.CLIENTE || !principal.getId().equals(pedido.getCliente().getId())) {
+            throw new AccessDeniedException("Solo el cliente que hizo el pedido puede pedir el reembolso.");
+        }
+
+        if (pedido.getEstadoPedido() != EstadoPedido.ENTREGADO) {
+            throw new PedidoNoModificableException(
+                    "Solo podés pedir el reembolso de un pedido entregado. El pedido #" + id
+                    + " está " + pedido.getEstadoPedido() + ".");
+        }
+        if (pedido.getEstadoReembolso() != null) {
+            throw new ConflictoException(switch (pedido.getEstadoReembolso()) {
+                case SOLICITADO -> "Ya pediste el reembolso del pedido #" + id + ". Lo estamos revisando.";
+                case APROBADO -> "El reembolso del pedido #" + id + " ya fue aprobado.";
+                case RECHAZADO -> "El reembolso del pedido #" + id + " ya fue rechazado. "
+                        + "Si no estás de acuerdo, comunicate con la tienda.";
+            });
+        }
+        LocalDateTime limite = pedido.getFechaLimiteReembolso();
+        if (limite == null || LocalDateTime.now().isAfter(limite)) {
+            throw new PedidoNoModificableException(
+                    "Pasaron más de " + Pedido.PLAZO_REEMBOLSO_DIAS + " días desde la entrega del pedido #" + id
+                    + ": ya no se puede pedir el reembolso desde la página. Comunicate con la tienda.");
+        }
+
+        pedido.setEstadoReembolso(EstadoReembolso.SOLICITADO);
+        pedido.setMotivoReembolso(request.motivo().trim());
+        pedido.setFechaSolicitudReembolso(LocalDateTime.now());
+        log.info("El cliente {} pidió el reembolso del pedido {}.", principal.getId(), id);
+        return pedidoMapper.toResponse(pedidoRepository.save(pedido));
+    }
+
+    /**
+     * RF05: el admin resuelve el reembolso pedido. Si lo aprueba, se devuelve la plata en Mercado
+     * Pago antes de marcarlo (si falla, queda SOLICITADO). El stock no vuelve: el producto ya se
+     * entregó. Al rechazarlo tiene que decir por qué. En los dos casos se avisa al cliente.
+     */
+    public PedidoResponse resolverReembolso(Long id, ResolucionReembolsoRequest request) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
+
+        if (pedido.getEstadoReembolso() != EstadoReembolso.SOLICITADO) {
+            throw new ConflictoException(pedido.getEstadoReembolso() == null
+                    ? "El cliente no pidió el reembolso del pedido #" + id + "."
+                    : "El reembolso del pedido #" + id + " ya fue resuelto ("
+                            + pedido.getEstadoReembolso().name().toLowerCase() + ").");
+        }
+
+        String respuesta = request.respuesta() == null ? "" : request.respuesta().trim();
+        if (Boolean.TRUE.equals(request.aprobar())) {
+            double devuelto = reembolsoPagos.reembolsarCobros(pedido);
+            if (devuelto > 0) {
+                pedido.setTipoReembolso(TipoReembolso.AUTOMATICO);
+                pedido.setMontoReembolsado(devuelto);
+            } else {
+                // Se pagó sin pasarela (lo marcó pagado el admin): la tienda lo devuelve por su cuenta.
+                pedido.setTipoReembolso(TipoReembolso.MANUAL);
+                pedido.setMontoReembolsado(calcularTotal(pedido));
+            }
+            pedido.setEstadoReembolso(EstadoReembolso.APROBADO);
+        } else {
+            if (respuesta.isEmpty()) {
+                throw new EcommerceException("Para rechazar el reembolso, contale al cliente por qué.");
+            }
+            pedido.setEstadoReembolso(EstadoReembolso.RECHAZADO);
+        }
+        pedido.setRespuestaReembolso(respuesta.isEmpty() ? null : respuesta);
+        pedido.setFechaResolucionReembolso(LocalDateTime.now());
+
+        Pedido guardado = pedidoRepository.save(pedido);
+        notificacionClienteService.avisarReembolso(guardado);
+        return pedidoMapper.toResponse(guardado);
     }
 
     @Transactional(readOnly = true)
@@ -664,7 +753,7 @@ public class PedidoService implements IPedidoService {
         envio.setEstado(nuevo);
 
         if (nuevo == EstadoEnvio.ENTREGADO) {
-            pedido.setEstadoPedido(EstadoPedido.ENTREGADO);
+            pedido.marcarEntregado();
             pedidoRepository.save(pedido);
         }
 

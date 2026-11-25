@@ -103,6 +103,36 @@
   outline-offset: 2px;
 }
 
+/* Cuentas creadas con Google o GitHub: falta el DNI o la contraseña propia. */
+.aviso-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1px solid var(--color-aviso);
+  border-radius: var(--radio);
+  font-size: 14px;
+}
+
+.aviso-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.aviso-fila p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+.aviso-fila strong {
+  color: var(--color-aviso);
+}
+
 .perfil-seccion {
   display: flex;
   flex-direction: column;

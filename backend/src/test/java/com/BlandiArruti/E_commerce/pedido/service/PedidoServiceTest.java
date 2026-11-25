@@ -472,7 +472,7 @@ class PedidoServiceTest {
 
     // ─── crear: precio por variante (SCRUM-154) ───────────────────────────────
 
-    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").contrasenia("x").activo(true).build();
+    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").dni("30000000").contrasenia("x").activo(true).build();
 
     private Producto proteina() {
         return Producto.builder().id(2L).nombre("Whey").precio(30000.0).descuento(0).activo(true).build();
@@ -510,6 +510,21 @@ class PedidoServiceTest {
                 UsuarioDetails.fromCliente(clienteCrear)))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("no pertenece al producto");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_clienteSinDni_pideCompletarloAntesDeComprar() {
+        // Cuenta creada con Google o GitHub: todavía no cargó el DNI, que va en la factura.
+        Cliente sinDni = Cliente.builder().id(1L).email("c@gmail.com").contrasenia("x").activo(true).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(sinDni));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, null, 1)), null),
+                UsuarioDetails.fromCliente(sinDni)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("Completá tu DNI");
+        verify(productoRepository, never()).findById(any());
         verify(pedidoRepository, never()).save(any());
     }
 

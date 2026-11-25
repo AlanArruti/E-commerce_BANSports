@@ -13,6 +13,7 @@ import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
 import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.service.LocalidadService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
@@ -92,7 +93,7 @@ class ClienteServiceTest {
         Cliente cliente = Cliente.builder().id(1L).nombre("Juan").email("juan@mail.com").build();
         ClienteResponse response = mock(ClienteResponse.class);
 
-        when(clienteRepository.existsByEmail("juan@mail.com")).thenReturn(false);
+        when(clienteRepository.buscarPorEmailEquivalente("juan@mail.com")).thenReturn(Optional.empty());
         when(clienteRepository.existsByDni("12345678")).thenReturn(false);
         when(clienteMapper.toEntity(request)).thenReturn(cliente);
         when(passwordEncoder.encode("pass123")).thenReturn("hashed");
@@ -110,7 +111,7 @@ class ClienteServiceTest {
     void crear_emailDuplicado_lanzaDuplicadoException() {
         var request = new ClienteRequest("Juan", "Pérez", "12345678", "duplicado@mail.com", "pass");
 
-        when(clienteRepository.existsByEmail("duplicado@mail.com")).thenReturn(true);
+        when(clienteRepository.buscarPorEmailEquivalente("duplicado@mail.com")).thenReturn(Optional.of(Cliente.builder().id(99L).email("duplicado@mail.com").build()));
 
         assertThatThrownBy(() -> clienteService.crear(request))
                 .isInstanceOf(DuplicadoException.class);
@@ -123,7 +124,7 @@ class ClienteServiceTest {
     void crear_dniDuplicado_lanzaDuplicadoException() {
         var request = new ClienteRequest("Juan", "Pérez", "99999999", "unico@mail.com", "pass");
 
-        when(clienteRepository.existsByEmail("unico@mail.com")).thenReturn(false);
+        when(clienteRepository.buscarPorEmailEquivalente("unico@mail.com")).thenReturn(Optional.empty());
         when(clienteRepository.existsByDni("99999999")).thenReturn(true);
 
         assertThatThrownBy(() -> clienteService.crear(request))
@@ -172,12 +173,12 @@ class ClienteServiceTest {
     void actualizar_emailNuevo_actualizaDatos() {
         Cliente cliente = Cliente.builder().id(1L).email("viejo@mail.com")
                 .contrasenia("hash-original").activo(true).build();
-        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com");
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com", null);
         ClienteResponse response = mock(ClienteResponse.class);
 
         autenticarComoAdmin();
         when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
-        when(clienteRepository.existsByEmail("nuevo@mail.com")).thenReturn(false);
+        when(clienteRepository.buscarPorEmailEquivalente("nuevo@mail.com")).thenReturn(Optional.empty());
         when(clienteRepository.save(cliente)).thenReturn(cliente);
         when(clienteMapper.toResponse(cliente)).thenReturn(response);
 
@@ -191,11 +192,11 @@ class ClienteServiceTest {
     void actualizar_noTocaLaContrasenia() {
         Cliente cliente = Cliente.builder().id(1L).email("viejo@mail.com")
                 .contrasenia("hash-original").activo(true).build();
-        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com");
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "nuevo@mail.com", null);
 
         autenticarComoAdmin();
         when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
-        when(clienteRepository.existsByEmail("nuevo@mail.com")).thenReturn(false);
+        when(clienteRepository.buscarPorEmailEquivalente("nuevo@mail.com")).thenReturn(Optional.empty());
         when(clienteRepository.save(cliente)).thenReturn(cliente);
 
         clienteService.actualizar(1L, request);
@@ -207,11 +208,11 @@ class ClienteServiceTest {
     @Test
     void actualizar_emailDuplicadoDeOtroCliente_lanzaDuplicado() {
         Cliente cliente = Cliente.builder().id(1L).email("original@mail.com").activo(true).build();
-        var request = new ClienteUpdateRequest("Juan", "Pérez", "otro@mail.com");
+        var request = new ClienteUpdateRequest("Juan", "Pérez", "otro@mail.com", null);
 
         autenticarComoAdmin();
         when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
-        when(clienteRepository.existsByEmail("otro@mail.com")).thenReturn(true);
+        when(clienteRepository.buscarPorEmailEquivalente("otro@mail.com")).thenReturn(Optional.of(Cliente.builder().id(99L).email("otro@mail.com").build()));
 
         assertThatThrownBy(() -> clienteService.actualizar(1L, request))
                 .isInstanceOf(DuplicadoException.class);
@@ -247,6 +248,110 @@ class ClienteServiceTest {
         assertThatThrownBy(() -> clienteService.cambiarPassword(1L, request))
                 .isInstanceOf(CredencialesInvalidasException.class);
         verify(clienteRepository, never()).save(any());
+    }
+
+    // ─── Cuentas creadas con Google o GitHub ─────────────────────────────────
+
+    @Test
+    void crear_emailConMayusculas_seGuardaEnMinusculas() {
+        var request = new ClienteRequest("Juan", "Pérez", "12345678", "  Juan@Mail.com ", "pass123");
+        Cliente cliente = Cliente.builder().id(1L).email("  Juan@Mail.com ").build();
+
+        when(clienteRepository.buscarPorEmailEquivalente("juan@mail.com")).thenReturn(Optional.empty());
+        when(clienteRepository.existsByDni("12345678")).thenReturn(false);
+        when(clienteMapper.toEntity(request)).thenReturn(cliente);
+        when(passwordEncoder.encode("pass123")).thenReturn("hashed");
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+
+        clienteService.crear(request);
+
+        assertThat(cliente.getEmail()).isEqualTo("juan@mail.com");
+        assertThat(cliente.isContraseniaPropia()).isTrue();
+    }
+
+    @Test
+    void crear_gmailYaRegistradoConOtrosPuntos_lanzaDuplicado() {
+        // Ya entró con Google como juan.perez@gmail.com: registrarse como juanperez@gmail.com es la misma casilla.
+        var request = new ClienteRequest("Juan", "Pérez", "12345678", "juanperez@gmail.com", "pass123");
+        when(clienteRepository.buscarPorEmailEquivalente("juanperez@gmail.com"))
+                .thenReturn(Optional.of(Cliente.builder().id(5L).email("juan.perez@gmail.com").build()));
+
+        assertThatThrownBy(() -> clienteService.crear(request))
+                .isInstanceOf(DuplicadoException.class)
+                .hasMessageContaining("Google");
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void cambiarPassword_cuentaSinContraseniaPropia_laCreaSinPedirLaActual() {
+        Cliente cliente = Cliente.builder().id(1L).contrasenia("hash-aleatorio").contraseniaPropia(false)
+                .activo(true).build();
+
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(passwordEncoder.encode("nueva123")).thenReturn("hash-nuevo");
+
+        clienteService.cambiarPassword(1L, new CambioPasswordRequest(null, "nueva123"));
+
+        assertThat(cliente.getContrasenia()).isEqualTo("hash-nuevo");
+        assertThat(cliente.isContraseniaPropia()).isTrue();
+        verify(passwordEncoder, never()).matches(any(), any());
+    }
+
+    @Test
+    void cambiarPassword_cuentaConContraseniaSinLaActual_rechaza() {
+        Cliente cliente = Cliente.builder().id(1L).contrasenia("hash-viejo").activo(true).build();
+
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+
+        assertThatThrownBy(() -> clienteService.cambiarPassword(1L, new CambioPasswordRequest(" ", "nueva123")))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("actual es obligatoria");
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizar_clienteSinDni_loCarga() {
+        Cliente cliente = Cliente.builder().id(1L).email("ana@gmail.com").activo(true).build();
+
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.existsByDni("30111222")).thenReturn(false);
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+
+        clienteService.actualizar(1L, new ClienteUpdateRequest("Ana", "García", "ana@gmail.com", "30111222"));
+
+        assertThat(cliente.getDni()).isEqualTo("30111222");
+        assertThat(cliente.getApellido()).isEqualTo("García");
+    }
+
+    @Test
+    void actualizar_dniDistintoDelCargado_rechaza() {
+        Cliente cliente = Cliente.builder().id(1L).email("ana@gmail.com").dni("30111222").activo(true).build();
+
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+
+        assertThatThrownBy(() -> clienteService.actualizar(1L,
+                new ClienteUpdateRequest("Ana", "García", "ana@gmail.com", "40999888")))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("no se puede cambiar");
+        assertThat(cliente.getDni()).isEqualTo("30111222");
+    }
+
+    @Test
+    void actualizar_dniDeOtroCliente_lanzaDuplicado() {
+        Cliente cliente = Cliente.builder().id(1L).email("ana@gmail.com").activo(true).build();
+
+        autenticarComoCliente(1L);
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.existsByDni("30111222")).thenReturn(true);
+
+        assertThatThrownBy(() -> clienteService.actualizar(1L,
+                new ClienteUpdateRequest("Ana", "García", "ana@gmail.com", "30111222")))
+                .isInstanceOf(DuplicadoException.class);
+        assertThat(cliente.getDni()).isNull();
     }
 
     // ─── eliminar ────────────────────────────────────────────────────────────

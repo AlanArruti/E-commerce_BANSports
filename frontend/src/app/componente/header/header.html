@@ -2,6 +2,14 @@
   Envíos a todo el país · Pagá con Mercado Pago
 </div>
 
+<!-- Cuentas creadas con Google o GitHub: sin DNI no se puede comprar (va en la factura). -->
+@if (authService.esCliente() && faltanDatos()) {
+  <div class="aviso-datos" role="status">
+    <span>Te faltan datos de tu cuenta ({{ datosFaltantes() }}). Completalos para poder comprar.</span>
+    <button type="button" class="aviso-datos-boton" (click)="completarDatos()">Completar mis datos</button>
+  </div>
+}
+
 <header class="header">
   <div class="contenedor header-grilla">
     <button
@@ -145,5 +153,5 @@
 }
 
 @if (perfilAbierto()) {
-  <app-perfil-modal (cerrar)="cerrarPerfil()" />
+  <app-perfil-modal [inicio]="modoPerfil()" (cerrar)="cerrarPerfil()" />
 }

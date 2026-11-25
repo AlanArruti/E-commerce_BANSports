@@ -7,6 +7,37 @@
   padding: var(--espacio-2) var(--espacio-4);
 }
 
+/* Cuenta creada con Google o GitHub sin DNI: no puede comprar hasta completarlo. */
+.aviso-datos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2) var(--espacio-4);
+  padding: var(--espacio-2) var(--espacio-4);
+  background: var(--color-superficie-2);
+  border-bottom: 1px solid var(--color-aviso);
+  color: var(--color-texto);
+  font-size: 13px;
+  text-align: center;
+}
+
+.aviso-datos-boton {
+  padding: 4px 12px;
+  border: 1px solid var(--color-aviso);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-aviso);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aviso-datos-boton:hover {
+  background: var(--color-aviso);
+  color: var(--color-negro);
+}
+
 .header {
   border-bottom: 1px solid var(--color-borde);
   background: var(--color-negro);

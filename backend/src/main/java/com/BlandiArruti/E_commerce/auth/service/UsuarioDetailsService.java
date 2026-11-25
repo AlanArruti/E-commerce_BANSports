@@ -23,7 +23,8 @@ public class UsuarioDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        Optional<Cliente> cliente = clienteRepository.findByEmail(identifier);
+        // Sin importar mayúsculas ni, en Gmail, los puntos: es la misma cuenta que ve el login social.
+        Optional<Cliente> cliente = clienteRepository.buscarPorEmailEquivalente(identifier);
         if (cliente.isPresent()) {
             return UsuarioDetails.fromCliente(cliente.get());
         }

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
@@ -13,6 +13,7 @@ import { CotizacionEnvio, plazoDeEnvio } from '../../models/cotizacion-envio';
 import { ValidacionCupon } from '../../models/cupon';
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
+import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
 import { CotizacionService } from '../../services/cotizacion.service';
 import { CuponService } from '../../services/cupon.service';
@@ -30,6 +31,13 @@ import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
   styleUrl: './checkout.css'
 })
 export class Checkout implements OnInit {
+  private readonly authService = inject(AuthService);
+  /** Cuenta creada con Google o GitHub sin DNI: el back no deja confirmar (va en la factura). */
+  protected readonly sinDni = computed(() => {
+    const cliente = this.authService.cliente();
+    return !!cliente && !cliente.dni;
+  });
+
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<ErrorTraducido | null>(null);
   protected readonly direcciones = signal<Direccion[]>([]);

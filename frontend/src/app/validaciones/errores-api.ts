@@ -147,7 +147,9 @@ export function traducirErrorPerfil(error: HttpErrorResponse): ErrorTraducido {
   if (error.status === 409) {
     return {
       titulo: 'No pudimos guardar los cambios',
-      detalle: 'Ese email ya está registrado por otra cuenta.'
+      detalle: mensaje.toLowerCase().includes('dni')
+        ? 'Ese DNI ya está registrado en otra cuenta. Si es tuyo, escribinos y lo revisamos.'
+        : 'Ese email ya está registrado por otra cuenta.'
     };
   }
   if (error.status === 403) {
@@ -204,7 +206,9 @@ export function traducirErrorRegistro(error: HttpErrorResponse): ErrorTraducido 
     if (mensaje.toLowerCase().includes('email')) {
       return {
         titulo: 'Ese email ya tiene una cuenta',
-        detalle: 'Ya existe una cuenta con este email.',
+        detalle:
+          'Ya existe una cuenta con este email. Si antes entraste con Google o GitHub, ingresá con ese botón; ' +
+          'si no recordás la contraseña, usá "¿Olvidaste tu contraseña?".',
         campo: 'email'
       };
     }

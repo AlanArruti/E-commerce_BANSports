@@ -2,13 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  OnInit,
   computed,
+  input,
   signal,
   output
 } from '@angular/core';
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { APELLIDO_PENDIENTE, faltanDatos } from '../../models/cliente';
 import { Direccion } from '../../models/direccion';
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { AuthService } from '../../services/auth.service';
@@ -20,9 +23,10 @@ import {
   traducirErrorPerfil
 } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
-import { coincideCon, requerido, soloLetras } from '../../validaciones/validadores';
+import { coincideCon, largoDni, requerido, soloLetras, soloNumeros } from '../../validaciones/validadores';
 
-type Modo = 'ver' | 'editar' | 'password';
+export type ModoPerfil = 'ver' | 'editar' | 'password';
+type Modo = ModoPerfil;
 
 @Component({
   selector: 'app-perfil-modal',
@@ -31,8 +35,10 @@ type Modo = 'ver' | 'editar' | 'password';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './perfil-modal.css'
 })
-export class PerfilModal {
+export class PerfilModal implements OnInit {
   readonly cerrar = output<void>();
+  /** Con qué pantalla abre. El aviso "Completá tus datos" del header lo abre directo en 'editar'. */
+  readonly inicio = input<ModoPerfil>('ver');
 
   protected readonly modo = signal<Modo>('ver');
   protected readonly cargando = signal(false);
@@ -48,21 +54,28 @@ export class PerfilModal {
   private readonly intentoPassword = signal(false);
 
   protected readonly cliente = computed(() => this.authService.cliente());
+  /** Cuenta creada con Google o GitHub que todavía no tiene contraseña propia. */
+  protected readonly sinContrasenia = computed(() => this.authService.cliente()?.tieneContrasenia === false);
+  /** Le falta el DNI (obligatorio para comprar) o el apellido. */
+  protected readonly faltanDatos = computed(() => faltanDatos(this.authService.cliente()));
+  protected readonly sinDni = computed(() => !this.authService.cliente()?.dni);
   protected readonly nombreCompleto = computed(() => {
     const cliente = this.authService.cliente();
-    return cliente ? `${cliente.nombre} ${cliente.apellido}`.trim() : '';
+    return cliente ? `${cliente.nombre} ${this.apellidoReal(cliente.apellido)}`.trim() : '';
   });
   protected readonly iniciales = computed(() => {
     const cliente = this.authService.cliente();
     if (!cliente) {
       return '';
     }
-    return `${cliente.nombre.charAt(0)}${cliente.apellido.charAt(0)}`.toUpperCase();
+    return `${cliente.nombre.charAt(0)}${this.apellidoReal(cliente.apellido).charAt(0)}`.toUpperCase();
   });
 
   protected readonly perfilForm: FormGroup;
   protected readonly nombre: FormControl<string>;
   protected readonly apellido: FormControl<string>;
+  /** Solo se edita si todavía no tiene DNI; una vez cargado no se cambia. */
+  protected readonly dni: FormControl<string>;
 
   protected readonly passwordForm: FormGroup;
   protected readonly contraseniaActual: FormControl<string>;
@@ -82,13 +95,19 @@ export class PerfilModal {
       nonNullable: true,
       validators: [requerido, soloLetras, Validators.maxLength(50)]
     });
-    this.apellido = new FormControl(cliente?.apellido ?? '', {
+    this.apellido = new FormControl(this.apellidoReal(cliente?.apellido), {
       nonNullable: true,
       validators: [requerido, soloLetras, Validators.maxLength(50)]
     });
+    // Opcional al guardar (se pueden cambiar otros datos sin cargarlo), pero si se escribe tiene que ser válido.
+    this.dni = new FormControl('', {
+      nonNullable: true,
+      validators: [soloNumeros, largoDni]
+    });
     this.perfilForm = new FormGroup({
       nombre: this.nombre,
-      apellido: this.apellido
+      apellido: this.apellido,
+      dni: this.dni
     });
 
     this.contraseniaActual = new FormControl('', {
@@ -117,6 +136,19 @@ export class PerfilModal {
     this.cargarPedidos();
   }
 
+  ngOnInit(): void {
+    if (this.inicio() === 'editar') {
+      this.editar();
+    } else if (this.inicio() === 'password') {
+      this.irPassword();
+    }
+  }
+
+  /** El "-" que deja el login con GitHub no se muestra en el formulario: se pide el apellido de verdad. */
+  private apellidoReal(apellido: string | undefined): string {
+    return !apellido || apellido === APELLIDO_PENDIENTE ? '' : apellido;
+  }
+
   @HostListener('document:keydown.escape')
   protected cerrarConEscape(): void {
     this.cerrar.emit();
@@ -136,7 +168,8 @@ export class PerfilModal {
   protected editar(): void {
     const cliente = this.authService.cliente();
     this.nombre.setValue(cliente?.nombre ?? '');
-    this.apellido.setValue(cliente?.apellido ?? '');
+    this.apellido.setValue(this.apellidoReal(cliente?.apellido));
+    this.dni.setValue('');
     this.intentoPerfil.set(false);
     this.errorServidor.set(null);
     this.exito.set(null);
@@ -164,11 +197,14 @@ export class PerfilModal {
       .actualizarPerfil({
         nombre: this.nombre.value.trim(),
         apellido: this.apellido.value.trim(),
-        email: this.authService.cliente()?.email ?? ''
+        email: this.authService.cliente()?.email ?? '',
+        // Solo se manda si todavía no tenía: una vez cargado no se cambia.
+        dni: this.sinDni() ? this.dni.value.trim() || null : null
       })
       .subscribe({
         next: () => {
           this.cargando.set(false);
+          this.intentoPerfil.set(false);
           this.exito.set('Tus datos se actualizaron correctamente.');
           this.modo.set('ver');
         },
@@ -185,7 +221,12 @@ export class PerfilModal {
   }
 
   protected irPassword(): void {
+    // Una cuenta creada con Google o GitHub no conoce su contraseña: crea la primera sin la "actual".
+    this.contraseniaActual.setValidators(this.sinContrasenia() ? [] : [requerido]);
+    this.contraseniaActual.updateValueAndValidity();
     this.passwordForm.reset();
+    // Sin esto, un guardado anterior del perfil dejaba los errores a la vista antes de escribir.
+    this.intentoPerfil.set(false);
     this.intentoPassword.set(false);
     this.errorServidor.set(null);
     this.exito.set(null);
@@ -211,9 +252,11 @@ export class PerfilModal {
     }
 
     this.cargando.set(true);
+    // Se lee antes de mandar: al responder, el servicio ya marca que tiene contraseña.
+    const creada = this.sinContrasenia();
     this.clienteService
       .cambiarPassword({
-        contraseniaActual: this.contraseniaActual.value,
+        contraseniaActual: creada ? null : this.contraseniaActual.value,
         contraseniaNueva: this.contraseniaNueva.value
       })
       .subscribe({
@@ -221,7 +264,11 @@ export class PerfilModal {
           this.cargando.set(false);
           this.passwordForm.reset();
           this.intentoPassword.set(false);
-          this.exito.set('Tu contraseña se actualizó correctamente.');
+          this.exito.set(
+            creada
+              ? 'Creaste tu contraseña. Ahora también podés entrar con tu email.'
+              : 'Tu contraseña se actualizó correctamente.'
+          );
           this.modo.set('ver');
         },
         error: (e) => {

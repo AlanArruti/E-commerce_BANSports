@@ -32,6 +32,8 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - **Notificaciones en la página** (RF02): el cliente recibe un aviso cuando se acredita el pago de su pedido, cuando pasa a preparación, cuando se despacha (con empresa y número de seguimiento), cuando está en camino, cuando se entrega y cuando un admin lo cancela. Cuando un producto entra en oferta o mejora su descuento, el aviso les llega a todos los clientes activos.
 - **Confirmación de recepción** (RF03): cuando un pedido figura `ENTREGADO`, el cliente dueño puede responder "Lo recibí" o "No lo recibí", con un comentario opcional. "No lo recibí" queda marcado en el panel para que la tienda lo revise, y después todavía se puede cambiar a "Lo recibí". "Lo recibí" ya no se cambia.
 - Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
+- **Una cuenta por persona, con o sin Google/GitHub**: los emails se guardan y se comparan en minúsculas y, en Gmail, sin importar los puntos ni lo que va después de "+" (es la misma casilla). Si alguien se registra con el formulario y después entra con Google con el mismo email, entra a esa misma cuenta.
+- Las cuentas creadas con Google o GitHub empiezan sin DNI y con una contraseña aleatoria. Desde el perfil el cliente carga el DNI (una sola vez) y **crea** su contraseña sin poner la "actual". El DNI es obligatorio para confirmar una compra porque va en la factura; mientras falte, el header muestra un aviso para completarlo.
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
 ---
@@ -137,7 +139,7 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/categorias` | Listar categorías | Público |
 | `GET` | `/cliente/{id}` | Ver perfil del cliente | CLIENTE / ADMIN |
 | `PUT` | `/cliente/{id}` | Editar perfil (nombre, apellido, email) | CLIENTE / ADMIN |
-| `PATCH` | `/cliente/{id}/password` | Cambiar contraseña (requiere la actual) | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/password` | Cambiar contraseña (requiere la actual, salvo que la cuenta se haya creado con Google o GitHub y todavía no tenga una) | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/direccion` | Agregar dirección de envío | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/pedido` | Historial de pedidos del cliente | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
@@ -481,7 +483,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **334 tests** (333 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **345 tests** (344 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -507,10 +509,11 @@ Cobertura de tests unitarios:
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 47 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción)
+- `PedidoServiceTest` — 48 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
-- `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
+- `ClienteServiceTest` — 23 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez)
+- `EmailsTest` — 3 tests (minúsculas y equivalencia de casillas de Gmail)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 7 tests (cotización Correo Argentino y tarifa de respaldo por provincia)

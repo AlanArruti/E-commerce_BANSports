@@ -44,6 +44,15 @@ public class Cliente {
     @Column(name = "contrasenia", nullable = false, length = 255)
     private String contrasenia;
 
+    /**
+     * false si la cuenta la creó el login con Google o GitHub: la contraseña es aleatoria y el cliente
+     * no la conoce, así que puede crear una sin poner la "actual". El DEFAULT deja en true a los
+     * clientes que ya existían (todos se registraron con contraseña o pueden recuperarla).
+     */
+    @Column(name = "contrasenia_propia", nullable = false, columnDefinition = "boolean default true not null")
+    @Builder.Default
+    private boolean contraseniaPropia = true;
+
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;

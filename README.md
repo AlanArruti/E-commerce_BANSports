@@ -18,7 +18,7 @@ Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angu
 
 ## Descripción del proyecto
 
-El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
+El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes en los eventos clave del ciclo de vida del pedido, por email y en la propia página (campanita del header con sus pedidos y las ofertas nuevas).
 
 ### Reglas de negocio principales
 
@@ -29,6 +29,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
 - Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
 - Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
+- **Notificaciones en la página** (RF02): el cliente recibe un aviso cuando se acredita el pago de su pedido, cuando pasa a preparación, cuando se despacha (con empresa y número de seguimiento), cuando está en camino, cuando se entrega y cuando un admin lo cancela. Cuando un producto entra en oferta o mejora su descuento, el aviso les llega a todos los clientes activos.
 - Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
@@ -85,7 +86,7 @@ Controller → IService (interface) → ServiceImpl → Repository
 ```
 backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── aop/                  ← LoggingAspect (AOP transversal)
-├── auth/                 ← JWT, OAuth2 GitHub, AuthController
+├── auth/                 ← JWT, OAuth2 (GitHub y Google), recuperar contraseña, AuthController
 ├── administrador/        ← CRUD de administradores
 ├── carrito/              ← Carrito de compras
 ├── categoria/            ← Categorías de productos
@@ -93,11 +94,12 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── config/               ← SecurityConfig
 ├── cotizacion/           ← Cotización de envío (Correo Argentino)
 ├── envio/                ← Gestión de envíos
-├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock
+├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock, TipoNotificacion
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
-├── notificacion/         ← Envío de emails (JavaMailSender + plantillas Thymeleaf)
+├── notificacion/         ← Emails (NotificacionService: JavaMailSender + plantillas Thymeleaf) y
+│                           notificaciones de la página (NotificacionClienteService + tabla notificaciones)
 ├── pago/                 ← Pagos con pasarelas (ver "Pasarelas de pago")
 │   ├── pasarela/         ← PasarelaPago, PasarelaPagoBase, RegistroPasarelas
 │   │   └── mercadopago/  ← MercadoPagoPasarela (hija) + cliente de la API de Orders
@@ -140,6 +142,10 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito `{ idDireccion, opcionEnvio, codigoCupon? }` | CLIENTE / ADMIN |
+| `GET` | `/cliente/{id}/notificaciones` | Últimas 30 notificaciones (pedidos y ofertas), de la más nueva a la más vieja | CLIENTE / ADMIN |
+| `GET` | `/cliente/{id}/notificaciones/no-leidas` | Cantidad sin leer `{ cantidad }` (contador de la campanita) | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/notificaciones/{nid}/leida` | Marcar una notificación como leída | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/notificaciones/leidas` | Marcar todas como leídas | CLIENTE / ADMIN |
 | `GET` | `/cupones/validar?codigo=` | ¿Sirve el cupón para mi carrito? Devuelve el descuento o 400 con el motivo (vencido, agotado, compra mínima) | CLIENTE |
 | `GET` `POST` `PUT` `DELETE` | `/cupones`, `/cupones/{id}` | Cupones de descuento (la baja es lógica) | ADMIN |
 | `PATCH` | `/pedido/{id}/pagar` | Marcar pagado sin pasarela (genera factura) | ADMIN |
@@ -473,7 +479,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **319 tests** (318 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **327 tests** (326 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -507,6 +513,7 @@ Cobertura de tests unitarios:
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 7 tests (cotización Correo Argentino y tarifa de respaldo por provincia)
 - `NotificacionServiceTest` — 9 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
+- `NotificacionClienteServiceTest` — 8 tests (avisos de pago, despacho con seguimiento y en camino, sin aviso en pendiente de pago, oferta para todos los clientes activos, marcar leída, notificaciones de otro cliente)
 - `CodigoPostalTest` — 18 tests (formato de 4 números o CPA, y que el código pueda ser de la provincia de la localidad)
 - `LocalidadServiceTest` — 6 tests (búsqueda en Georef, alta de país, provincia y ciudad la primera vez)
 - `GeorefClientTest` — 3 tests y `CorreoArgentinoClientTest` — 2 tests (respuestas y caídas de las APIs externas)

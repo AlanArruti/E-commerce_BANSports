@@ -96,8 +96,8 @@ class AdminResumenServiceTest {
     void resumen_sinDatos_devuelveCeros() {
         when(facturaRepository.sumarVentasEntre(any(), any(), any())).thenReturn(0.0);
         when(pedidoRepository.countByEstadoPedido(any())).thenReturn(0L);
-        when(varianteRepository.countByActivoTrueAndStock(0)).thenReturn(0L);
-        when(varianteRepository.countByActivoTrueAndStockBetween(1, 5)).thenReturn(0L);
+        when(varianteRepository.contarActivasConStockEntre(0, 0)).thenReturn(0L);
+        when(varianteRepository.contarActivasConStockEntre(1, 5)).thenReturn(0L);
         when(productoRepository.countOfertasActivas()).thenReturn(0L);
 
         ResumenAdminResponse resumen = service.resumen();

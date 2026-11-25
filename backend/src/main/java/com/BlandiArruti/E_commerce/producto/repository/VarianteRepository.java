@@ -23,12 +23,14 @@ public interface VarianteRepository extends JpaRepository<Variante, Long> {
 
     List<Variante> findByProductoIdAndActivoTrue(Long idProducto);
 
-    long countByActivoTrueAndStock(int stock);
-
-    long countByActivoTrueAndStockBetween(int min, int max);
+    // Stock bajo y sin stock: solo variantes activas de productos activos. Borrar un producto
+    // no da de baja sus variantes, y no tiene sentido avisar que falta stock de algo borrado.
+    @Query("SELECT COUNT(v) FROM Variante v WHERE v.activo = true AND v.producto.activo = true " +
+           "AND v.stock BETWEEN :min AND :max")
+    long contarActivasConStockEntre(@Param("min") int min, @Param("max") int max);
 
     @Query("SELECT v FROM Variante v JOIN FETCH v.producto p " +
-           "WHERE v.activo = true AND v.stock <= :max " +
+           "WHERE v.activo = true AND p.activo = true AND v.stock <= :max " +
            "ORDER BY v.stock ASC, v.id ASC")
     List<Variante> findStockBajo(@Param("max") int max);
 }

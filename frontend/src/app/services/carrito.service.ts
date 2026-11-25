@@ -181,8 +181,8 @@ export class CarritoService {
   }
 
   /**
-   * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock
-   * y que la dirección sea del cliente, y vacía el carrito. Solo con sesión.
+   * Convierte el carrito en un pedido (queda en PENDIENTE_PAGO). El back valida el stock y que la
+   * dirección sea del cliente, y cancela los pedidos que confirmó antes y nunca llevó a pagar. Solo con sesión.
    */
   checkout(idDireccion: number, opcion: CotizacionEnvio, codigoCupon: string | null = null): Observable<Pedido> {
     return this.http
@@ -192,8 +192,9 @@ export class CarritoService {
         opcionEnvio: { tipoEntrega: opcion.tipoEntrega, servicio: opcion.servicio },
         // El back vuelve a validar el cupón y calcula el descuento él.
         codigoCupon
-      })
-      .pipe(tap(() => this.carrito.update((carrito) => (carrito ? { ...carrito, items: [], total: 0 } : carrito))));
+      });
+    // El carrito no se vacía al confirmar: si el cliente se arrepiente antes de pagar, lo encuentra igual.
+    // Lo comprado sale del carrito cuando se acredita el pago (ver resultado-pago, que lo vuelve a cargar).
   }
 
   /** Cuántas unidades de esa variante ya hay en el carrito (para no ofrecer más que el stock). */

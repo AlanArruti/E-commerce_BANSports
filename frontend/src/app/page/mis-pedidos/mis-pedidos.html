@@ -65,6 +65,13 @@
             <svg class="pedido-flecha" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
           </a>
           <!-- RF03: fuera del enlace, porque adentro de un <a> no puede haber botones. -->
+          <!-- Pendiente de pago: se puede volver a Mercado Pago desde el detalle (salió sin pagar, no andaba, etc.). -->
+          @if (pedido.estado === 'PENDIENTE_PAGO') {
+            <div class="pendiente-pago">
+              <span>Este pedido todavía no se pagó.</span>
+              <a class="btn btn-primario btn-chico" [routerLink]="['/perfil/pedidos', pedido.id]">Pagar ahora</a>
+            </div>
+          }
           @if (pedido.estado === 'ENTREGADO') {
             <app-confirmar-recepcion class="recepcion" [pedido]="pedido" (confirmado)="actualizar($event)" />
           }

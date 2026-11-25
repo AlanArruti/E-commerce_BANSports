@@ -23,6 +23,8 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 ### Reglas de negocio principales
 
 - Un pedido se crea en estado `PENDIENTE_PAGO`. El stock **no** se descuenta hasta que el pago es confirmado.
+- **El carrito no se vacía al confirmar el checkout**: si el cliente se arrepiente antes de pagar, vuelve al carrito ("Volver al carrito para cambiar algo" cancela ese pedido) y lo encuentra igual. Lo comprado sale del carrito recién cuando se acredita el pago, y solo eso: lo que agregó después queda. Al volver a confirmar, se cancelan solos los pedidos pendientes que nunca llegaron a la pasarela; los que tienen un intento de pago no se tocan.
+- Un pedido pendiente se puede pagar más tarde (por ejemplo, si salió de Mercado Pago sin querer o no tenía saldo): "Pagar ahora" en Mis pedidos lleva al detalle, que tiene el botón de la pasarela.
 - El cliente paga con una pasarela (MercadoPago). Cada intento queda registrado como un `Pago`. El pedido pasa a `PAGADO` cuando la pasarela confirma el cobro, ya sea al volver el cliente a la tienda o por el webhook. Un admin también puede marcarlo pagado a mano.
 - Al confirmar el pago se genera automáticamente una **Factura** (tipo A, B o C) y el pedido pasa a `PAGADO`.
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
@@ -483,7 +485,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **345 tests** (344 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **347 tests** (346 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -503,13 +505,13 @@ Cobertura de tests unitarios:
 - `OAuth2ClienteServiceTest` — 10 tests (GitHub y Google: alta, vinculación por email, email privado de GitHub, email sin verificar, cuenta desactivada)
 - `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
-- `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
+- `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout sin vaciar el carrito)
 - `CategoriaServiceTest` — 13 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
 - `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 48 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar)
+- `PedidoServiceTest` — 50 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
 - `ClienteServiceTest` — 23 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez)

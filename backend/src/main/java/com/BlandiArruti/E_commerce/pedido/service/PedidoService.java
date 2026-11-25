@@ -3,6 +3,7 @@ package com.BlandiArruti.E_commerce.pedido.service;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
+import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
 import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
@@ -54,6 +55,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -76,6 +78,7 @@ public class PedidoService implements IPedidoService {
     private final ICuponService cuponService;
     private final FacturaPdfGenerator facturaPdfGenerator;
     private final NotificacionClienteService notificacionClienteService;
+    private final CarritoRepository carritoRepository;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -387,8 +390,48 @@ public class PedidoService implements IPedidoService {
 
         notificacionService.notificarFacturaGenerada(factura);
         notificacionClienteService.avisarPedido(guardado);
+        quitarDelCarrito(pedido);
 
         return guardado;
+    }
+
+    /**
+     * El carrito ya no se vacía al confirmar el checkout (el cliente puede arrepentirse y volver a
+     * cambiarlo antes de pagar): lo comprado sale del carrito recién cuando se cobra. Se descuenta
+     * solo lo de este pedido, por si después de confirmarlo agregó otras cosas.
+     */
+    private void quitarDelCarrito(Pedido pedido) {
+        carritoRepository.findByClienteId(pedido.getCliente().getId()).ifPresent(carrito -> {
+            for (ItemPedido comprado : pedido.getItems()) {
+                Long idProducto = comprado.getProducto() == null ? null : comprado.getProducto().getId();
+                Long idVariante = comprado.getVariante() == null ? null : comprado.getVariante().getId();
+                carrito.getItems().stream()
+                        .filter(item -> item.getProducto().getId().equals(idProducto)
+                                && Objects.equals(
+                                        item.getVariante() == null ? null : item.getVariante().getId(), idVariante))
+                        .findFirst()
+                        .ifPresent(item -> item.setCantidad(item.getCantidad() - comprado.getCantidad()));
+            }
+            carrito.getItems().removeIf(item -> item.getCantidad() <= 0);
+            carritoRepository.save(carrito);
+        });
+    }
+
+    /**
+     * Cancela los pedidos pendientes del cliente que nunca llegaron a la pasarela: quedan cuando confirma
+     * el checkout y vuelve al carrito sin ir a pagar. Los que tienen un intento de pago no se tocan, porque
+     * el pago todavía puede acreditarse. Lo llama el checkout antes de crear el pedido nuevo.
+     */
+    public void cancelarPendientesSinIntentoDePago(Long idCliente) {
+        for (Pedido abandonado : pedidoRepository.findPendientesSinIntentoDePago(idCliente)) {
+            if (abandonado.getCupon() != null) {
+                cuponService.devolverUso(abandonado.getCupon());
+            }
+            abandonado.setEstadoPedido(EstadoPedido.CANCELADO);
+            pedidoRepository.save(abandonado);
+            log.info("Pedido {} cancelado: el cliente {} volvió a confirmar sin haberlo pagado.",
+                    abandonado.getId(), idCliente);
+        }
     }
 
     public PedidoResponse cambiarEstado(Long id, EstadoPedidoRequest request) {

@@ -32,6 +32,18 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     List<Pedido> findByClienteIdAndEstadoPedido(Long idCliente, EstadoPedido estado);
 
+    /**
+     * Pedidos pendientes de pago del cliente que nunca llegaron a una pasarela (no tienen ni un Pago).
+     * Son los que quedan cuando confirma el checkout y vuelve al carrito sin ir a pagar.
+     */
+    @Query("""
+            select p from Pedido p
+            where p.cliente.id = :idCliente
+              and p.estadoPedido = com.BlandiArruti.E_commerce.enums.EstadoPedido.PENDIENTE_PAGO
+              and not exists (select 1 from Pago g where g.pedido = p)
+            """)
+    List<Pedido> findPendientesSinIntentoDePago(@Param("idCliente") Long idCliente);
+
     Page<Pedido> findAll(Pageable pageable);
 
     Page<Pedido> findByClienteId(Long idCliente, Pageable pageable);

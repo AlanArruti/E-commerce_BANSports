@@ -328,7 +328,7 @@ class CarritoServiceTest {
     }
 
     @Test
-    void checkout_carritoConItems_creaPedidoYVaciaCarrito() {
+    void checkout_carritoConItems_creaPedidoSinVaciarElCarrito() {
         autenticarComoCliente(1L);
         Variante variante = varianteConStock(10L, 5);
         Carrito carrito = carritoVacio(1L);
@@ -342,7 +342,11 @@ class CarritoServiceTest {
 
         carritoService.checkout(1L, null, null, null);
 
-        assertThat(carrito.getItems()).isEmpty();
-        verify(carritoRepository).save(carrito);
+        // Si se arrepiente antes de pagar, vuelve al carrito y lo encuentra igual: se vacía al cobrar.
+        assertThat(carrito.getItems()).containsExactly(item);
+        // Antes de crear el nuevo, se cancelan los pedidos que confirmó y nunca llevó a pagar.
+        var orden = inOrder(pedidoService);
+        orden.verify(pedidoService).cancelarPendientesSinIntentoDePago(1L);
+        orden.verify(pedidoService).crear(any(), any());
     }
 }

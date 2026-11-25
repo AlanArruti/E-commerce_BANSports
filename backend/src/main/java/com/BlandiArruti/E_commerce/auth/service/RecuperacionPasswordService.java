@@ -55,7 +55,7 @@ public class RecuperacionPasswordService {
 
     @Transactional
     public void solicitar(RecuperarPasswordRequest request) {
-        Optional<Cliente> encontrado = clienteRepository.findByEmail(request.email().trim())
+        Optional<Cliente> encontrado = clienteRepository.buscarPorEmailEquivalente(request.email().trim())
                 .filter(Cliente::isActivo);
         if (encontrado.isEmpty()) {
             log.info("Recuperación de contraseña pedida para un email sin cuenta activa.");
@@ -99,6 +99,7 @@ public class RecuperacionPasswordService {
         }
 
         cliente.setContrasenia(passwordEncoder.encode(request.contraseniaNueva()));
+        cliente.setContraseniaPropia(true);
         token.setUsado(true);
         // Si se bloqueó por intentos fallidos, con la contraseña nueva puede entrar ya.
         loginAttemptService.loginExitoso(cliente.getEmail());

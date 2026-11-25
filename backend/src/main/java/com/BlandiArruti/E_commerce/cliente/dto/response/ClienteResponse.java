@@ -11,5 +11,7 @@ public record ClienteResponse(
         String dni,
         String email,
         List<DireccionResponse> direcciones,
-        LocalDateTime fechaAlta
+        LocalDateTime fechaAlta,
+        /** false: la cuenta se creó con Google o GitHub y todavía no tiene contraseña propia. */
+        boolean tieneContrasenia
 ) {}

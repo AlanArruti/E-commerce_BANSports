@@ -3,6 +3,7 @@ package com.BlandiArruti.E_commerce.pedido.service;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
+import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
 import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
@@ -29,6 +30,8 @@ import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
 import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.ItemPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
@@ -49,8 +52,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -73,6 +78,7 @@ public class PedidoService implements IPedidoService {
     private final ICuponService cuponService;
     private final FacturaPdfGenerator facturaPdfGenerator;
     private final NotificacionClienteService notificacionClienteService;
+    private final CarritoRepository carritoRepository;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -120,6 +126,11 @@ public class PedidoService implements IPedidoService {
         }
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(idCliente)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(idCliente));
+
+        // La factura lleva el DNI. Las cuentas creadas con Google o GitHub no lo tienen hasta que lo cargan.
+        if (cliente.getDni() == null || cliente.getDni().isBlank()) {
+            throw new EcommerceException("Completá tu DNI en Mi perfil antes de confirmar la compra.");
+        }
 
         List<Producto> productos = new ArrayList<>();
         List<Variante> variantes = new ArrayList<>();
@@ -379,8 +390,48 @@ public class PedidoService implements IPedidoService {
 
         notificacionService.notificarFacturaGenerada(factura);
         notificacionClienteService.avisarPedido(guardado);
+        quitarDelCarrito(pedido);
 
         return guardado;
+    }
+
+    /**
+     * El carrito ya no se vacía al confirmar el checkout (el cliente puede arrepentirse y volver a
+     * cambiarlo antes de pagar): lo comprado sale del carrito recién cuando se cobra. Se descuenta
+     * solo lo de este pedido, por si después de confirmarlo agregó otras cosas.
+     */
+    private void quitarDelCarrito(Pedido pedido) {
+        carritoRepository.findByClienteId(pedido.getCliente().getId()).ifPresent(carrito -> {
+            for (ItemPedido comprado : pedido.getItems()) {
+                Long idProducto = comprado.getProducto() == null ? null : comprado.getProducto().getId();
+                Long idVariante = comprado.getVariante() == null ? null : comprado.getVariante().getId();
+                carrito.getItems().stream()
+                        .filter(item -> item.getProducto().getId().equals(idProducto)
+                                && Objects.equals(
+                                        item.getVariante() == null ? null : item.getVariante().getId(), idVariante))
+                        .findFirst()
+                        .ifPresent(item -> item.setCantidad(item.getCantidad() - comprado.getCantidad()));
+            }
+            carrito.getItems().removeIf(item -> item.getCantidad() <= 0);
+            carritoRepository.save(carrito);
+        });
+    }
+
+    /**
+     * Cancela los pedidos pendientes del cliente que nunca llegaron a la pasarela: quedan cuando confirma
+     * el checkout y vuelve al carrito sin ir a pagar. Los que tienen un intento de pago no se tocan, porque
+     * el pago todavía puede acreditarse. Lo llama el checkout antes de crear el pedido nuevo.
+     */
+    public void cancelarPendientesSinIntentoDePago(Long idCliente) {
+        for (Pedido abandonado : pedidoRepository.findPendientesSinIntentoDePago(idCliente)) {
+            if (abandonado.getCupon() != null) {
+                cuponService.devolverUso(abandonado.getCupon());
+            }
+            abandonado.setEstadoPedido(EstadoPedido.CANCELADO);
+            pedidoRepository.save(abandonado);
+            log.info("Pedido {} cancelado: el cliente {} volvió a confirmar sin haberlo pagado.",
+                    abandonado.getId(), idCliente);
+        }
     }
 
     public PedidoResponse cambiarEstado(Long id, EstadoPedidoRequest request) {
@@ -427,6 +478,49 @@ public class PedidoService implements IPedidoService {
         Pedido guardado = pedidoRepository.save(pedido);
         notificacionClienteService.avisarPedido(guardado);
         return pedidoMapper.toResponse(guardado);
+    }
+
+    /**
+     * RF03: el cliente avisa si le llegó el pedido que figura entregado. "No lo recibí" queda
+     * registrado (con el comentario) para que lo revise la tienda, y después todavía puede pasar a
+     * "Lo recibí" si el paquete aparece. "Lo recibí" es definitivo.
+     */
+    public PedidoResponse confirmarRecepcion(Long id, ConfirmarRecepcionRequest request) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
+
+        UsuarioDetails principal = getPrincipal();
+        if (principal.getRol() != Rol.CLIENTE || !principal.getId().equals(pedido.getCliente().getId())) {
+            throw new AccessDeniedException("Solo el cliente que hizo el pedido puede confirmar si lo recibió.");
+        }
+
+        if (pedido.getEstadoPedido() != EstadoPedido.ENTREGADO) {
+            throw new PedidoNoModificableException(
+                    "Solo podés confirmar la recepción de un pedido entregado. El pedido #" + id
+                    + " está " + pedido.getEstadoPedido() + ".");
+        }
+
+        ConfirmacionRecepcion actual = pedido.getConfirmacionRecepcion();
+        boolean recibido = request.recibido();
+        if (actual == ConfirmacionRecepcion.RECIBIDO) {
+            throw new ConflictoException("Ya confirmaste que recibiste el pedido #" + id + ".");
+        }
+        if (actual == ConfirmacionRecepcion.NO_RECIBIDO && !recibido) {
+            throw new ConflictoException("Ya nos avisaste que el pedido #" + id
+                    + " no te llegó. Lo estamos revisando.");
+        }
+
+        pedido.setConfirmacionRecepcion(recibido ? ConfirmacionRecepcion.RECIBIDO : ConfirmacionRecepcion.NO_RECIBIDO);
+        pedido.setFechaConfirmacionRecepcion(LocalDateTime.now());
+        if (recibido) {
+            pedido.setComentarioRecepcion(null);
+        } else {
+            String comentario = request.comentario() == null ? "" : request.comentario().trim();
+            pedido.setComentarioRecepcion(comentario.isEmpty() ? null : comentario);
+            log.warn("El cliente {} avisó que no recibió el pedido {} (figura ENTREGADO).",
+                    principal.getId(), id);
+        }
+        return pedidoMapper.toResponse(pedidoRepository.save(pedido));
     }
 
     @Transactional(readOnly = true)

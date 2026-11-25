@@ -4,6 +4,9 @@ import com.BlandiArruti.E_commerce.administrador.entity.Administrador;
 import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
 import com.BlandiArruti.E_commerce.cupon.service.ICuponService;
 import com.BlandiArruti.E_commerce.auth.service.UsuarioDetails;
+import com.BlandiArruti.E_commerce.carrito.entity.Carrito;
+import com.BlandiArruti.E_commerce.carrito.entity.ItemCarrito;
+import com.BlandiArruti.E_commerce.carrito.repository.CarritoRepository;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
@@ -14,6 +17,7 @@ import com.BlandiArruti.E_commerce.envio.entity.Envio;
 import com.BlandiArruti.E_commerce.envio.mapper.EnvioMapper;
 import com.BlandiArruti.E_commerce.envio.repository.EnvioRepository;
 import com.BlandiArruti.E_commerce.enums.EstadoEnvio;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
@@ -28,6 +32,7 @@ import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.envio.dto.request.EnvioRequest;
 import com.BlandiArruti.E_commerce.pedido.entity.ItemPedido;
@@ -78,6 +83,7 @@ class PedidoServiceTest {
     @Mock EnvioMapper envioMapper;
     @Mock CotizacionEnvioService cotizacionEnvioService;
     @Mock ICuponService cuponService;
+    @Mock CarritoRepository carritoRepository;
     @Mock FacturaPdfGenerator facturaPdfGenerator;
     @Mock NotificacionClienteService notificacionClienteService;
 
@@ -302,6 +308,50 @@ class PedidoServiceTest {
     }
 
     @Test
+    void pagar_sacaDelCarritoSoloLoComprado() {
+        // El carrito ya no se vacía al confirmar: lo comprado sale recién al cobrar.
+        Producto proteina = Producto.builder().id(2L).build();
+        Producto creatina = Producto.builder().id(3L).build();
+        Variante chocolate = Variante.builder().id(1L).producto(proteina).stock(10).build();
+        ItemPedido comprado = ItemPedido.builder()
+                .producto(proteina).variante(chocolate).cantidad(2).precioProducto(200.0).build();
+        Pedido pedido = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO, comprado);
+
+        Carrito carrito = Carrito.builder().id(1L).build();
+        ItemCarrito mismoQueElPedido = ItemCarrito.builder().carrito(carrito)
+                .producto(proteina).variante(chocolate).cantidad(2).build();
+        // Lo agregó después de confirmar el pedido: tiene que quedar.
+        ItemCarrito agregadoDespues = ItemCarrito.builder().carrito(carrito)
+                .producto(creatina).cantidad(1).build();
+        carrito.getItems().add(mismoQueElPedido);
+        carrito.getItems().add(agregadoDespues);
+
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        when(carritoRepository.findByClienteId(1L)).thenReturn(Optional.of(carrito));
+
+        pedidoService.pagar(1L, new PagoRequest(TipoFactura.B));
+
+        assertThat(carrito.getItems()).containsExactly(agregadoDespues);
+        verify(carritoRepository).save(carrito);
+    }
+
+    @Test
+    void cancelarPendientesSinIntentoDePago_losCancelaYDevuelveElCupon() {
+        Cupon cupon = Cupon.builder().id(4L).codigo("BIENVENIDA").build();
+        Pedido abandonado = pedidoConEstado(EstadoPedido.PENDIENTE_PAGO);
+        abandonado.setCupon(cupon);
+        when(pedidoRepository.findPendientesSinIntentoDePago(1L)).thenReturn(List.of(abandonado));
+
+        pedidoService.cancelarPendientesSinIntentoDePago(1L);
+
+        assertThat(abandonado.getEstadoPedido()).isEqualTo(EstadoPedido.CANCELADO);
+        verify(cuponService).devolverUso(cupon);
+        verify(pedidoRepository).save(abandonado);
+    }
+
+    @Test
     void pagar_usaElStockLeidoConBloqueo_noElQueQuedoEnMemoria() {
         // Otro pago ya se llevó unidades: el stock real (bloqueado) es menor al que tenía el pedido en memoria.
         Variante enMemoria = Variante.builder().id(1L).stock(10).build();
@@ -470,7 +520,7 @@ class PedidoServiceTest {
 
     // ─── crear: precio por variante (SCRUM-154) ───────────────────────────────
 
-    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").contrasenia("x").activo(true).build();
+    private final Cliente clienteCrear = Cliente.builder().id(1L).email("c@test.com").dni("30000000").contrasenia("x").activo(true).build();
 
     private Producto proteina() {
         return Producto.builder().id(2L).nombre("Whey").precio(30000.0).descuento(0).activo(true).build();
@@ -508,6 +558,21 @@ class PedidoServiceTest {
                 UsuarioDetails.fromCliente(clienteCrear)))
                 .isInstanceOf(EcommerceException.class)
                 .hasMessageContaining("no pertenece al producto");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_clienteSinDni_pideCompletarloAntesDeComprar() {
+        // Cuenta creada con Google o GitHub: todavía no cargó el DNI, que va en la factura.
+        Cliente sinDni = Cliente.builder().id(1L).email("c@gmail.com").contrasenia("x").activo(true).build();
+        when(clienteRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(sinDni));
+
+        assertThatThrownBy(() -> pedidoService.crear(
+                new PedidoRequest(null, null, null, List.of(new ItemPedidoRequest(2L, null, 1)), null),
+                UsuarioDetails.fromCliente(sinDni)))
+                .isInstanceOf(EcommerceException.class)
+                .hasMessageContaining("Completá tu DNI");
+        verify(productoRepository, never()).findById(any());
         verify(pedidoRepository, never()).save(any());
     }
 
@@ -701,6 +766,91 @@ class PedidoServiceTest {
         assertThatThrownBy(() -> pedidoService.obtenerFacturaPdf(1L))
                 .isInstanceOf(ConflictoException.class)
                 .hasMessageContaining("aún no tiene factura");
+    }
+
+    // ─── confirmarRecepcion() (RF03) ─────────────────────────────────────────
+
+    @Test
+    void confirmarRecepcion_recibido_loGuardaConFecha() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, "ignorado"));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.RECIBIDO);
+        assertThat(pedido.getFechaConfirmacionRecepcion()).isNotNull();
+        assertThat(pedido.getComentarioRecepcion()).isNull();
+    }
+
+    @Test
+    void confirmarRecepcion_noRecibido_guardaElComentario() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(false, "  No vino nadie  "));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.NO_RECIBIDO);
+        assertThat(pedido.getComentarioRecepcion()).isEqualTo("No vino nadie");
+    }
+
+    @Test
+    void confirmarRecepcion_noRecibidoYDespuesRecibido_seActualiza() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        pedido.setConfirmacionRecepcion(ConfirmacionRecepcion.NO_RECIBIDO);
+        pedido.setComentarioRecepcion("No llegó");
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null));
+
+        assertThat(pedido.getConfirmacionRecepcion()).isEqualTo(ConfirmacionRecepcion.RECIBIDO);
+        assertThat(pedido.getComentarioRecepcion()).isNull();
+    }
+
+    @Test
+    void confirmarRecepcion_yaRecibido_lanzaConflicto() {
+        autenticarComoCliente(1L);
+        Pedido pedido = pedidoConEstado(EstadoPedido.ENTREGADO);
+        pedido.setConfirmacionRecepcion(ConfirmacionRecepcion.RECIBIDO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(false, null)))
+                .isInstanceOf(ConflictoException.class)
+                .hasMessageContaining("Ya confirmaste");
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmarRecepcion_pedidoNoEntregado_lanzaNoModificable() {
+        autenticarComoCliente(1L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.DESPACHADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(PedidoNoModificableException.class)
+                .hasMessageContaining("entregado");
+    }
+
+    @Test
+    void confirmarRecepcion_deOtroCliente_lanzaAccessDenied() {
+        autenticarComoCliente(2L);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.ENTREGADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmarRecepcion_admin_lanzaAccessDenied() {
+        autenticarComoAdmin();
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedidoConEstado(EstadoPedido.ENTREGADO)));
+
+        assertThatThrownBy(() -> pedidoService.confirmarRecepcion(1L, new ConfirmarRecepcionRequest(true, null)))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

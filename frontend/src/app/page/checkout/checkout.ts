@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { PedidoService } from '../../services/pedido.service';
 import { AvisoFusion } from '../../componente/aviso-fusion/aviso-fusion';
 import { forkJoin } from 'rxjs';
 import { FormDireccion } from '../../componente/form-direccion/form-direccion';
@@ -13,11 +14,12 @@ import { CotizacionEnvio, plazoDeEnvio } from '../../models/cotizacion-envio';
 import { ValidacionCupon } from '../../models/cupon';
 import { atributosOrdenados } from '../../models/variante';
 import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
+import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
 import { CotizacionService } from '../../services/cotizacion.service';
 import { CuponService } from '../../services/cupon.service';
 import { DireccionService } from '../../services/direccion.service';
-import { ErrorTraducido, traducirErrorCarrito, traducirErrorCheckout, traducirErrorCotizacion, traducirErrorCupon } from '../../validaciones/errores-api';
+import { ErrorTraducido, traducirErrorCancelarPedido, traducirErrorCarrito, traducirErrorCheckout, traducirErrorCotizacion, traducirErrorCupon } from '../../validaciones/errores-api';
 import { ErrorCarga } from '../../componente/error-carga/error-carga';
 import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
 
@@ -30,6 +32,17 @@ import { PagarPedido } from '../../componente/pagar-pedido/pagar-pedido';
   styleUrl: './checkout.css'
 })
 export class Checkout implements OnInit {
+  private readonly authService = inject(AuthService);
+  private readonly pedidoService = inject(PedidoService);
+  private readonly router = inject(Router);
+  protected readonly volviendo = signal(false);
+  protected readonly errorVolver = signal<ErrorTraducido | null>(null);
+  /** Cuenta creada con Google o GitHub sin DNI: el back no deja confirmar (va en la factura). */
+  protected readonly sinDni = computed(() => {
+    const cliente = this.authService.cliente();
+    return !!cliente && !cliente.dni;
+  });
+
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<ErrorTraducido | null>(null);
   protected readonly direcciones = signal<Direccion[]>([]);
@@ -166,6 +179,29 @@ export class Checkout implements OnInit {
     this.agregandoDireccion.set(false);
     this.errorConfirmar.set(null);
     this.cargarCotizacion(direccion.id);
+  }
+
+  /**
+   * Se arrepintió antes de pagar: cancela el pedido recién creado (todavía no se cobró nada) y vuelve al
+   * carrito, que no se vació. Si no se puede cancelar, igual vuelve: el próximo checkout lo cancela solo.
+   */
+  volverAlCarrito(pedido: Pedido): void {
+    this.volviendo.set(true);
+    this.errorVolver.set(null);
+    this.pedidoService.cancelar(pedido.id).subscribe({
+      next: () => {
+        this.volviendo.set(false);
+        this.router.navigate(['/carrito']);
+      },
+      error: (e: unknown) => {
+        this.volviendo.set(false);
+        this.errorVolver.set(
+          e instanceof HttpErrorResponse
+            ? traducirErrorCancelarPedido(e)
+            : { titulo: 'No pudimos cancelar el pedido', detalle: 'Ocurrió un error inesperado. Intentá de nuevo.' }
+        );
+      }
+    });
   }
 
   confirmar(): void {

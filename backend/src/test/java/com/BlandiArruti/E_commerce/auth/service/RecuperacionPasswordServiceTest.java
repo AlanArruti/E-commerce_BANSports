@@ -63,7 +63,7 @@ class RecuperacionPasswordServiceTest {
 
     @Test
     void solicitar_emailExistente_guardaHashYMandaEnlace() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(cliente));
         when(tokenRepository.findFirstByClienteOrderByFechaCreacionDesc(cliente)).thenReturn(Optional.empty());
 
         service.solicitar(new RecuperarPasswordRequest(" " + EMAIL + " "));
@@ -88,7 +88,7 @@ class RecuperacionPasswordServiceTest {
 
     @Test
     void solicitar_emailInexistente_noHaceNadaNiLanzaExcepcion() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.empty());
 
         service.solicitar(new RecuperarPasswordRequest(EMAIL));
 
@@ -98,7 +98,7 @@ class RecuperacionPasswordServiceTest {
     @Test
     void solicitar_clienteDadoDeBaja_noMandaMail() {
         cliente.setActivo(false);
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(cliente));
 
         service.solicitar(new RecuperarPasswordRequest(EMAIL));
 
@@ -112,7 +112,7 @@ class RecuperacionPasswordServiceTest {
                 .fechaCreacion(LocalDateTime.now().minusSeconds(10))
                 .vence(LocalDateTime.now().plusMinutes(29))
                 .build();
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(cliente));
         when(tokenRepository.findFirstByClienteOrderByFechaCreacionDesc(cliente)).thenReturn(Optional.of(reciente));
 
         service.solicitar(new RecuperarPasswordRequest(EMAIL));

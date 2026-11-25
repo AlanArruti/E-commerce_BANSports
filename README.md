@@ -18,18 +18,24 @@ Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angu
 
 ## Descripción del proyecto
 
-El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes por email en los eventos clave del ciclo de vida del pedido.
+El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes en los eventos clave del ciclo de vida del pedido, por email y en la propia página (campanita del header con sus pedidos y las ofertas nuevas).
 
 ### Reglas de negocio principales
 
 - Un pedido se crea en estado `PENDIENTE_PAGO`. El stock **no** se descuenta hasta que el pago es confirmado.
+- **El carrito no se vacía al confirmar el checkout**: si el cliente se arrepiente antes de pagar, vuelve al carrito ("Volver al carrito para cambiar algo" cancela ese pedido) y lo encuentra igual. Lo comprado sale del carrito recién cuando se acredita el pago, y solo eso: lo que agregó después queda. Al volver a confirmar, se cancelan solos los pedidos pendientes que nunca llegaron a la pasarela; los que tienen un intento de pago no se tocan.
+- Un pedido pendiente se puede pagar más tarde (por ejemplo, si salió de Mercado Pago sin querer o no tenía saldo): "Pagar ahora" en Mis pedidos lleva al detalle, que tiene el botón de la pasarela.
 - El cliente paga con una pasarela (MercadoPago). Cada intento queda registrado como un `Pago`. El pedido pasa a `PAGADO` cuando la pasarela confirma el cobro, ya sea al volver el cliente a la tienda o por el webhook. Un admin también puede marcarlo pagado a mano.
 - Al confirmar el pago se genera automáticamente una **Factura** (tipo A, B o C) y el pedido pasa a `PAGADO`.
 - El envío solo puede crearse para pedidos en estado `PAGADO`. Al crear el envío el pedido pasa a `DESPACHADO`.
 - Las transiciones de estado de envío siguen la secuencia `DESPACHADO → EN_CAMINO → ENTREGADO`.
 - Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
 - Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
+- **Notificaciones en la página** (RF02): el cliente recibe un aviso cuando se acredita el pago de su pedido, cuando pasa a preparación, cuando se despacha (con empresa y número de seguimiento), cuando está en camino, cuando se entrega y cuando un admin lo cancela. Cuando un producto entra en oferta o mejora su descuento, el aviso les llega a todos los clientes activos.
+- **Confirmación de recepción** (RF03): cuando un pedido figura `ENTREGADO`, el cliente dueño puede responder "Lo recibí" o "No lo recibí", con un comentario opcional. "No lo recibí" queda marcado en el panel para que la tienda lo revise, y después todavía se puede cambiar a "Lo recibí". "Lo recibí" ya no se cambia.
 - Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
+- **Una cuenta por persona, con o sin Google/GitHub**: los emails se guardan y se comparan en minúsculas y, en Gmail, sin importar los puntos ni lo que va después de "+" (es la misma casilla). Si alguien se registra con el formulario y después entra con Google con el mismo email, entra a esa misma cuenta.
+- Las cuentas creadas con Google o GitHub empiezan sin DNI y con una contraseña aleatoria. Desde el perfil el cliente carga el DNI (una sola vez) y **crea** su contraseña sin poner la "actual". El DNI es obligatorio para confirmar una compra porque va en la factura; mientras falte, el header muestra un aviso para completarlo.
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
 ---
@@ -85,7 +91,7 @@ Controller → IService (interface) → ServiceImpl → Repository
 ```
 backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── aop/                  ← LoggingAspect (AOP transversal)
-├── auth/                 ← JWT, OAuth2 GitHub, AuthController
+├── auth/                 ← JWT, OAuth2 (GitHub y Google), recuperar contraseña, AuthController
 ├── administrador/        ← CRUD de administradores
 ├── carrito/              ← Carrito de compras
 ├── categoria/            ← Categorías de productos
@@ -93,11 +99,12 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── config/               ← SecurityConfig
 ├── cotizacion/           ← Cotización de envío (Correo Argentino)
 ├── envio/                ← Gestión de envíos
-├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock
+├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock, TipoNotificacion
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
-├── notificacion/         ← Envío de emails (JavaMailSender + plantillas Thymeleaf)
+├── notificacion/         ← Emails (NotificacionService: JavaMailSender + plantillas Thymeleaf) y
+│                           notificaciones de la página (NotificacionClienteService + tabla notificaciones)
 ├── pago/                 ← Pagos con pasarelas (ver "Pasarelas de pago")
 │   ├── pasarela/         ← PasarelaPago, PasarelaPagoBase, RegistroPasarelas
 │   │   └── mercadopago/  ← MercadoPagoPasarela (hija) + cliente de la API de Orders
@@ -134,12 +141,16 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/categorias` | Listar categorías | Público |
 | `GET` | `/cliente/{id}` | Ver perfil del cliente | CLIENTE / ADMIN |
 | `PUT` | `/cliente/{id}` | Editar perfil (nombre, apellido, email) | CLIENTE / ADMIN |
-| `PATCH` | `/cliente/{id}/password` | Cambiar contraseña (requiere la actual) | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/password` | Cambiar contraseña (requiere la actual, salvo que la cuenta se haya creado con Google o GitHub y todavía no tenga una) | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/direccion` | Agregar dirección de envío | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/pedido` | Historial de pedidos del cliente | CLIENTE / ADMIN |
 | `GET` | `/cliente/{id}/carrito` | Ver carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/items` | Agregar ítem al carrito | CLIENTE / ADMIN |
 | `POST` | `/cliente/{id}/carrito/checkout` | Crear pedido desde el carrito `{ idDireccion, opcionEnvio, codigoCupon? }` | CLIENTE / ADMIN |
+| `GET` | `/cliente/{id}/notificaciones` | Últimas 30 notificaciones (pedidos y ofertas), de la más nueva a la más vieja | CLIENTE / ADMIN |
+| `GET` | `/cliente/{id}/notificaciones/no-leidas` | Cantidad sin leer `{ cantidad }` (contador de la campanita) | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/notificaciones/{nid}/leida` | Marcar una notificación como leída | CLIENTE / ADMIN |
+| `PATCH` | `/cliente/{id}/notificaciones/leidas` | Marcar todas como leídas | CLIENTE / ADMIN |
 | `GET` | `/cupones/validar?codigo=` | ¿Sirve el cupón para mi carrito? Devuelve el descuento o 400 con el motivo (vencido, agotado, compra mínima) | CLIENTE |
 | `GET` `POST` `PUT` `DELETE` | `/cupones`, `/cupones/{id}` | Cupones de descuento (la baja es lógica) | ADMIN |
 | `PATCH` | `/pedido/{id}/pagar` | Marcar pagado sin pasarela (genera factura) | ADMIN |
@@ -150,6 +161,7 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/pago/pedido/{pedidoId}` | Intentos de pago de un pedido | CLIENTE / ADMIN |
 | `POST` | `/webhook/{pasarela}` | Aviso de una pasarela (ej. `/webhook/mercadopago`) | Público |
 | `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido | CLIENTE / ADMIN |
+| `PATCH` | `/pedido/{id}/recepcion` | Confirmar si llegó el pedido entregado `{ recibido, comentario? }` | CLIENTE dueño |
 | `PATCH` | `/pedido/{id}/estado` | Cambiar estado manualmente (no permite saltar a `PAGADO`) | ADMIN |
 | `POST` | `/pedido/{id}/envio` | Crear envío para pedido PAGADO | ADMIN |
 | `PATCH` | `/pedido/{id}/envio/estado` | Avanzar estado del envío | ADMIN |
@@ -473,7 +485,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **319 tests** (318 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **347 tests** (346 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -493,20 +505,22 @@ Cobertura de tests unitarios:
 - `OAuth2ClienteServiceTest` — 10 tests (GitHub y Google: alta, vinculación por email, email privado de GitHub, email sin verificar, cuenta desactivada)
 - `RecuperacionPasswordServiceTest` — 9 tests (enlace por mail, email inexistente o dado de baja, pedido repetido, token vencido, usado o inexistente)
 - `LoginAttemptServiceTest` — 8 tests (contador de intentos, bloqueo a los 5 fallos, reset tras login exitoso)
-- `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout)
+- `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout sin vaciar el carrito)
 - `CategoriaServiceTest` — 13 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
 - `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 40 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
+- `PedidoServiceTest` — 50 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
-- `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
+- `ClienteServiceTest` — 23 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez)
+- `EmailsTest` — 3 tests (minúsculas y equivalencia de casillas de Gmail)
 - `EnvioServiceTest` — 10 tests (ciclo de vida del envío)
 - `AdministradorServiceTest` — 12 tests (CRUD, duplicados, no darse de baja a sí mismo)
 - `CotizacionEnvioServiceTest` — 7 tests (cotización Correo Argentino y tarifa de respaldo por provincia)
 - `NotificacionServiceTest` — 9 tests (los cuatro mails con sus plantillas reales en HTML y texto plano, datos del cliente escapados, fallo de conexión)
+- `NotificacionClienteServiceTest` — 8 tests (avisos de pago, despacho con seguimiento y en camino, sin aviso en pendiente de pago, oferta para todos los clientes activos, marcar leída, notificaciones de otro cliente)
 - `CodigoPostalTest` — 18 tests (formato de 4 números o CPA, y que el código pueda ser de la provincia de la localidad)
 - `LocalidadServiceTest` — 6 tests (búsqueda en Georef, alta de país, provincia y ciudad la primera vez)
 - `GeorefClientTest` — 3 tests y `CorreoArgentinoClientTest` — 2 tests (respuestas y caídas de las APIs externas)
@@ -518,7 +532,7 @@ Cobertura de tests unitarios:
 
 ### Tests del front
 
-El front tiene **83 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+El front tiene **88 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
 No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
 
 **Con Docker (recomendado, no hace falta instalar nada):**
@@ -554,6 +568,7 @@ Qué cubren (lo que más se rompe):
 - `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
 - `admin-producto.spec.ts` — 4 tests: el alta de un producto con foto y marca de novedad
 - `header-admin.spec.ts` — 3 tests: el header del panel (solo secciones del panel, usuario de la sesión, cerrar sesión)
+- `confirmar-recepcion.spec.ts` — 5 tests: "Lo recibí" / "No lo recibí" de un pedido entregado (no aparece en otros estados, comentario sin espacios de más, "Ya lo recibí" después de avisar, motivo del rechazo del back)
 
 Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
 tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record CambioPasswordRequest(
-        @NotBlank(message = "La contraseña actual es obligatoria.")
+        /** Obligatoria salvo que la cuenta se haya creado con Google o GitHub y todavía no tenga contraseña propia. */
         String contraseniaActual,
 
         @NotBlank(message = "La contraseña nueva es obligatoria.")

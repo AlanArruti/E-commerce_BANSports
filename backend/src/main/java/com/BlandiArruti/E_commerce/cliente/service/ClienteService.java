@@ -13,10 +13,12 @@ import com.BlandiArruti.E_commerce.cliente.mapper.ClienteMapper;
 import com.BlandiArruti.E_commerce.cliente.mapper.DireccionMapper;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import com.BlandiArruti.E_commerce.cliente.repository.DireccionRepository;
+import com.BlandiArruti.E_commerce.cliente.util.Emails;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.enums.Rol;
 import com.BlandiArruti.E_commerce.exception.CredencialesInvalidasException;
 import com.BlandiArruti.E_commerce.exception.DuplicadoException;
+import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.geo.entity.Ciudad;
 import com.BlandiArruti.E_commerce.geo.service.LocalidadService;
@@ -88,13 +90,18 @@ public class ClienteService implements IClienteService {
     }
 
     public ClienteResponse crear(ClienteRequest request) {
-        if (clienteRepository.existsByEmail(request.email())) {
-            throw DuplicadoException.email(request.email());
+        String email = Emails.normalizar(request.email());
+        // "Juan@Gmail.com" y "juan.perez@gmail.com" contra "juanperez@gmail.com" son la misma cuenta:
+        // si ya existe (por ejemplo, creada con Google), no se duplica.
+        if (clienteRepository.buscarPorEmailEquivalente(email).isPresent()) {
+            throw DuplicadoException.email(email);
         }
         if (clienteRepository.existsByDni(request.dni())) {
             throw DuplicadoException.dni(request.dni());
         }
         Cliente cliente = clienteMapper.toEntity(request);
+        cliente.setEmail(email);
+        cliente.setContraseniaPropia(true);
         cliente.setContrasenia(passwordEncoder.encode(request.contrasenia()));
         cliente = clienteRepository.save(cliente);
 
@@ -108,15 +115,38 @@ public class ClienteService implements IClienteService {
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(id));
 
-        if (!cliente.getEmail().equals(request.email())
-                && clienteRepository.existsByEmail(request.email())) {
-            throw DuplicadoException.email(request.email());
+        String email = Emails.normalizar(request.email());
+        if (!cliente.getEmail().equalsIgnoreCase(email)
+                && clienteRepository.buscarPorEmailEquivalente(email)
+                        .filter(otro -> !otro.getId().equals(cliente.getId()))
+                        .isPresent()) {
+            throw DuplicadoException.email(email);
         }
+
+        cargarDni(cliente, request.dni());
 
         cliente.setNombre(request.nombre());
         cliente.setApellido(request.apellido());
-        cliente.setEmail(request.email());
+        cliente.setEmail(email);
         return clienteMapper.toResponse(clienteRepository.save(cliente));
+    }
+
+    /**
+     * Las cuentas creadas con Google o GitHub llegan sin DNI: se carga desde el perfil una sola vez.
+     * Si ya tiene, mandar el mismo (o ninguno) no cambia nada; uno distinto se rechaza.
+     */
+    private void cargarDni(Cliente cliente, String dni) {
+        String nuevo = dni == null ? "" : dni.trim();
+        if (nuevo.isEmpty() || nuevo.equals(cliente.getDni())) {
+            return;
+        }
+        if (cliente.getDni() != null && !cliente.getDni().isBlank()) {
+            throw new EcommerceException("El DNI no se puede cambiar una vez cargado.");
+        }
+        if (clienteRepository.existsByDni(nuevo)) {
+            throw DuplicadoException.dni(nuevo);
+        }
+        cliente.setDni(nuevo);
     }
 
     public void cambiarPassword(Long id, CambioPasswordRequest request) {
@@ -124,11 +154,20 @@ public class ClienteService implements IClienteService {
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(id));
 
-        if (!passwordEncoder.matches(request.contraseniaActual(), cliente.getContrasenia())) {
-            throw new CredencialesInvalidasException("La contraseña actual no es correcta.");
+        // Si la cuenta se creó con Google o GitHub, la contraseña es aleatoria y el cliente no la conoce:
+        // la crea sin poner la actual. Ya está logueado, así que no hace falta otra verificación.
+        if (cliente.isContraseniaPropia()) {
+            String actual = request.contraseniaActual();
+            if (actual == null || actual.isBlank()) {
+                throw new EcommerceException("La contraseña actual es obligatoria.");
+            }
+            if (!passwordEncoder.matches(actual, cliente.getContrasenia())) {
+                throw new CredencialesInvalidasException("La contraseña actual no es correcta.");
+            }
         }
 
         cliente.setContrasenia(passwordEncoder.encode(request.contraseniaNueva()));
+        cliente.setContraseniaPropia(true);
         clienteRepository.save(cliente);
     }
 

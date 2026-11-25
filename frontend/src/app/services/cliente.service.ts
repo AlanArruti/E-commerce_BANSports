@@ -22,8 +22,11 @@ export class ClienteService {
     );
   }
 
+  /** También crea la primera contraseña de una cuenta hecha con Google o GitHub (sin la "actual"). */
   cambiarPassword(datos: CambioPasswordRequest): Observable<void> {
-    return this.http.patch<void>(`${this.API_URL}/cliente/${this.idCliente()}/password`, datos);
+    return this.http.patch<void>(`${this.API_URL}/cliente/${this.idCliente()}/password`, datos).pipe(
+      tap(() => this.authService.cliente.update((cliente) => (cliente ? { ...cliente, tieneContrasenia: true } : cliente)))
+    );
   }
 
   /** Historial del cliente. El back no los ordena: van del más nuevo al más viejo. */

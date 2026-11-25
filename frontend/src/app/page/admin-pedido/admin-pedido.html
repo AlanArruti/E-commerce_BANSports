@@ -293,8 +293,9 @@
         <h2 class="titulo-display titulo-modal" id="titulo-cancelar">¿Cancelar el pedido #{{ pedido.id }}?</h2>
         <p class="texto-modal">
           @if (devuelveStock()) {
-            <strong class="destacado">Ya estaba cobrado:</strong> el stock de sus productos vuelve al catálogo.
-            La devolución del dinero se gestiona aparte en Mercado Pago.
+            <strong class="destacado">Ya estaba cobrado:</strong> el stock de sus productos vuelve al catálogo y se le
+            devuelven {{ pedido.total | precio }} al cliente en Mercado Pago. Si Mercado Pago rechaza la devolución, el
+            pedido no se cancela.
           } @else {
             Todavía no se cobró, así que no se mueve el stock.
           }

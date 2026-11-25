@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { CambioPasswordRequest } from '../models/cambio-password-request';
 import { Cliente } from '../models/cliente';
 import { ClienteUpdateRequest } from '../models/cliente-update-request';
-import { Pedido } from '../models/pedido';
+import { CancelacionPedido, Pedido } from '../models/pedido';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -41,9 +41,12 @@ export class ClienteService {
     return this.http.get<Pedido>(`${this.API_URL}/pedido/${id}`);
   }
 
-  /** Solo pedidos sin cobrar (PENDIENTE_PAGO o EN_PREPARACION); con otro estado el back responde 400. */
-  cancelarPedido(id: number): Observable<void> {
-    return this.http.patch<void>(`${this.API_URL}/pedido/${id}/cancelar`, {});
+  /**
+   * RF04: mientras no esté despachado. Si ya estaba pagado, el back devuelve la plata en Mercado Pago
+   * antes de cancelarlo (si Mercado Pago lo rechaza responde 503 y el pedido sigue igual).
+   */
+  cancelarPedido(id: number): Observable<CancelacionPedido> {
+    return this.http.patch<CancelacionPedido>(`${this.API_URL}/pedido/${id}/cancelar`, {});
   }
 
   private idCliente(): number {

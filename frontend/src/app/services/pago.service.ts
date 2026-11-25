@@ -8,7 +8,8 @@ import { EstadoPedido } from '../models/pedido';
 export type TipoFactura = 'A' | 'B';
 
 /** Estado de un intento de pago, igual para todas las pasarelas. */
-export type EstadoPago = 'CREADO' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+/** REEMBOLSADO: estaba cobrado y se devolvió al cancelar el pedido (RF04). */
+export type EstadoPago = 'CREADO' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'REEMBOLSADO';
 
 /** Una pasarela que el cliente puede elegir (GET /pago/pasarelas). */
 export interface Pasarela {

@@ -534,14 +534,21 @@ export function traducirErrorResena(error: HttpErrorResponse): ErrorTraducido {
 
 /** Cuando el cliente cancela un pedido desde "Mis pedidos". */
 export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  // RF04: Mercado Pago no devolvió la plata. No es una falla del servidor: el pedido sigue como estaba.
+  if (error.status === 503 && mensaje) {
+    return {
+      titulo: 'No pudimos devolver el pago',
+      detalle: `${mensaje} El pedido no se canceló. Probá de nuevo en unos minutos.`
+    };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;
   }
-  const mensaje = mensajeDelBack(error);
-  if (mensaje.includes('ya fue cobrado')) {
+  if (mensaje.includes('ya fue despachado')) {
     return {
-      titulo: 'Este pedido ya está pago',
+      titulo: 'Este pedido ya salió',
       detalle: 'Ya no se puede cancelar desde acá. Escribinos y lo resolvemos con la devolución del dinero.'
     };
   }
@@ -581,11 +588,15 @@ export function traducirErrorRecepcion(error: HttpErrorResponse): ErrorTraducido
 
 /** Para el panel de pedidos: listado, detalle y cambios de estado. */
 export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  // RF04: Mercado Pago no devolvió la plata del pedido que se quería cancelar; el pedido sigue igual.
+  if (error.status === 503 && mensaje) {
+    return { titulo: 'No se pudo devolver el pago', detalle: `${mensaje} El pedido no se canceló.` };
+  }
   const general = errorGeneral(error);
   if (general) {
     return general;
   }
-  const mensaje = mensajeDelBack(error);
   if (error.status === 404) {
     return { titulo: 'Ese pedido ya no existe', detalle: 'Volvé al listado y elegí otro.' };
   }

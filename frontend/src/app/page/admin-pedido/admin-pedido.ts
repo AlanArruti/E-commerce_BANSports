@@ -11,6 +11,7 @@ import { NoEncontrado } from '../../componente/no-encontrado/no-encontrado';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { localidadDeDireccion } from '../../models/direccion';
 import {
+  CancelacionPedido,
   EMPRESAS_ENVIO,
   ETIQUETAS_ESTADO_ENVIO,
   ItemPedido,
@@ -20,7 +21,15 @@ import {
   siguienteEstadoEnvio
 } from '../../models/pedido';
 import { atributosOrdenados } from '../../models/variante';
-import { PrecioPipe } from '../../pipes/precio.pipe';
+import { PrecioPipe, formatearPrecio } from '../../pipes/precio.pipe';
+
+/** RF04: qué pasó con la plata del pedido cobrado que se canceló. */
+export function textoReembolsoAdmin(r: CancelacionPedido): string {
+  const monto = formatearPrecio(r.montoReembolsado);
+  return r.reembolso === 'AUTOMATICO'
+    ? `Se le devolvieron ${monto} al cliente en Mercado Pago.`
+    : `Se pagó fuera de Mercado Pago: tenés que devolverle ${monto} al cliente por tu cuenta.`;
+}
 import { PedidoService } from '../../services/pedido.service';
 import { ErrorTraducido, traducirErrorGestionPedido } from '../../validaciones/errores-api';
 import { mensajeDeError } from '../../validaciones/mensajes';
@@ -224,7 +233,12 @@ export class AdminPedido {
     const texto = cancelarDevuelveStock(pedido.estado)
       ? `Cancelaste el pedido #${pedido.id}. El stock de sus productos volvió al catálogo.`
       : `Cancelaste el pedido #${pedido.id}.`;
-    this.ejecutar('cancelar', this.pedidoService.cancelar(pedido.id), texto);
+    // RF04: si estaba cobrado, el back cuenta qué pasó con la plata (devuelta en Mercado Pago o a mano).
+    this.ejecutar(
+      'cancelar',
+      this.pedidoService.cancelar(pedido.id),
+      (r: CancelacionPedido) => (r.reembolso === 'NO_CORRESPONDE' ? texto : `${texto} ${textoReembolsoAdmin(r)}`)
+    );
   }
 
   errorCampo(campo: CampoEnvio): string | null {
@@ -262,15 +276,15 @@ export class AdminPedido {
    * Corre la acción y siempre vuelve a pedir el pedido: si salió bien, para mostrar el estado nuevo;
    * si falló porque otro lo cambió antes, para que se vea el estado real.
    */
-  private ejecutar(accion: Accion, pedido$: Observable<unknown>, textoOk: string): void {
+  private ejecutar<T>(accion: Accion, pedido$: Observable<T>, textoOk: string | ((respuesta: T) => string)): void {
     this.procesando.set(accion);
     this.aviso.set(null);
     this.errorAccion.set(null);
     pedido$.subscribe({
-      next: () => {
+      next: (respuesta) => {
         this.procesando.set(null);
         this.modal.set(null);
-        this.aviso.set(textoOk);
+        this.aviso.set(typeof textoOk === 'function' ? textoOk(respuesta) : textoOk);
         this.recargar$.next();
       },
       error: (e: unknown) => {

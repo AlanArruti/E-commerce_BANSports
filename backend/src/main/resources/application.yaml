@@ -105,6 +105,19 @@ correo-argentino:
 georef:
   base-url: https://apis.datos.gob.ar/georef/api
 
+# RF01: cotización del dólar (DolarApi, gratis y sin key) y ajuste automático de precios.
+# Los precios siguen en pesos: si el dólar se mueve al menos ajuste-minimo-porcentaje desde el
+# último ajuste, todos se ajustan en el mismo porcentaje.
+dolar:
+  base-url: https://dolarapi.com
+  casa: ${DOLAR_CASA:oficial}
+  actualizacion-automatica: ${DOLAR_ACTUALIZACION_AUTOMATICA:true}
+  # Formato ISO-8601: PT30M = cada 30 minutos.
+  intervalo: ${DOLAR_INTERVALO:PT30M}
+  ajuste-minimo-porcentaje: ${DOLAR_AJUSTE_MINIMO:1}
+  # Un salto mayor no se aplica solo (puede ser un dato erróneo): lo confirma el admin.
+  variacion-maxima-porcentaje: ${DOLAR_VARIACION_MAXIMA:20}
+
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@ecommerce-blandi-arruti.com}
 

@@ -92,12 +92,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/paises/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/provincias/**").permitAll()
+                // Cotización del dólar: la ve cualquiera, como los precios del catálogo.
+                .requestMatchers(HttpMethod.GET, "/api/v1/dolar").permitAll()
 
                 // ── Solo ADMIN ───────────────────────────────────────────────
                 .requestMatchers("/api/v1/administrador/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/envio/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/factura/**").hasRole("ADMIN")
+                // Historial de ajustes y actualización manual (GET /api/v1/dolar es público, arriba).
+                .requestMatchers("/api/v1/dolar/**").hasRole("ADMIN")
 
                 // Dejar una reseña es del cliente: va antes de la regla general de POST /producto/**.
                 .requestMatchers(HttpMethod.POST,   "/api/v1/producto/*/resenas").hasRole("CLIENTE")

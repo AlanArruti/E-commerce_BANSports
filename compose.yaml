@@ -115,6 +115,13 @@ services:
       CORREO_ARGENTINO_PASSWORD_TOKEN: ${CORREO_ARGENTINO_PASSWORD_TOKEN:-}
       CORREO_ARGENTINO_CUSTOMER_ID: ${CORREO_ARGENTINO_CUSTOMER_ID:-}
 
+      # ── Cotización del dólar (RF01): DolarApi, sin key. Ver dolar.* en application.yaml ──
+      DOLAR_CASA: ${DOLAR_CASA:-oficial}
+      DOLAR_ACTUALIZACION_AUTOMATICA: ${DOLAR_ACTUALIZACION_AUTOMATICA:-true}
+      DOLAR_INTERVALO: ${DOLAR_INTERVALO:-PT30M}
+      DOLAR_AJUSTE_MINIMO: ${DOLAR_AJUSTE_MINIMO:-1}
+      DOLAR_VARIACION_MAXIMA: ${DOLAR_VARIACION_MAXIMA:-20}
+
       TZ: America/Argentina/Buenos_Aires
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]

@@ -8,7 +8,8 @@ import { CategoriaService } from '../../services/categoria.service';
 import { FavoritoService } from '../../services/favorito.service';
 import { ArrastrarScroll } from '../../directivas/arrastrar-scroll';
 import { BuscadorProductos } from '../buscador-productos/buscador-productos';
-import { PerfilModal } from '../perfil-modal/perfil-modal';
+import { ModoPerfil, PerfilModal } from '../perfil-modal/perfil-modal';
+import { APELLIDO_PENDIENTE, faltanDatos } from '../../models/cliente';
 import { CampanaNotificaciones } from '../campana-notificaciones/campana-notificaciones';
 
 /** Cuántas categorías entran en la barra del header. El resto se ve en el catálogo y en el menú del celular. */
@@ -28,6 +29,18 @@ export class Header {
   protected readonly todasLasCategorias;
   protected readonly categorias = computed(() => this.todasLasCategorias().slice(0, CATEGORIAS_EN_HEADER));
   protected readonly perfilAbierto = signal(false);
+  protected readonly modoPerfil = signal<ModoPerfil>('ver');
+  /** Cuenta creada con Google o GitHub a la que le falta el DNI o el apellido. */
+  protected readonly faltanDatos = computed(() => faltanDatos(this.authService.cliente()));
+  /** "DNI", "apellido" o "DNI y apellido". */
+  protected readonly datosFaltantes = computed(() => {
+    const cliente = this.authService.cliente();
+    const faltan = [
+      !cliente?.dni ? 'DNI' : null,
+      !cliente?.apellido || cliente.apellido === APELLIDO_PENDIENTE ? 'apellido' : null
+    ].filter((dato) => dato !== null);
+    return faltan.join(' y ');
+  });
   /** Menú lateral del celular (botón hamburguesa). */
   protected readonly menuAbierto = signal(false);
 
@@ -72,6 +85,14 @@ export class Header {
 
   abrirPerfil(): void {
     this.cerrarMenu();
+    this.modoPerfil.set('ver');
+    this.perfilAbierto.set(true);
+  }
+
+  /** Desde el aviso de datos pendientes: abre el perfil directo en el formulario. */
+  completarDatos(): void {
+    this.cerrarMenu();
+    this.modoPerfil.set('editar');
     this.perfilAbierto.set(true);
   }
 

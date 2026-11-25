@@ -45,12 +45,38 @@
 
     @switch (modo()) {
       @case ('ver') {
+        <!-- Cuentas creadas con Google o GitHub: sin DNI (hace falta para comprar) y sin contraseña propia. -->
+        @if (faltanDatos() || sinContrasenia()) {
+          <div class="aviso-pendiente" role="status">
+            @if (faltanDatos()) {
+              <div class="aviso-fila">
+                <p>
+                  <strong>Completá tus datos.</strong>
+                  {{ sinDni() ? 'Necesitamos tu DNI para la factura: sin él no podés confirmar compras.' : 'Falta tu apellido.' }}
+                </p>
+                <button type="button" class="btn btn-primario btn-chico" (click)="editar()">Completar datos</button>
+              </div>
+            }
+            @if (sinContrasenia()) {
+              <div class="aviso-fila">
+                <p>
+                  <strong>Tu cuenta no tiene contraseña.</strong>
+                  Entraste con Google o GitHub. Creá una para entrar también con tu email.
+                </p>
+                <button type="button" class="btn btn-secundario btn-chico" (click)="irPassword()">Crear contraseña</button>
+              </div>
+            }
+          </div>
+        }
+
         <section class="perfil-seccion">
           <div class="seccion-cabecera">
             <h3 class="titulo-display seccion-titulo">Datos personales</h3>
             <div class="perfil-acciones">
               <button type="button" class="btn btn-secundario btn-chico" (click)="editar()">Editar datos</button>
-              <button type="button" class="btn btn-secundario btn-chico" (click)="irPassword()">Cambiar contraseña</button>
+              <button type="button" class="btn btn-secundario btn-chico" (click)="irPassword()">
+                {{ sinContrasenia() ? 'Crear contraseña' : 'Cambiar contraseña' }}
+              </button>
             </div>
           </div>
 
@@ -61,11 +87,11 @@
             </div>
             <div class="dato">
               <dt>Apellido</dt>
-              <dd>{{ cliente()?.apellido || '—' }}</dd>
+              <dd>{{ cliente()?.apellido === '-' ? 'Sin cargar' : (cliente()?.apellido || '—') }}</dd>
             </div>
             <div class="dato">
               <dt>DNI</dt>
-              <dd>{{ cliente()?.dni || '—' }}</dd>
+              <dd>{{ cliente()?.dni || 'Sin cargar' }}</dd>
             </div>
             <div class="dato">
               <dt>Email</dt>
@@ -119,7 +145,25 @@
             <div class="fila-doble">
               <div class="campo">
                 <label for="perfil-dni">DNI</label>
-                <input id="perfil-dni" type="text" class="input" [value]="cliente()?.dni ?? ''" disabled />
+                @if (sinDni()) {
+                  <!-- Cuentas creadas con Google o GitHub: se carga una sola vez. -->
+                  <input
+                    id="perfil-dni"
+                    type="text"
+                    inputmode="numeric"
+                    class="input"
+                    formControlName="dni"
+                    placeholder="Sin puntos, ej. 30123456"
+                    [ngClass]="{ 'input-error': error(dni, 'dni'), 'input-ok': correcto(dni) }"
+                    [attr.aria-invalid]="error(dni, 'dni') ? true : null"
+                    aria-describedby="perfil-dni-error"
+                  />
+                  @if (error(dni, 'dni'); as mensaje) {
+                    <p class="msj-error" id="perfil-dni-error">{{ mensaje }}</p>
+                  }
+                } @else {
+                  <input id="perfil-dni" type="text" class="input" [value]="cliente()?.dni ?? ''" disabled />
+                }
               </div>
               <div class="campo">
                 <label for="perfil-email">Email</label>
@@ -127,7 +171,13 @@
               </div>
             </div>
 
-            <p class="perfil-nota">El DNI y el email no se pueden modificar desde acá.</p>
+            <p class="perfil-nota">
+              @if (sinDni()) {
+                El DNI va en la factura y es obligatorio para comprar. Revisalo bien: después no se puede cambiar. El email no se modifica desde acá.
+              } @else {
+                El DNI y el email no se pueden modificar desde acá.
+              }
+            </p>
 
             <div class="perfil-botones">
               <button type="button" class="btn btn-secundario btn-chico" [disabled]="cargando()" (click)="cancelarEdicion()">
@@ -143,9 +193,16 @@
 
       @case ('password') {
         <section class="perfil-seccion">
-          <h3 class="titulo-display seccion-titulo">Cambiar contraseña</h3>
+          <h3 class="titulo-display seccion-titulo">{{ sinContrasenia() ? 'Crear contraseña' : 'Cambiar contraseña' }}</h3>
 
           <form class="perfil-formulario" [formGroup]="passwordForm" (ngSubmit)="guardarPassword()" novalidate>
+            @if (sinContrasenia()) {
+              <p class="perfil-nota">
+                Entraste con Google o GitHub, así que tu cuenta todavía no tiene contraseña. Con la que crees vas a
+                poder entrar también con tu email.
+              </p>
+            }
+            @if (!sinContrasenia()) {
             <div class="campo">
               <label for="password-actual">Contraseña actual</label>
               <div class="input-con-boton">
@@ -180,6 +237,7 @@
                 <p class="msj-error" id="password-actual-error">{{ mensaje }}</p>
               }
             </div>
+            }
 
             <div class="campo">
               <label for="password-nueva">Contraseña nueva</label>
@@ -222,7 +280,7 @@
                 Cancelar
               </button>
               <button type="submit" class="btn btn-primario btn-chico" [disabled]="cargando()">
-                {{ cargando() ? 'Guardando…' : 'Cambiar contraseña' }}
+                {{ cargando() ? 'Guardando…' : (sinContrasenia() ? 'Crear contraseña' : 'Cambiar contraseña') }}
               </button>
             </div>
           </form>

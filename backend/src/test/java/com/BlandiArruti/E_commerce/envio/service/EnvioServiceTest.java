@@ -11,6 +11,7 @@ import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.exception.ConflictoException;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.entity.Pedido;
 import com.BlandiArruti.E_commerce.pedido.repository.PedidoRepository;
@@ -35,6 +36,7 @@ class EnvioServiceTest {
     @Mock EnvioMapper envioMapper;
     @Mock PedidoRepository pedidoRepository;
     @Mock NotificacionService notificacionService;
+    @Mock NotificacionClienteService notificacionClienteService;
 
     @InjectMocks
     EnvioService envioService;

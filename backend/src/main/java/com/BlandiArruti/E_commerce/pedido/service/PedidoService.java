@@ -20,6 +20,7 @@ import com.BlandiArruti.E_commerce.enums.TipoFactura;
 import com.BlandiArruti.E_commerce.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.shared.dto.PageResponse;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
@@ -71,6 +72,7 @@ public class PedidoService implements IPedidoService {
     private final CotizacionEnvioService cotizacionEnvioService;
     private final ICuponService cuponService;
     private final FacturaPdfGenerator facturaPdfGenerator;
+    private final NotificacionClienteService notificacionClienteService;
 
     private UsuarioDetails getPrincipal() {
         return (UsuarioDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -248,6 +250,11 @@ public class PedidoService implements IPedidoService {
 
         pedido.setEstadoPedido(EstadoPedido.CANCELADO);
         pedidoRepository.save(pedido);
+
+        // Si lo canceló el propio cliente no hace falta avisarle.
+        if (getPrincipal().getRol() == Rol.ADMIN) {
+            notificacionClienteService.avisarPedido(pedido);
+        }
     }
 
     // ── Lo que necesita PagoService (pasarelas de pago) ──────────────────────
@@ -371,6 +378,7 @@ public class PedidoService implements IPedidoService {
         Pedido guardado = pedidoRepository.save(pedido);
 
         notificacionService.notificarFacturaGenerada(factura);
+        notificacionClienteService.avisarPedido(guardado);
 
         return guardado;
     }
@@ -416,7 +424,9 @@ public class PedidoService implements IPedidoService {
         }
 
         pedido.setEstadoPedido(nuevo);
-        return pedidoMapper.toResponse(pedidoRepository.save(pedido));
+        Pedido guardado = pedidoRepository.save(pedido);
+        notificacionClienteService.avisarPedido(guardado);
+        return pedidoMapper.toResponse(guardado);
     }
 
     @Transactional(readOnly = true)
@@ -486,6 +496,7 @@ public class PedidoService implements IPedidoService {
         pedidoRepository.save(pedido);
 
         notificacionService.notificarEnvioActualizado(envio);
+        notificacionClienteService.avisarEnvio(envio);
 
         return envioMapper.toResponse(envio);
     }
@@ -519,6 +530,7 @@ public class PedidoService implements IPedidoService {
 
         envioRepository.save(envio);
         notificacionService.notificarEnvioActualizado(envio);
+        notificacionClienteService.avisarEnvio(envio);
 
         return envioMapper.toResponse(envio);
     }

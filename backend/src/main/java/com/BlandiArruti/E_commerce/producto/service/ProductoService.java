@@ -6,6 +6,7 @@ import com.BlandiArruti.E_commerce.enums.OperacionStock;
 import com.BlandiArruti.E_commerce.exception.EcommerceException;
 import com.BlandiArruti.E_commerce.exception.EntidadNoEncontradaException;
 import com.BlandiArruti.E_commerce.exception.StockInsuficienteException;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.producto.dto.request.ProductoRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.StockRequest;
 import com.BlandiArruti.E_commerce.producto.dto.request.VarianteRequest;
@@ -54,6 +55,7 @@ public class ProductoService implements IProductoService {
     private final ImagenVarianteRepository imagenVarianteRepository;
     private final ProductoMapper productoMapper;
     private final VarianteMapper varianteMapper;
+    private final NotificacionClienteService notificacionClienteService;
 
     public ImagenProductoResponse subirImagen(Long idProducto, MultipartFile archivo) {
         Producto producto = productoRepository.findById(idProducto)
@@ -224,7 +226,9 @@ public class ProductoService implements IProductoService {
         producto.setCategoria(categoria);
         producto.setNovedad(Boolean.TRUE.equals(request.novedad()));
         producto.recalcularPrecioFinal();
-        return productoMapper.toResponse(productoRepository.save(producto));
+        Producto guardado = productoRepository.save(producto);
+        avisarSiEntroEnOferta(guardado, 0);
+        return productoMapper.toResponse(guardado);
     }
 
     public ProductoResponse actualizar(Long id, ProductoRequest request) {
@@ -233,6 +237,8 @@ public class ProductoService implements IProductoService {
 
         Categoria categoria = categoriaRepository.findById(request.categoriaId())
                 .orElseThrow(() -> EntidadNoEncontradaException.categoria(request.categoriaId()));
+
+        int descuentoAnterior = producto.getDescuento() == null ? 0 : producto.getDescuento();
 
         producto.setNombre(request.nombre());
         producto.setDescripcion(request.descripcion());
@@ -243,7 +249,20 @@ public class ProductoService implements IProductoService {
             producto.setNovedad(request.novedad());
         }
         producto.recalcularPrecioFinal();
-        return productoMapper.toResponse(productoRepository.save(producto));
+        Producto guardado = productoRepository.save(producto);
+        avisarSiEntroEnOferta(guardado, descuentoAnterior);
+        return productoMapper.toResponse(guardado);
+    }
+
+    /**
+     * RF02: los clientes se enteran cuando un producto entra en oferta o mejora su descuento.
+     * Bajar o sacar el descuento no avisa nada.
+     */
+    private void avisarSiEntroEnOferta(Producto producto, int descuentoAnterior) {
+        int descuento = producto.getDescuento() == null ? 0 : producto.getDescuento();
+        if (descuento > 0 && descuento > descuentoAnterior) {
+            notificacionClienteService.avisarOferta(producto);
+        }
     }
 
     public ProductoResponse marcarNovedad(Long id, boolean novedad) {

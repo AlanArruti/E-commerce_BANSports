@@ -21,6 +21,7 @@ import com.BlandiArruti.E_commerce.producto.repository.ProductoRepository;
 import com.BlandiArruti.E_commerce.producto.repository.VarianteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +47,7 @@ class ProductoServiceTest {
     @Mock ImagenVarianteRepository imagenVarianteRepository;
     @Mock ProductoMapper productoMapper;
     @Mock VarianteMapper varianteMapper;
+    @Mock NotificacionClienteService notificacionClienteService;
 
     @InjectMocks
     ProductoService productoService;

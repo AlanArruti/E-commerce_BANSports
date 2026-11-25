@@ -25,6 +25,7 @@ import com.BlandiArruti.E_commerce.exception.PedidoNoModificableException;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
+import com.BlandiArruti.E_commerce.notificacion.service.NotificacionClienteService;
 import com.BlandiArruti.E_commerce.notificacion.service.NotificacionService;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
@@ -78,6 +79,7 @@ class PedidoServiceTest {
     @Mock CotizacionEnvioService cotizacionEnvioService;
     @Mock ICuponService cuponService;
     @Mock FacturaPdfGenerator facturaPdfGenerator;
+    @Mock NotificacionClienteService notificacionClienteService;
 
     @InjectMocks
     PedidoService pedidoService;

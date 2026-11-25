@@ -4,7 +4,43 @@
   font-size: 13px;
   font-weight: 600;
   text-align: center;
-  padding: var(--espacio-2) var(--espacio-4);
+  padding: var(--espacio-2) 0;
+}
+
+/* El aviso queda centrado y el dólar a la derecha (columnas 1fr auto 1fr). */
+.anuncio-fila {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--espacio-4);
+}
+
+.anuncio-texto {
+  grid-column: 2;
+}
+
+.anuncio-dolar {
+  grid-column: 3;
+  justify-self: end;
+}
+
+@media (max-width: 720px) {
+  .anuncio-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0 var(--espacio-4);
+  }
+
+  .anuncio-texto {
+    grid-column: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .anuncio-dolar {
+    grid-column: 2;
+  }
 }
 
 .header {

@@ -778,3 +778,22 @@ export function traducirErrorGuardarCupon(error: HttpErrorResponse): ErrorTraduc
     detalle: mensaje || `El servidor respondió con el código ${error.status}.`
   };
 }
+
+/**
+ * Cotización del dólar en el panel (RF01). El 503 no es una falla del servidor: es la API del
+ * dólar que no respondió (o que el back todavía no leyó ninguna), y el back explica cuál.
+ */
+export function traducirErrorDolar(error: HttpErrorResponse): ErrorTraducido {
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 503 && mensaje) {
+    return { titulo: 'No pudimos consultar el dólar', detalle: mensaje };
+  }
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  return {
+    titulo: 'No pudimos consultar el dólar',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}

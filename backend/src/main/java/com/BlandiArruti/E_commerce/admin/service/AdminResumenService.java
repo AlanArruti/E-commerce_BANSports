@@ -63,8 +63,8 @@ public class AdminResumenService {
                 pedidoRepository.countByEstadoPedido(EstadoPedido.PENDIENTE_PAGO),
                 pedidoRepository.countByEstadoPedido(EstadoPedido.EN_PREPARACION),
                 pedidoRepository.countByEstadoPedido(EstadoPedido.PAGADO),
-                varianteRepository.countByActivoTrueAndStock(0),
-                varianteRepository.countByActivoTrueAndStockBetween(1, STOCK_BAJO),
+                varianteRepository.contarActivasConStockEntre(0, 0),
+                varianteRepository.contarActivasConStockEntre(1, STOCK_BAJO),
                 productoRepository.countOfertasActivas()
         );
     }

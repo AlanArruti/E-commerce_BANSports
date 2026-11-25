@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
+import { ConfirmarRecepcion } from '../../componente/confirmar-recepcion/confirmar-recepcion';
 import { ETIQUETAS_ESTADO_PEDIDO, EstadoPedido, Pedido } from '../../models/pedido';
 import { PrecioPipe } from '../../pipes/precio.pipe';
 import { ClienteService } from '../../services/cliente.service';
@@ -18,7 +19,7 @@ interface FiltroEstado {
 /** Historial de pedidos del cliente, filtrable por estado (SCRUM-121). */
 @Component({
   selector: 'app-mis-pedidos',
-  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PrecioPipe],
+  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PrecioPipe, ConfirmarRecepcion],
   templateUrl: './mis-pedidos.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mis-pedidos.css'
@@ -74,6 +75,11 @@ export class MisPedidos implements OnInit {
         );
       }
     });
+  }
+
+  /** Reemplaza el pedido por cómo quedó después de confirmar la recepción. */
+  actualizar(pedido: Pedido): void {
+    this.pedidos.update((pedidos) => pedidos.map((p) => (p.id === pedido.id ? pedido : p)));
   }
 
   elegirEstado(estado: EstadoPedido | null): void {

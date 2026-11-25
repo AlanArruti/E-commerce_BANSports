@@ -55,6 +55,10 @@
               <td class="col-total">{{ pedido.total | precio }}</td>
               <td>
                 <span class="estado" [ngClass]="'estado-' + pedido.estado.toLowerCase()">{{ etiquetasEstado[pedido.estado] }}</span>
+                <!-- RF03: el cliente avisó que no le llegó: hay que revisarlo. -->
+                @if (pedido.confirmacionRecepcion === 'NO_RECIBIDO') {
+                  <span class="no-recibido" title="El cliente avisó que no le llegó el pedido">No lo recibió</span>
+                }
               </td>
             </tr>
           } @empty {

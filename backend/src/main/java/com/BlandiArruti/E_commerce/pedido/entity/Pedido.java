@@ -4,6 +4,7 @@ import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.entity.Direccion;
 import com.BlandiArruti.E_commerce.cupon.entity.Cupon;
 import com.BlandiArruti.E_commerce.envio.entity.Envio;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.entity.Factura;
 import jakarta.persistence.*;
@@ -81,6 +82,19 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_pedido", nullable = false)
     private EstadoPedido estadoPedido;
+
+    // RF03: el cliente confirma si le llegó el pedido entregado. Null = todavía no respondió.
+    // Columnas opcionales: ddl-auto=update las agrega sin problema sobre pedidos existentes.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confirmacion_recepcion", length = 20)
+    private ConfirmacionRecepcion confirmacionRecepcion;
+
+    @Column(name = "fecha_confirmacion_recepcion")
+    private LocalDateTime fechaConfirmacionRecepcion;
+
+    /** Lo que contó el cliente cuando no le llegó, para que lo revise la tienda. */
+    @Column(name = "comentario_recepcion", length = 500)
+    private String comentarioRecepcion;
 
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Envio envio;

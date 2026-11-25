@@ -207,6 +207,59 @@
   color: var(--color-texto-secundario);
 }
 
+/* RF03: confirmación del cliente sobre el pedido entregado. */
+.recepcion {
+  margin-top: var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font-size: 14px;
+}
+
+.recepcion.ok {
+  border-color: var(--color-verde);
+}
+
+.recepcion.problema {
+  border-color: var(--color-aviso);
+}
+
+.recepcion p {
+  margin: 0;
+}
+
+.recepcion-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-texto-secundario);
+}
+
+.recepcion-estado {
+  margin-top: var(--espacio-1) !important;
+  font-weight: 700;
+}
+
+.ok .recepcion-estado {
+  color: var(--color-verde);
+}
+
+.problema .recepcion-estado {
+  color: var(--color-aviso);
+}
+
+.recepcion-comentario {
+  margin-top: var(--espacio-1) !important;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.recepcion-nota {
+  margin-top: var(--espacio-2) !important;
+  color: var(--color-texto-secundario);
+}
+
 /* ── Acciones ───────────────────────────────────────────── */
 .acciones .btn {
   min-height: 48px;

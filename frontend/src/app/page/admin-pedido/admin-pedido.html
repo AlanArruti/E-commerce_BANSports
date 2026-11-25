@@ -146,6 +146,35 @@
                 <span class="sin-dato">Sin envío: se crea al despachar.</span>
               </p>
             }
+
+            <!-- RF03: lo que respondió el cliente sobre el pedido entregado. -->
+            @if (pedido.estado === 'ENTREGADO') {
+              <div class="recepcion" [class.ok]="pedido.confirmacionRecepcion === 'RECIBIDO'"
+                [class.problema]="pedido.confirmacionRecepcion === 'NO_RECIBIDO'">
+                <p class="recepcion-titulo">Recepción del cliente</p>
+                @switch (pedido.confirmacionRecepcion) {
+                  @case ('RECIBIDO') {
+                    <p class="recepcion-estado">Confirmó que lo recibió
+                      @if (pedido.fechaConfirmacionRecepcion) { el {{ pedido.fechaConfirmacionRecepcion | date: 'dd/MM/yyyy HH:mm' }} }
+                    </p>
+                  }
+                  @case ('NO_RECIBIDO') {
+                    <p class="recepcion-estado">Avisó que NO lo recibió
+                      @if (pedido.fechaConfirmacionRecepcion) { el {{ pedido.fechaConfirmacionRecepcion | date: 'dd/MM/yyyy HH:mm' }} }
+                    </p>
+                    @if (pedido.comentarioRecepcion) {
+                      <p class="recepcion-comentario">“{{ pedido.comentarioRecepcion }}”</p>
+                    } @else {
+                      <p class="recepcion-comentario sin-dato">No dejó comentario.</p>
+                    }
+                    <p class="recepcion-nota">Revisá el envío con la empresa y contactá al cliente.</p>
+                  }
+                  @default {
+                    <p class="recepcion-estado sin-dato">Todavía no confirmó si le llegó.</p>
+                  }
+                }
+              </div>
+            }
           </section>
         </div>
       </div>

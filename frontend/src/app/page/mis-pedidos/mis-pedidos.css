@@ -91,6 +91,11 @@
   border-color: var(--color-verde);
 }
 
+/* "¿Te llegó el pedido?" queda pegado debajo de la tarjeta del pedido entregado. */
+.recepcion {
+  margin-top: var(--espacio-1);
+}
+
 .pedido-datos {
   display: flex;
   flex-direction: column;

@@ -7,6 +7,7 @@ import com.BlandiArruti.E_commerce.envio.dto.response.EnvioResponse;
 import com.BlandiArruti.E_commerce.enums.EstadoPedido;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaPdfResponse;
 import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PedidoRequest;
@@ -88,6 +89,15 @@ public class PedidoController {
     public ResponseEntity<PedidoResponse> cambiarEstado(@PathVariable Long id,
                                                         @Valid @RequestBody EstadoPedidoRequest request) {
         return ResponseEntity.ok(pedidoService.cambiarEstado(id, request));
+    }
+
+    @Operation(summary = "Confirmar si llegó el pedido entregado (solo el cliente dueño)",
+            description = "RF03. { recibido: true|false, comentario? }. Solo con el pedido ENTREGADO. "
+                    + "\"No lo recibí\" se puede cambiar después a \"Lo recibí\"; \"Lo recibí\" es definitivo.")
+    @PatchMapping("/{id}/recepcion")
+    public ResponseEntity<PedidoResponse> confirmarRecepcion(@PathVariable Long id,
+                                                             @Valid @RequestBody ConfirmarRecepcionRequest request) {
+        return ResponseEntity.ok(pedidoService.confirmarRecepcion(id, request));
     }
 
     @Operation(summary = "Obtener factura del pedido")

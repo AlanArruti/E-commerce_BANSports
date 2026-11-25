@@ -29,6 +29,8 @@ import com.BlandiArruti.E_commerce.factura.dto.response.FacturaResponse;
 import com.BlandiArruti.E_commerce.factura.pdf.FacturaPdfGenerator;
 import com.BlandiArruti.E_commerce.factura.mapper.FacturaMapper;
 import com.BlandiArruti.E_commerce.factura.repository.FacturaRepository;
+import com.BlandiArruti.E_commerce.enums.ConfirmacionRecepcion;
+import com.BlandiArruti.E_commerce.pedido.dto.request.ConfirmarRecepcionRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.EstadoPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.ItemPedidoRequest;
 import com.BlandiArruti.E_commerce.pedido.dto.request.PagoRequest;
@@ -49,6 +51,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -427,6 +430,49 @@ public class PedidoService implements IPedidoService {
         Pedido guardado = pedidoRepository.save(pedido);
         notificacionClienteService.avisarPedido(guardado);
         return pedidoMapper.toResponse(guardado);
+    }
+
+    /**
+     * RF03: el cliente avisa si le llegó el pedido que figura entregado. "No lo recibí" queda
+     * registrado (con el comentario) para que lo revise la tienda, y después todavía puede pasar a
+     * "Lo recibí" si el paquete aparece. "Lo recibí" es definitivo.
+     */
+    public PedidoResponse confirmarRecepcion(Long id, ConfirmarRecepcionRequest request) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> EntidadNoEncontradaException.pedido(id));
+
+        UsuarioDetails principal = getPrincipal();
+        if (principal.getRol() != Rol.CLIENTE || !principal.getId().equals(pedido.getCliente().getId())) {
+            throw new AccessDeniedException("Solo el cliente que hizo el pedido puede confirmar si lo recibió.");
+        }
+
+        if (pedido.getEstadoPedido() != EstadoPedido.ENTREGADO) {
+            throw new PedidoNoModificableException(
+                    "Solo podés confirmar la recepción de un pedido entregado. El pedido #" + id
+                    + " está " + pedido.getEstadoPedido() + ".");
+        }
+
+        ConfirmacionRecepcion actual = pedido.getConfirmacionRecepcion();
+        boolean recibido = request.recibido();
+        if (actual == ConfirmacionRecepcion.RECIBIDO) {
+            throw new ConflictoException("Ya confirmaste que recibiste el pedido #" + id + ".");
+        }
+        if (actual == ConfirmacionRecepcion.NO_RECIBIDO && !recibido) {
+            throw new ConflictoException("Ya nos avisaste que el pedido #" + id
+                    + " no te llegó. Lo estamos revisando.");
+        }
+
+        pedido.setConfirmacionRecepcion(recibido ? ConfirmacionRecepcion.RECIBIDO : ConfirmacionRecepcion.NO_RECIBIDO);
+        pedido.setFechaConfirmacionRecepcion(LocalDateTime.now());
+        if (recibido) {
+            pedido.setComentarioRecepcion(null);
+        } else {
+            String comentario = request.comentario() == null ? "" : request.comentario().trim();
+            pedido.setComentarioRecepcion(comentario.isEmpty() ? null : comentario);
+            log.warn("El cliente {} avisó que no recibió el pedido {} (figura ENTREGADO).",
+                    principal.getId(), id);
+        }
+        return pedidoMapper.toResponse(pedidoRepository.save(pedido));
     }
 
     @Transactional(readOnly = true)

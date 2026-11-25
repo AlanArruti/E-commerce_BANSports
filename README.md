@@ -30,6 +30,7 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - Cada **variante** puede tener su propio precio (por ejemplo, la de 2 kg cuesta más que la de 1 kg); si no tiene, cuesta lo mismo que el producto. La oferta del producto se aplica a todas sus variantes. Un pedido no acepta la variante de otro producto.
 - Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
 - **Notificaciones en la página** (RF02): el cliente recibe un aviso cuando se acredita el pago de su pedido, cuando pasa a preparación, cuando se despacha (con empresa y número de seguimiento), cuando está en camino, cuando se entrega y cuando un admin lo cancela. Cuando un producto entra en oferta o mejora su descuento, el aviso les llega a todos los clientes activos.
+- **Confirmación de recepción** (RF03): cuando un pedido figura `ENTREGADO`, el cliente dueño puede responder "Lo recibí" o "No lo recibí", con un comentario opcional. "No lo recibí" queda marcado en el panel para que la tienda lo revise, y después todavía se puede cambiar a "Lo recibí". "Lo recibí" ya no se cambia.
 - Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
 - Los clientes solo pueden acceder a sus propios recursos; los administradores tienen acceso irrestricto.
 
@@ -156,6 +157,7 @@ Base URL: `http://localhost:8080/api/v1`
 | `GET` | `/pago/pedido/{pedidoId}` | Intentos de pago de un pedido | CLIENTE / ADMIN |
 | `POST` | `/webhook/{pasarela}` | Aviso de una pasarela (ej. `/webhook/mercadopago`) | Público |
 | `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido | CLIENTE / ADMIN |
+| `PATCH` | `/pedido/{id}/recepcion` | Confirmar si llegó el pedido entregado `{ recibido, comentario? }` | CLIENTE dueño |
 | `PATCH` | `/pedido/{id}/estado` | Cambiar estado manualmente (no permite saltar a `PAGADO`) | ADMIN |
 | `POST` | `/pedido/{id}/envio` | Crear envío para pedido PAGADO | ADMIN |
 | `PATCH` | `/pedido/{id}/envio/estado` | Avanzar estado del envío | ADMIN |
@@ -479,7 +481,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **327 tests** (326 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **334 tests** (333 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -505,7 +507,7 @@ Cobertura de tests unitarios:
 - `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
 - `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 40 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido)
+- `PedidoServiceTest` — 47 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
 - `ClienteServiceTest` — 16 tests (CRUD, owner-check, acceso, búsqueda del panel)
@@ -525,7 +527,7 @@ Cobertura de tests unitarios:
 
 ### Tests del front
 
-El front tiene **83 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+El front tiene **88 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
 No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
 
 **Con Docker (recomendado, no hace falta instalar nada):**
@@ -561,6 +563,7 @@ Qué cubren (lo que más se rompe):
 - `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
 - `admin-producto.spec.ts` — 4 tests: el alta de un producto con foto y marca de novedad
 - `header-admin.spec.ts` — 3 tests: el header del panel (solo secciones del panel, usuario de la sesión, cerrar sesión)
+- `confirmar-recepcion.spec.ts` — 5 tests: "Lo recibí" / "No lo recibí" de un pedido entregado (no aparece en otros estados, comentario sin espacios de más, "Ya lo recibí" después de avisar, motivo del rechazo del back)
 
 Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
 tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario

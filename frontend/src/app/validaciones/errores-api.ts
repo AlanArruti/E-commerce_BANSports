@@ -553,6 +553,28 @@ export function traducirErrorCancelarPedido(error: HttpErrorResponse): ErrorTrad
   };
 }
 
+/** "Lo recibí" / "No lo recibí" de un pedido entregado (RF03). */
+export function traducirErrorRecepcion(error: HttpErrorResponse): ErrorTraducido {
+  const general = errorGeneral(error);
+  if (general) {
+    return general;
+  }
+  const mensaje = mensajeDelBack(error);
+  if (error.status === 409) {
+    return { titulo: 'Ya respondiste por este pedido', detalle: mensaje || 'Actualizamos lo que tenías guardado.' };
+  }
+  if (mensaje.includes('entregado')) {
+    return { titulo: 'Este pedido todavía no figura entregado', detalle: 'Vas a poder confirmarlo cuando llegue.' };
+  }
+  if (error.status === 403 || error.status === 404) {
+    return { titulo: 'No encontramos ese pedido', detalle: 'Puede que no sea de tu cuenta. Volvé a Mis pedidos.' };
+  }
+  return {
+    titulo: 'No pudimos guardar tu respuesta',
+    detalle: mensaje || `El servidor respondió con el código ${error.status}.`
+  };
+}
+
 /** Para el panel de pedidos: listado, detalle y cambios de estado. */
 export function traducirErrorGestionPedido(error: HttpErrorResponse): ErrorTraducido {
   const general = errorGeneral(error);

@@ -126,6 +126,11 @@
 
       <!-- ── Entrega y acciones ───────────────────────── -->
       <div class="lateral">
+        <!-- ── RF03: "Lo recibí" / "No lo recibí" ───────── -->
+        @if (pedido.estado === 'ENTREGADO') {
+          <app-confirmar-recepcion [pedido]="pedido" (confirmado)="reintentar()" />
+        }
+
         <section class="panel" aria-labelledby="titulo-entrega">
           <h2 class="panel-titulo" id="titulo-entrega">Entrega en</h2>
           <!-- Los pedidos viejos no guardaban la dirección en el pedido: se usa la del envío. -->

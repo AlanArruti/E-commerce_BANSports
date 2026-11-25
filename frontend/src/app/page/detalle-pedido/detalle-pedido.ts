@@ -6,6 +6,7 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { EstadoPedidoEtiqueta } from '../../componente/estado-pedido/estado-pedido';
+import { ConfirmarRecepcion } from '../../componente/confirmar-recepcion/confirmar-recepcion';
 import { PoteProducto, abreviarNombre } from '../../componente/pote-producto/pote-producto';
 import { localidadDeDireccion } from '../../models/direccion';
 import {
@@ -43,7 +44,7 @@ const CARGANDO: EstadoDetalle = { cargando: true, pedido: null, noEncontrado: fa
  */
 @Component({
   selector: 'app-detalle-pedido',
-  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe],
+  imports: [DatePipe, RouterLink, EstadoPedidoEtiqueta, PoteProducto, PrecioPipe, ConfirmarRecepcion],
   templateUrl: './detalle-pedido.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './detalle-pedido.css',

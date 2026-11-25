@@ -39,6 +39,11 @@ export class PedidoService {
     return this.http.patch<void>(`${this.API_URL}/${id}/cancelar`, {});
   }
 
+  /** RF03: el cliente dueño confirma si le llegó el pedido entregado. */
+  confirmarRecepcion(id: number, recibido: boolean, comentario?: string): Observable<Pedido> {
+    return this.http.patch<Pedido>(`${this.API_URL}/${id}/recepcion`, { recibido, comentario: comentario || null });
+  }
+
   /** Crea el envío a la dirección del pedido y lo pasa a DESPACHADO. Solo para pedidos PAGADO. */
   despachar(id: number, envio: EnvioRequest): Observable<Envio> {
     return this.http.post<Envio>(`${this.API_URL}/${id}/envio`, envio);

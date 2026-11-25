@@ -105,7 +105,14 @@ export interface Pedido {
   /** Lo usa el panel del admin (listado y detalle). El checkout no lo usa. */
   cliente: Cliente | null;
   factura: Factura | null;
+  /** RF03: si el cliente confirmó que le llegó el pedido entregado. Null = todavía no respondió. */
+  confirmacionRecepcion?: ConfirmacionRecepcion | null;
+  fechaConfirmacionRecepcion?: string | null;
+  /** Lo que contó el cliente cuando no le llegó. */
+  comentarioRecepcion?: string | null;
 }
+
+export type ConfirmacionRecepcion = 'RECIBIDO' | 'NO_RECIBIDO';
 
 /** Cambios de estado que el admin hace a mano (PATCH /pedido/{id}/estado). PAGADO nunca: se llega cobrando. */
 export type EstadoManual = Exclude<EstadoPedido, 'PAGADO'>;

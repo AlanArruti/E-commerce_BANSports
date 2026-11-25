@@ -1,6 +1,7 @@
 package com.BlandiArruti.E_commerce.auth.service;
 
 import com.BlandiArruti.E_commerce.auth.client.GitHubEmailClient;
+import com.BlandiArruti.E_commerce.cliente.util.Emails;
 import com.BlandiArruti.E_commerce.cliente.entity.Cliente;
 import com.BlandiArruti.E_commerce.cliente.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,9 @@ public class OAuth2ClienteService extends DefaultOAuth2UserService {
             default -> throw error("proveedor_desconocido", "Proveedor no soportado: " + proveedor);
         };
 
-        Cliente cliente = clienteRepository.findByEmail(email)
+        // Si ya se registró con el formulario (aunque haya escrito el email con mayúsculas o, en Gmail,
+        // sin los puntos), entra a esa misma cuenta.
+        Cliente cliente = clienteRepository.buscarPorEmailEquivalente(email)
                 .orElseGet(() -> registrar(proveedor, email, atributos));
 
         if (!cliente.isActivo()) {
@@ -113,8 +116,10 @@ public class OAuth2ClienteService extends DefaultOAuth2UserService {
                 .nombre(recortar(nombre))
                 // El apellido es obligatorio en la base; se puede completar después desde el perfil.
                 .apellido(apellido == null ? "-" : recortar(apellido))
-                .email(email)
+                .email(Emails.normalizar(email))
+                // Aleatoria: el cliente no la conoce. Puede crear la suya desde el perfil sin la "actual".
                 .contrasenia(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .contraseniaPropia(false)
                 .build());
     }
 

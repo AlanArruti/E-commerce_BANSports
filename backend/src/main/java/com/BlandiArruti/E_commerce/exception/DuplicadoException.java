@@ -7,7 +7,8 @@ public class DuplicadoException extends EcommerceException {
     }
 
     public static DuplicadoException email(String email) {
-        return new DuplicadoException("El email '" + email + "' ya está registrado.");
+        return new DuplicadoException("El email '" + email + "' ya está registrado. Si antes entraste con "
+                + "Google o GitHub, ingresá con ese botón, o pedí una contraseña con \"¿Olvidaste tu contraseña?\".");
     }
 
     public static DuplicadoException dni(String dni) {

@@ -59,7 +59,7 @@ class OAuth2ClienteServiceTest {
 
     @Test
     void google_emailNuevo_creaClienteConNombreYApellido() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("hash-aleatorio");
         when(clienteRepository.save(any())).thenAnswer(inv -> {
             Cliente c = inv.getArgument(0);
@@ -74,13 +74,15 @@ class OAuth2ClienteServiceTest {
         assertThat(nuevo.getApellido()).isEqualTo("García López");
         assertThat(nuevo.getEmail()).isEqualTo(EMAIL);
         assertThat(nuevo.getContrasenia()).isEqualTo("hash-aleatorio");
+        // La contraseña es aleatoria: el cliente puede crear la suya sin poner la "actual".
+        assertThat(nuevo.isContraseniaPropia()).isFalse();
         assertThat(usuario.getId()).isEqualTo(9L);
         assertThat(usuario.getRol().name()).isEqualTo("CLIENTE");
     }
 
     @Test
     void google_emailDeCuentaExistente_laVinculaSinCrearOtra() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(clienteExistente(true)));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(clienteExistente(true)));
 
         UsuarioDetails usuario = service.procesar("google", google(true), TOKEN);
 
@@ -100,7 +102,7 @@ class OAuth2ClienteServiceTest {
 
     @Test
     void google_cuentaDesactivada_rechaza() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(clienteExistente(false)));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(clienteExistente(false)));
 
         assertThatThrownBy(() -> service.procesar("google", google(true), TOKEN))
                 .isInstanceOf(OAuth2AuthenticationException.class)
@@ -112,7 +114,7 @@ class OAuth2ClienteServiceTest {
     void google_sinApellido_guardaGuionParaCompletarDespues() {
         Map<String, Object> atributos = google(true);
         atributos.remove("family_name");
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.empty());
         when(clienteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.procesar("google", atributos, TOKEN);
@@ -125,7 +127,7 @@ class OAuth2ClienteServiceTest {
     @Test
     void github_emailPublico_separaNombreYApellido() {
         Map<String, Object> atributos = Map.of("email", EMAIL, "name", "Ana García", "login", "anagarcia");
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.empty());
         when(clienteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.procesar("github", atributos, TOKEN);
@@ -142,7 +144,7 @@ class OAuth2ClienteServiceTest {
         atributos.put("email", null);
         atributos.put("login", "anagarcia");
         when(gitHubEmailClient.emailPrincipalVerificado(TOKEN)).thenReturn(Optional.of(EMAIL));
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.of(clienteExistente(true)));
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.of(clienteExistente(true)));
 
         UsuarioDetails usuario = service.procesar("github", atributos, TOKEN);
 
@@ -163,7 +165,7 @@ class OAuth2ClienteServiceTest {
 
     @Test
     void github_sinNombre_usaElLoginYApellidoGuion() {
-        when(clienteRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        when(clienteRepository.buscarPorEmailEquivalente(EMAIL)).thenReturn(Optional.empty());
         when(clienteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.procesar("github", Map.of("email", EMAIL, "login", "anagarcia"), TOKEN);

@@ -10,6 +10,7 @@ import org.mapstruct.Mapping;
 public interface ClienteMapper {
 
     @Mapping(source = "uuid", target = "uuidCliente")
+    @Mapping(source = "contraseniaPropia", target = "tieneContrasenia")
     ClienteResponse toResponse(Cliente cliente);
 
     @Mapping(target = "id", ignore = true)

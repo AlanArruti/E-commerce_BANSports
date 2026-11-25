@@ -124,6 +124,11 @@ public class PedidoService implements IPedidoService {
         Cliente cliente = clienteRepository.findByIdAndActivoTrue(idCliente)
                 .orElseThrow(() -> EntidadNoEncontradaException.cliente(idCliente));
 
+        // La factura lleva el DNI. Las cuentas creadas con Google o GitHub no lo tienen hasta que lo cargan.
+        if (cliente.getDni() == null || cliente.getDni().isBlank()) {
+            throw new EcommerceException("Completá tu DNI en Mi perfil antes de confirmar la compra.");
+        }
+
         List<Producto> productos = new ArrayList<>();
         List<Variante> variantes = new ArrayList<>();
 

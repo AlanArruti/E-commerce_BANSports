@@ -22,5 +22,12 @@ public record ClienteUpdateRequest(
         @NotBlank(message = "El email no puede estar vacío.")
         @Pattern(regexp = FormatosCliente.EMAIL, message = FormatosCliente.MENSAJE_EMAIL)
         @Size(max = 100, message = "El email no puede superar los 100 caracteres.")
-        String email
+        String email,
+
+        /**
+         * Opcional. Las cuentas creadas con Google o GitHub no tienen DNI: se carga acá una sola vez.
+         * Una vez cargado no se cambia (mandar el mismo, o null, no hace nada).
+         */
+        @Pattern(regexp = FormatosCliente.DNI, message = "El DNI debe tener 7 u 8 números, sin puntos ni espacios.")
+        String dni
 ) {}

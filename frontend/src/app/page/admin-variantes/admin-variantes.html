@@ -42,7 +42,7 @@
       @if (editando() === null) {
         <button type="button" class="btn btn-primario btn-nuevo" (click)="nueva()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva variante
+          Agregar variantes
         </button>
       }
     </div>
@@ -54,11 +54,10 @@
       </div>
     }
 
-    <!-- Alta / edición -->
-    @if (editando(); as modo) {
-      <form class="tarjeta-form" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate aria-labelledby="titulo-form">
-        <h2 class="titulo-display titulo-form" id="titulo-form">{{ modo === 'nueva' ? 'Nueva variante' : 'Editar variante' }}</h2>
-        <p class="ayuda-form">Cada atributo es un par nombre–valor, por ejemplo <strong>sabor: Chocolate</strong> o <strong>peso: 1 kg</strong>.</p>
+    <!-- Alta: opciones y combinaciones -->
+    @if (editando() === 'nueva') {
+      <form class="tarjeta-form form-alta" (submit)="$event.preventDefault(); crearVariantes()" novalidate aria-labelledby="titulo-alta">
+        <h2 class="titulo-display titulo-form" id="titulo-alta">Nuevas variantes</h2>
 
         @if (errorForm(); as error) {
           <div class="alerta-error" role="alert">
@@ -70,43 +69,203 @@
           </div>
         }
 
-        <fieldset class="atributos" formArrayName="atributos">
-          <legend class="etiqueta">Atributos</legend>
-          @for (fila of atributos.controls; track fila; let i = $index) {
-            <div class="fila-atributo" [formGroupName]="i">
-              <div class="campo">
-                <label class="solo-lectores" [for]="'atr-clave-' + i">Nombre del atributo {{ i + 1 }}</label>
-                <input class="input" [id]="'atr-clave-' + i" formControlName="clave" placeholder="sabor" autocomplete="off"
-                  [ngClass]="{ 'input-error': errorCampo(fila.controls.clave, 'clave') }" />
-                @if (errorCampo(fila.controls.clave, 'clave'); as mensaje) {
-                  <p class="msj-error">{{ mensaje }}</p>
-                }
-              </div>
-              <span class="dos-puntos" aria-hidden="true">:</span>
-              <div class="campo">
-                <label class="solo-lectores" [for]="'atr-valor-' + i">Valor del atributo {{ i + 1 }}</label>
-                <input class="input" [id]="'atr-valor-' + i" formControlName="valor" placeholder="Chocolate" autocomplete="off"
-                  [ngClass]="{ 'input-error': errorCampo(fila.controls.valor, 'valor') }" />
-                @if (errorCampo(fila.controls.valor, 'valor'); as mensaje) {
-                  <p class="msj-error">{{ mensaje }}</p>
-                }
-              </div>
-              <button type="button" class="btn-accion borrar" [disabled]="atributos.length === 1"
-                [attr.aria-label]="'Quitar atributo ' + (i + 1)" title="Quitar atributo" (click)="quitarAtributo(i)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <section class="paso" aria-labelledby="paso-opciones">
+          <p class="paso-numero">Paso 1 de 2</p>
+          <h3 class="paso-titulo" id="paso-opciones">¿En qué cambian las variantes?</h3>
+          <p class="ayuda-form">Elegí una o más opciones y cargá sus valores. Si el producto es único, no elijas ninguna.</p>
+
+          <div class="tipos" role="group" aria-label="Opciones">
+            @for (sugerida of sugeridas; track sugerida.clave) {
+              <button type="button" class="tipo" [class.activo]="tieneOpcion(sugerida.clave)"
+                [attr.aria-pressed]="tieneOpcion(sugerida.clave)" [disabled]="opcionBloqueada(sugerida.clave)"
+                [title]="opcionBloqueada(sugerida.clave) ? 'Ya la usan variantes creadas' : ''"
+                (click)="alternarOpcion(sugerida.clave)">
+                {{ tieneOpcion(sugerida.clave) ? '✓' : '+' }} {{ nombreOpcion(sugerida.clave) }}
               </button>
+            }
+            @if (otraOpcion() === null) {
+              <button type="button" class="tipo tipo-otra" (click)="abrirOtraOpcion()">+ Otra opción</button>
+            }
+          </div>
+
+          @if (otraOpcion() !== null) {
+            <div class="fila-otra">
+              <label class="solo-lectores" for="otra-opcion">Nombre de la opción</label>
+              <input id="otra-opcion" class="input" placeholder="Cápsulas" autocomplete="off" [value]="otraOpcion()"
+                (input)="otraOpcion.set($any($event.target).value)" (keydown.enter)="$event.preventDefault(); confirmarOtraOpcion()" />
+              <button type="button" class="btn btn-secundario btn-chico" (click)="confirmarOtraOpcion()">Agregar opción</button>
+              <button type="button" class="btn-texto-simple" (click)="otraOpcion.set(null)">Cancelar</button>
             </div>
           }
-          @if (claveRepetida(); as mensaje) {
-            @if (intentoGuardar()) {
-              <p class="msj-error">{{ mensaje }}</p>
-            }
+
+          @for (opcion of opciones(); track opcion.clave) {
+            <div class="opcion">
+              <div class="opcion-encabezado">
+                <span class="opcion-nombre">{{ nombreOpcion(opcion.clave) }}</span>
+                @if (!opcionBloqueada(opcion.clave)) {
+                  <button type="button" class="btn-texto-simple" (click)="quitarOpcion(opcion.clave)">Sacar opción</button>
+                }
+              </div>
+              <ul class="valores" [attr.aria-label]="'Valores de ' + nombreOpcion(opcion.clave)">
+                @for (valor of opcion.valores; track valor) {
+                  <li class="valor" [class.bloqueado]="valorBloqueado(opcion.clave, valor)">
+                    {{ valor }}
+                    @if (!valorBloqueado(opcion.clave, valor)) {
+                      <button type="button" class="quitar-valor" [attr.aria-label]="'Quitar ' + valor" (click)="quitarValor(opcion.clave, valor)">×</button>
+                    }
+                  </li>
+                }
+              </ul>
+              <div class="fila-valor">
+                <label class="solo-lectores" [for]="'valor-' + opcion.clave">Nuevo valor de {{ nombreOpcion(opcion.clave) }}</label>
+                <input #campoValor class="input" [id]="'valor-' + opcion.clave" autocomplete="off"
+                  placeholder="Escribí un valor y Enter"
+                  (input)="escribirBorrador(opcion.clave, campoValor.value)"
+                  (keydown.enter)="enterEnValor($event, opcion.clave, campoValor)" />
+                <button type="button" class="btn btn-secundario btn-chico agregar-valor" (click)="agregarValor(opcion.clave, campoValor.value, campoValor)">Agregar</button>
+              </div>
+              @if (sugeridosDe(opcion).length) {
+                <p class="sugeridos">
+                  Sugeridos:
+                  @for (sugerido of sugeridosDe(opcion); track sugerido) {
+                    <button type="button" class="sugerido" (click)="agregarValor(opcion.clave, sugerido)">+ {{ sugerido }}</button>
+                  }
+                </p>
+              }
+            </div>
           }
-          <button type="button" class="link agregar-atributo" (click)="agregarAtributo()">+ Agregar atributo</button>
-        </fieldset>
+          @if (errorOpciones(); as mensaje) {
+            <p class="msj-error" role="alert">{{ mensaje }}</p>
+          }
+        </section>
+
+        <section class="paso" aria-labelledby="paso-combinaciones">
+          <p class="paso-numero">Paso 2 de 2</p>
+          <h3 class="paso-titulo" id="paso-combinaciones">Stock y precio de cada variante</h3>
+          <p class="ayuda-form">
+            Precio vacío = cuesta lo mismo que el producto
+            @if (producto(); as p) { ({{ p.precioBase | precio }}) }.
+            Destildá las combinaciones que no vendés.
+          </p>
+
+          <div class="tabla-contenedor">
+            <table class="tabla tabla-combinaciones">
+              <thead>
+                <tr>
+                  <th scope="col" class="col-incluir"><span class="solo-lectores">Crear</span></th>
+                  @for (opcion of columnas(); track opcion.clave) {
+                    <th scope="col">{{ nombreOpcion(opcion.clave) }}</th>
+                  } @empty {
+                    <th scope="col">Variante</th>
+                  }
+                  <th scope="col" class="col-stock-alta">Stock</th>
+                  <th scope="col" class="col-precio-alta">Precio $</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of filas(); track fila.clave; let i = $index) {
+                  <tr [class.apagada]="fila.existe || !datos(fila).incluir">
+                    <td class="col-incluir">
+                      @if (!fila.existe) {
+                        <input type="checkbox" class="check" [id]="'incluir-' + i" [checked]="datos(fila).incluir"
+                          [attr.aria-label]="'Crear ' + descripcionFila(fila)"
+                          (change)="cambiarFila(fila, { incluir: $any($event.target).checked })" />
+                      }
+                    </td>
+                    @for (opcion of columnas(); track opcion.clave) {
+                      <td>{{ valorDe(fila, opcion.clave) }}</td>
+                    } @empty {
+                      <td>Producto único</td>
+                    }
+                    @if (fila.existe) {
+                      <td colspan="2" class="ya-existe">Ya existe</td>
+                    } @else {
+                      <td class="col-stock-alta">
+                        <label class="solo-lectores" [for]="'stock-' + i">Stock</label>
+                        <input class="input input-chico" [id]="'stock-' + i" inputmode="numeric" placeholder="0" autocomplete="off"
+                          [value]="datos(fila).stock" [disabled]="!datos(fila).incluir"
+                          [class.input-error]="errorStockFila(fila)" [attr.aria-invalid]="!!errorStockFila(fila)"
+                          (input)="cambiarFila(fila, { stock: $any($event.target).value })" />
+                        @if (errorStockFila(fila); as mensaje) {
+                          <p class="msj-error">{{ mensaje }}</p>
+                        }
+                      </td>
+                      <td class="col-precio-alta">
+                        <label class="solo-lectores" [for]="'precio-' + i">Precio</label>
+                        <input class="input input-chico" [id]="'precio-' + i" inputmode="decimal" placeholder="igual" autocomplete="off"
+                          [value]="datos(fila).precio" [disabled]="!datos(fila).incluir"
+                          [class.input-error]="errorPrecioFila(fila)" [attr.aria-invalid]="!!errorPrecioFila(fila)"
+                          (input)="cambiarFila(fila, { precio: $any($event.target).value })" />
+                        @if (errorPrecioFila(fila); as mensaje) {
+                          <p class="msj-error">{{ mensaje }}</p>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        @if (intentoGuardar() && errorAlta(); as mensaje) {
+          <p class="msj-error resumen-error" role="alert">{{ mensaje }}</p>
+        }
+
+        <div class="acciones-form acciones-alta">
+          <span class="resumen-alta">
+            {{ filasACrear().length }} {{ filasACrear().length === 1 ? 'variante' : 'variantes' }} · {{ stockACrear() }} u. en total
+          </span>
+          <button type="button" class="btn btn-secundario" [disabled]="guardando()" (click)="cancelarFormulario()">Cancelar</button>
+          <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Creando…' : filasACrear().length === 1 ? 'Crear 1 variante' : 'Crear ' + filasACrear().length + ' variantes' }}
+          </button>
+        </div>
+      </form>
+    }
+
+    <!-- Edición de una variante -->
+    @if (editando(); as modo) {
+      @if (modo !== 'nueva') {
+      <form class="tarjeta-form" [formGroup]="formulario" (ngSubmit)="guardarEdicion()" novalidate aria-labelledby="titulo-form">
+        <h2 class="titulo-display titulo-form" id="titulo-form">Editar variante</h2>
+
+        @if (errorForm(); as error) {
+          <div class="alerta-error" role="alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <div>
+              <div class="alerta-error-titulo">{{ error.titulo }}</div>
+              <div class="alerta-error-texto">{{ error.detalle }}</div>
+            </div>
+          </div>
+        }
+
+        <div class="selectores">
+          @for (opcion of opcionesEdicion(); track opcion.clave) {
+            <div class="campo">
+              <label [for]="'editar-' + opcion.clave">{{ nombreOpcion(opcion.clave) }}</label>
+              <select class="input" [id]="'editar-' + opcion.clave" [value]="seleccion()[opcion.clave] ?? ''"
+                (change)="elegirValor(opcion.clave, $any($event.target).value)">
+                <option value="">Sin {{ nombreOpcion(opcion.clave).toLowerCase() }}</option>
+                @for (valor of opcion.valores; track valor) {
+                  <option [value]="valor" [selected]="seleccion()[opcion.clave] === valor">{{ valor }}</option>
+                }
+                <option [value]="nuevoValor" [selected]="seleccion()[opcion.clave] === nuevoValor">+ Nuevo valor…</option>
+              </select>
+              @if (seleccion()[opcion.clave] === nuevoValor) {
+                <label class="solo-lectores" [for]="'nuevo-' + opcion.clave">Nuevo valor de {{ nombreOpcion(opcion.clave) }}</label>
+                <input class="input input-nuevo" [id]="'nuevo-' + opcion.clave" autocomplete="off" placeholder="Escribí el valor"
+                  [value]="valoresNuevos()[opcion.clave] ?? ''" (input)="escribirValorNuevo(opcion.clave, $any($event.target).value)" />
+              }
+            </div>
+          }
+        </div>
+        @if (errorAtributos(); as mensaje) {
+          <p class="msj-error" role="alert">{{ mensaje }}</p>
+        }
 
         <div class="campo campo-stock">
-          <label for="var-stock">{{ modo === 'nueva' ? 'Stock inicial' : 'Stock' }}</label>
+          <label for="var-stock">Stock</label>
           <input id="var-stock" class="input" formControlName="stock" inputmode="numeric"
             [ngClass]="{ 'input-error': errorCampo(stock, 'stock') }" aria-describedby="var-stock-error" />
           @if (errorCampo(stock, 'stock'); as mensaje) {
@@ -134,11 +293,12 @@
 
         <div class="acciones-form">
           <button type="submit" class="btn btn-primario" [disabled]="guardando()">
-            {{ guardando() ? 'Guardando…' : modo === 'nueva' ? 'Agregar variante' : 'Guardar cambios' }}
+            {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
           </button>
           <button type="button" class="btn btn-secundario" [disabled]="guardando()" (click)="cancelarFormulario()">Cancelar</button>
         </div>
       </form>
+      }
     }
 
     <!-- Listado -->

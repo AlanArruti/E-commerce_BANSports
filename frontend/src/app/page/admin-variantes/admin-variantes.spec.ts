@@ -92,15 +92,28 @@ describe('AdminVariantes (formulario de variantes)', () => {
     return [...pantalla.querySelectorAll('.msj-error')].map((e) => e.textContent!.trim());
   }
 
-  /** Abre "Nueva variante" y carga dos atributos. */
-  function cargarNueva(atributos: [string, string][], stock: string): void {
-    apretar('.btn-nuevo');
-    for (let i = 1; i < atributos.length; i++) apretar('.agregar-atributo');
-    atributos.forEach(([clave, valor], i) => {
-      escribir(`#atr-clave-${i}`, clave);
-      escribir(`#atr-valor-${i}`, valor);
-    });
-    escribir('#var-stock', stock);
+  /** Escribe un valor en el campo de una opción y aprieta Enter. */
+  function agregarValor(clave: string, valor: string): void {
+    const input = pantalla.querySelector<HTMLInputElement>(`#valor-${clave}`)!;
+    input.value = valor;
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    fixture.detectChanges();
+  }
+
+  function filasTabla(): string[] {
+    // Texto visible de cada celda (sin las etiquetas para lectores de pantalla), separado por espacios.
+    return [...pantalla.querySelectorAll('.tabla-combinaciones tbody tr')].map((fila) =>
+      [...fila.querySelectorAll('td')]
+        .map((celda) => [...celda.childNodes].filter((n) => n.nodeType !== Node.COMMENT_NODE && !(n instanceof HTMLLabelElement)).map((n) => n.textContent).join('').trim())
+        .filter(Boolean)
+        .join(' ')
+    );
+  }
+
+  function valores(clave: string): string[] {
+    const opcion = [...pantalla.querySelectorAll('.opcion')].find((o) => o.querySelector(`#valor-${clave}`));
+    return [...(opcion?.querySelectorAll('.valor') ?? [])].map((v) => v.textContent!.replace('×', '').trim());
   }
 
   // ── Tests ───────────────────────────────────────────
@@ -109,68 +122,132 @@ describe('AdminVariantes (formulario de variantes)', () => {
     expect(pantalla.textContent).toContain('Chocolate');
   });
 
-  it('no deja guardar dos atributos con el mismo nombre (sin importar mayúsculas)', () => {
-    cargarNueva(
-      [
-        ['Sabor', 'Chocolate'],
-        ['sabor', 'Vainilla']
-      ],
-      '10'
-    );
+  it('el alta arranca con las opciones que ya usa el producto, y la combinación creada figura como existente', () => {
+    apretar('.btn-nuevo');
 
-    enviar('form.tarjeta-form');
-
-    expect(errores()).toContain('El atributo "sabor" está repetido.');
-    backend.expectNone(`${URL_PRODUCTO}/variante`); // no llegó a pedirle nada al back
+    expect(valores('sabor')).toEqual(['Chocolate']);
+    expect(valores('peso')).toEqual(['1 kg']);
+    expect(filasTabla()).toEqual(['Chocolate 1 kg Ya existe']);
+    expect(pantalla.querySelector('.form-alta button[type=submit]')!.textContent).toContain('Crear 0 variantes');
   });
 
-  it('no acepta stock negativo', () => {
-    cargarNueva([['sabor', 'Frutilla']], '-3');
+  it('sumar un valor arma las combinaciones nuevas, tildadas', () => {
+    apretar('.btn-nuevo');
+    agregarValor('sabor', 'Vainilla');
+    agregarValor('peso', '2 kg');
 
-    enviar('form.tarjeta-form');
+    // 2 sabores × 2 pesos: una ya existe, se crean las otras tres.
+    expect(filasTabla().length).toBe(4);
+    expect(pantalla.querySelectorAll('.tabla-combinaciones input[type=checkbox]:checked').length).toBe(3);
+    expect(pantalla.querySelector('.form-alta button[type=submit]')!.textContent).toContain('Crear 3 variantes');
+  });
+
+  it('no deja cargar dos veces el mismo valor (sin importar mayúsculas)', () => {
+    apretar('.btn-nuevo');
+    agregarValor('sabor', 'chocolate');
+
+    expect(errores()).toContain('"chocolate" ya está en Sabor.');
+    expect(valores('sabor')).toEqual(['Chocolate']);
+  });
+
+  it('pide el stock de cada combinación tildada y no manda nada si falta', () => {
+    apretar('.btn-nuevo');
+    agregarValor('sabor', 'Frutilla');
+    escribir('#stock-1', '2,5');
+
+    enviar('form.form-alta');
 
     expect(errores()).toContain('Solo números enteros, sin puntos ni comas.');
+    expect(errores()).toContain('Revisá el stock y el precio de las combinaciones marcadas.');
     backend.expectNone(`${URL_PRODUCTO}/variante`);
   });
 
-  it('no acepta stock con decimales ni vacío', () => {
-    cargarNueva([['sabor', 'Frutilla']], '2,5');
-    enviar('form.tarjeta-form');
-    expect(errores()).toContain('Solo números enteros, sin puntos ni comas.');
-
-    escribir('#var-stock', '');
-    expect(errores()).toContain('Poné el stock.');
-    backend.expectNone(`${URL_PRODUCTO}/variante`);
-  });
-
-  it('pide nombre y valor de cada atributo', () => {
-    cargarNueva([['', '']], '5');
-
-    enviar('form.tarjeta-form');
-
-    expect(errores()).toEqual(jasmine.arrayContaining(['Poné el nombre del atributo.', 'Poné el valor.']));
-  });
-
-  it('con datos válidos manda la variante con las claves en minúscula y el stock como número', () => {
-    cargarNueva(
-      [
-        ['Sabor', ' Vainilla '],
-        ['Peso', '2 kg']
-      ],
-      '12'
-    );
-    escribir('#var-precio', '45.999,50');
-
-    enviar('form.tarjeta-form');
-
-    const pedido = backend.expectOne(`${URL_PRODUCTO}/variante`);
-    expect(pedido.request.method).toBe('POST');
-    expect(pedido.request.body).toEqual({ atributos: { sabor: 'Vainilla', peso: '2 kg' }, stock: 12, precio: 45999.5 });
-
-    pedido.flush({ ...CHOCOLATE, id: 2, atributos: { sabor: 'Vainilla', peso: '2 kg' }, stock: 12 });
+  it('una opción nueva sin valores no deja crear', () => {
+    apretar('.btn-nuevo');
+    pantalla.querySelector<HTMLButtonElement>('.tipo[aria-pressed=false]')!.click(); // Talle
     fixture.detectChanges();
-    expect(pantalla.textContent).toContain('Variante agregada.');
-    expect(pantalla.textContent).toContain('Vainilla');
+
+    enviar('form.form-alta');
+
+    expect(errores()).toContain('Cargá al menos un valor de Talle o sacá esa opción.');
+    backend.expectNone(`${URL_PRODUCTO}/variante`);
+  });
+
+  it('crea cada combinación tildada con su stock y su precio', () => {
+    apretar('.btn-nuevo');
+    agregarValor('sabor', 'Vainilla');
+    agregarValor('peso', '2 kg');
+    // Filas: Choc 1kg (existe), Choc 2kg, Vain 1kg, Vain 2kg. Se destilda Vainilla 2 kg.
+    const checks = pantalla.querySelectorAll<HTMLInputElement>('.tabla-combinaciones input[type=checkbox]');
+    checks[2].click();
+    fixture.detectChanges();
+    escribir('#stock-1', '8');
+    escribir('#precio-1', '82.000');
+    escribir('#stock-2', '12');
+
+    enviar('form.form-alta');
+
+    const pedidos = backend.match(`${URL_PRODUCTO}/variante`);
+    expect(pedidos.map((p) => p.request.body)).toEqual([
+      { atributos: { sabor: 'Chocolate', peso: '2 kg' }, stock: 8, precio: 82000 },
+      { atributos: { sabor: 'Vainilla', peso: '1 kg' }, stock: 12, precio: null }
+    ]);
+    pedidos[0].flush({ ...CHOCOLATE, id: 2, atributos: { sabor: 'Chocolate', peso: '2 kg' }, stock: 8 });
+    pedidos[1].flush({ ...CHOCOLATE, id: 3, atributos: { sabor: 'Vainilla', peso: '1 kg' }, stock: 12 });
+    fixture.detectChanges();
+
+    expect(pantalla.textContent).toContain('Se agregaron 2 variantes.');
+    expect(pantalla.querySelector('.form-alta')).toBeNull();
+  });
+
+  it('si una falla, las otras quedan creadas y la tabla las marca como existentes', () => {
+    apretar('.btn-nuevo');
+    agregarValor('sabor', 'Vainilla');
+    agregarValor('sabor', 'Frutilla');
+    escribir('#stock-1', '5');
+    escribir('#stock-2', '5');
+
+    enviar('form.form-alta');
+
+    const [vainilla, frutilla] = backend.match(`${URL_PRODUCTO}/variante`);
+    vainilla.flush({ ...CHOCOLATE, id: 2, atributos: { sabor: 'Vainilla', peso: '1 kg' }, stock: 5 });
+    frutilla.flush({ status: 500, message: 'Error' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(pantalla.querySelector('.form-alta .alerta-error-titulo')!.textContent).toContain('Se agregaron 1, pero una no se pudo crear');
+    expect(filasTabla()).toContain('Vainilla 1 kg Ya existe');
+  });
+
+  it('al editar, cada opción es un desplegable y se puede escribir un valor nuevo', () => {
+    apretar('.btn-accion[title=Editar]');
+    const sabor = pantalla.querySelector<HTMLSelectElement>('#editar-sabor')!;
+    expect(sabor.value).toBe('Chocolate');
+
+    sabor.value = '__nuevo__';
+    sabor.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    escribir('#nuevo-sabor', ' Dulce de leche ');
+    enviar('form.tarjeta-form:not(.form-alta)');
+
+    const pedido = backend.expectOne(`${URL_PRODUCTO}/variante/${CHOCOLATE.id}`);
+    expect(pedido.request.method).toBe('PUT');
+    expect(pedido.request.body).toEqual({ atributos: { sabor: 'Dulce de leche', peso: '1 kg' }, stock: 4, precio: null });
+    pedido.flush({ ...CHOCOLATE, atributos: { sabor: 'Dulce de leche', peso: '1 kg' } });
+    fixture.detectChanges();
+    expect(pantalla.textContent).toContain('Variante actualizada.');
+  });
+
+  it('al editar, pide escribir el valor nuevo si se eligió "Nuevo valor"', () => {
+    apretar('.btn-accion[title=Editar]');
+    const sabor = pantalla.querySelector<HTMLSelectElement>('#editar-sabor')!;
+    sabor.value = '__nuevo__';
+    sabor.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    enviar('form.tarjeta-form:not(.form-alta)');
+
+    expect(errores()).toContain('Escribí el nuevo valor de Sabor.');
+    backend.expectNone(`${URL_PRODUCTO}/variante/${CHOCOLATE.id}`);
   });
 
   it('si el back rechaza el ajuste por falta de stock, lo explica', () => {

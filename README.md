@@ -18,7 +18,19 @@ Los comandos de Maven (`./mvnw ...`) se corren desde `backend/`; los de npm/Angu
 
 ## Descripción del proyecto
 
-El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes en los eventos clave del ciclo de vida del pedido, por email y en la propia página (campanita del header con sus pedidos y las ofertas nuevas).
+El sistema resuelve la problemática de una tienda online que necesita gestionar su catálogo de productos, procesar pedidos, emitir facturas y coordinar el despacho de envíos. Integra pagos en línea con **pasarelas de pago intercambiables** (hoy **MercadoPago Checkout Pro**, vía API de Orders) y notifica a los clientes en los eventos clave del ciclo de vida del pedido, por email y en la propia página (campanita del header con sus pedidos y las ofertas nuevas). Los precios se ajustan solos con la cotización del dólar, y el cliente puede cancelar un pedido ya pagado (con devolución automática), confirmar si le llegó y pedir un reembolso.
+
+### Requisitos agregados para el Trabajo Final Integrador
+
+Además de lo pedido en Programación III y IV, el TFI suma cinco requisitos funcionales (épica [SCRUM-160](https://arruti-blandi.atlassian.net/browse/SCRUM-160) en Jira). Cada uno tiene su parte de API y de front, y está explicado en las reglas de negocio de abajo.
+
+| Req. | Qué hace | Jira | PR |
+|---|---|---|---|
+| RF01 | Cotización del dólar en tiempo real y ajuste automático de precios | SCRUM-161 · 162 | #38 |
+| RF02 | Notificaciones del cliente en la página (campanita) | SCRUM-163 · 164 | #34 |
+| RF03 | Confirmar si llegó, o no, un pedido entregado | SCRUM-165 · 166 | #35 |
+| RF04 | Cancelar un pedido pagado y no despachado, con devolución del pago | SCRUM-167 · 168 | #38 |
+| RF05 | Pedir el reembolso de un pedido entregado; lo resuelve el admin | SCRUM-169 · 170 | #38 |
 
 ### Reglas de negocio principales
 
@@ -33,6 +45,9 @@ El sistema resuelve la problemática de una tienda online que necesita gestionar
 - Los **cupones** de descuento se cargan en el checkout y descuentan sobre el subtotal de productos (no sobre el envío): por porcentaje o por monto fijo, con vigencia, compra mínima y usos máximos opcionales. Al crear el pedido se vuelven a validar, el descuento queda guardado en el pedido y se suma un uso; si el pedido se cancela, el uso se devuelve. A diferencia de la oferta, que va por producto, el cupón va sobre el pedido entero.
 - **Notificaciones en la página** (RF02): el cliente recibe un aviso cuando se acredita el pago de su pedido, cuando pasa a preparación, cuando se despacha (con empresa y número de seguimiento), cuando está en camino, cuando se entrega y cuando un admin lo cancela. Cuando un producto entra en oferta o mejora su descuento, el aviso les llega a todos los clientes activos.
 - **Confirmación de recepción** (RF03): cuando un pedido figura `ENTREGADO`, el cliente dueño puede responder "Lo recibí" o "No lo recibí", con un comentario opcional. "No lo recibí" queda marcado en el panel para que la tienda lo revise, y después todavía se puede cambiar a "Lo recibí". "Lo recibí" ya no se cambia.
+- **Cotización del dólar y ajuste de precios** (RF01): la API lee el dólar oficial (precio de venta) de [DolarApi](https://dolarapi.com) al arrancar y después cada 30 minutos, y guarda cada lectura. Los precios se cargan en pesos; cuando el dólar se mueve al menos un 1 % desde el último ajuste, todos los precios de productos y variantes se multiplican por la misma proporción. Un salto de más del 20 % no se aplica solo (puede ser un dato erróneo): lo confirma el admin desde el panel ("Dólar"). Si DolarApi no responde, los precios quedan como estaban y se muestra la última cotización guardada. La tienda muestra la cotización en el header y el panel tiene el historial de ajustes. Los umbrales se cambian con las variables `DOLAR_*`.
+- **Cancelar un pedido pagado** (RF04): el cliente puede cancelar su pedido mientras esté `PENDIENTE_PAGO`, `EN_PREPARACION` o `PAGADO`; uno despachado o entregado, no. Si ya estaba cobrado, primero se devuelve el pago en la pasarela (Mercado Pago, `POST /v1/orders/{id}/refund`) y el `Pago` queda `REEMBOLSADO`: si la pasarela lo rechaza, el pedido no se cancela. Después vuelven el stock y el uso del cupón. Si el pago lo había marcado un admin a mano, el pedido se cancela y la respuesta avisa que la devolución la hace la tienda.
+- **Reembolso de un pedido entregado** (RF05): el cliente dueño lo pide una sola vez, con un motivo, dentro de los 10 días de la entrega; queda `SOLICITADO`. El admin lo revisa en el detalle del pedido: si lo aprueba, se devuelve el pago en Mercado Pago (o queda registrado como devolución manual) y pasa a `APROBADO`; si lo rechaza, tiene que decir por qué y pasa a `RECHAZADO`. El stock no vuelve, porque el producto ya se entregó. En los dos casos el cliente recibe una notificación.
 - Las bajas de clientes, productos y cupones son **lógicas** (soft-delete mediante campo `activo`).
 - **Una cuenta por persona, con o sin Google/GitHub**: los emails se guardan y se comparan en minúsculas y, en Gmail, sin importar los puntos ni lo que va después de "+" (es la misma casilla). Si alguien se registra con el formulario y después entra con Google con el mismo email, entra a esa misma cuenta.
 - Las cuentas creadas con Google o GitHub empiezan sin DNI y con una contraseña aleatoria. Desde el perfil el cliente carga el DNI (una sola vez) y **crea** su contraseña sin poner la "actual". El DNI es obligatorio para confirmar una compra porque va en la factura; mientras falte, el header muestra un aviso para completarlo.
@@ -98,8 +113,10 @@ backend/src/main/java/com/BlandiArruti/E_commerce/
 ├── cliente/              ← Clientes, direcciones
 ├── config/               ← SecurityConfig
 ├── cotizacion/           ← Cotización de envío (Correo Argentino)
+├── dolar/                ← Cotización del dólar (DolarApi) y ajuste automático de precios
 ├── envio/                ← Gestión de envíos
-├── enums/                ← EstadoPedido, EstadoEnvio, TipoFactura, OperacionStock, TipoNotificacion
+├── enums/                ← EstadoPedido, EstadoEnvio, EstadoPago, TipoFactura, OperacionStock, TipoNotificacion,
+│                           ConfirmacionRecepcion, EstadoReembolso, TipoReembolso
 ├── exception/            ← Excepciones custom + GlobalExceptionHandler
 ├── factura/              ← Generación y consulta de facturas
 ├── geo/                  ← País, Provincia, Ciudad (datos geográficos AR)
@@ -161,8 +178,13 @@ Base URL: `http://localhost:8080/api/v1`
 | `POST` | `/pago/{pagoId}/confirmar` | Confirmar el pago al volver de la pasarela (consulta el estado real) | CLIENTE / ADMIN |
 | `GET` | `/pago/pedido/{pedidoId}` | Intentos de pago de un pedido | CLIENTE / ADMIN |
 | `POST` | `/webhook/{pasarela}` | Aviso de una pasarela (ej. `/webhook/mercadopago`) | Público |
-| `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido | CLIENTE / ADMIN |
+| `PATCH` | `/pedido/{id}/cancelar` | Cancelar pedido; si estaba cobrado devuelve el pago y responde si la devolución fue `AUTOMATICO`, `MANUAL` o `NO_CORRESPONDE`, con el monto | CLIENTE / ADMIN |
 | `PATCH` | `/pedido/{id}/recepcion` | Confirmar si llegó el pedido entregado `{ recibido, comentario? }` | CLIENTE dueño |
+| `POST` | `/pedido/{id}/reembolso` | Pedir el reembolso de un pedido entregado `{ motivo }` | CLIENTE dueño |
+| `PATCH` | `/pedido/{id}/reembolso` | Aprobar o rechazar el reembolso pedido `{ aprobar, respuesta? }` | ADMIN |
+| `GET` | `/dolar` | Última cotización del dólar guardada y su fecha | Público |
+| `GET` | `/dolar/historial` | Ajustes de precios aplicados por el dólar | ADMIN |
+| `POST` | `/dolar/actualizar` | Consultar el dólar en el momento; con `?forzar=true` aplica un salto mayor al 20 % | ADMIN |
 | `PATCH` | `/pedido/{id}/estado` | Cambiar estado manualmente (no permite saltar a `PAGADO`) | ADMIN |
 | `POST` | `/pedido/{id}/envio` | Crear envío para pedido PAGADO | ADMIN |
 | `PATCH` | `/pedido/{id}/envio/estado` | Avanzar estado del envío | ADMIN |
@@ -478,6 +500,11 @@ docker compose down -v && docker compose up -d --build
 | `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google | `...apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Secreto del cliente OAuth de Google | `GOCSPX-...` |
 | `FRONT_ORIGINS` | Orígenes del front habilitados por CORS (separados por coma) | `http://localhost:5173` |
+| `DOLAR_CASA` | Cotización que se usa: `oficial`, `blue`, `bolsa` (MEP), `contadoconliqui`, `mayorista` o `tarjeta` | `oficial` |
+| `DOLAR_ACTUALIZACION_AUTOMATICA` | Consultar el dólar solo cada `DOLAR_INTERVALO` (`false` = solo a mano desde el panel) | `true` |
+| `DOLAR_INTERVALO` | Cada cuánto se consulta (formato ISO-8601) | `PT30M` |
+| `DOLAR_AJUSTE_MINIMO` | Variación mínima (%) para ajustar los precios | `1` |
+| `DOLAR_VARIACION_MAXIMA` | Variación (%) a partir de la cual el ajuste lo confirma el admin | `20` |
 | `OAUTH2_REDIRECT_URI` | A dónde vuelve el navegador tras el login con GitHub/Google. En Docker por defecto `${FRONT_URL}/ingreso-social`; fuera de Docker vacío = responde JSON (Postman) | `http://localhost:4200/ingreso-social` |
 
 Copiar `.env.example` como `.env` y completar con los valores reales.
@@ -486,7 +513,7 @@ Copiar `.env.example` como `.env` y completar con los valores reales.
 
 ## Tests
 
-El proyecto incluye **351 tests** (350 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
+El proyecto incluye **389 tests** (388 unitarios + 1 de integración), usando JUnit 5, Mockito, AssertJ y Testcontainers.
 
 > El test de integración levanta un PostgreSQL real en un contenedor, así que
 > necesita Docker Desktop corriendo. Sin Docker, corré solo los unitarios:
@@ -509,10 +536,13 @@ Cobertura de tests unitarios:
 - `CarritoServiceTest` — 15 tests (obtener/crear carrito, agregar/fusionar ítems, stock, actualizar, eliminar, checkout sin vaciar el carrito)
 - `CategoriaServiceTest` — 13 tests (listar con/sin filtro, crear, duplicado, actualizar, eliminar con confirmación)
 - `PagoServiceTest` — 11 tests (iniciar, confirmar aprobado/rechazado/repetido, cobro de otro pago, webhook, cupón repartido en las líneas del cobro)
-- `PasarelaPagoBaseTest` — 11 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas)
-- `MercadoPagoPasarelaTest` — 13 tests (order con total exacto, traducción de estados, avisos del webhook)
+- `PasarelaPagoBaseTest` — 14 tests (algoritmo de la clase padre con una pasarela inventada, registro de pasarelas, devolución de un cobro)
+- `MercadoPagoPasarelaTest` — 15 tests (order con total exacto, traducción de estados, avisos del webhook, devolución)
+- `ReembolsoPagosServiceTest` — 3 tests (devuelve los pagos aprobados, los marca `REEMBOLSADO`, rechazo de la pasarela)
+- `ActualizadorChecksEnumTest` — 2 tests (actualiza la restricción CHECK de `pagos.estado` al agregar `REEMBOLSADO`)
+- `DolarServiceTest` — 11 tests y `DolarApiClientTest` — 3 tests (la primera cotización como base, ajuste al subir y al bajar, variación menor al mínimo, salto grande que fuerza el admin, cambio de tipo de dólar, DolarApi caída)
 - `WebhookControllerTest` — 3 tests (aviso válido, pasarela inexistente, error sin reintentos)
-- `PedidoServiceTest` — 51 tests (cancelación, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar, dirección dada de baja)
+- `PedidoServiceTest` — 65 tests (cancelación, también de un pedido pagado con devolución automática o manual, reembolso pedido dentro y fuera del plazo y su resolución, pago, envío, estado, acreditación de pagos, cupón en el pedido, confirmación de recepción, DNI obligatorio para comprar, lo comprado sale del carrito al cobrar, pedidos abandonados antes de pagar, dirección dada de baja)
 - `CuponServiceTest` — 27 tests (vencido, todavía no vigente, agotado, sin monto mínimo, porcentaje, monto fijo, uso al crear el pedido y devolución al cancelar, alta y edición desde el panel)
 - `ProductoServiceTest` — 34 tests (variantes, stock, precio por variante, imágenes, novedades, ownership)
 - `ClienteServiceTest` — 26 tests (CRUD, owner-check, acceso, búsqueda del panel, email en minúsculas y equivalente de Gmail, crear contraseña sin la actual, cargar el DNI una sola vez, baja lógica de direcciones)
@@ -533,7 +563,7 @@ Cobertura de tests unitarios:
 
 ### Tests del front
 
-El front tiene **88 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
+El front tiene **108 tests** con Jasmine y Karma (`*.spec.ts`, al lado de cada archivo que prueban).
 No necesitan el back ni la base: las llamadas HTTP se simulan con `HttpTestingController`.
 
 **Con Docker (recomendado, no hace falta instalar nada):**
@@ -565,11 +595,14 @@ Qué cubren (lo que más se rompe):
 - `auth.interceptor.spec.ts` — 9 tests: agrega el token solo a nuestra API (no al login ni a otros sitios); un 401 cierra la sesión y manda al login que corresponde; el 401 del login o de "contraseña actual incorrecta" no la cierra
 - `auth.service.spec.ts` — 16 tests: login (recordarme o solo la pestaña, rol equivocado en cada login), logout, y validación de la sesión guardada (vencida, no es un JWT, token editado a mano, 401, sin conexión)
 - `validadores.spec.ts` — 13 tests: validadores propios (DNI, precio argentino, descuento, email…) y los mensajes de `mensajes.ts`
-- `errores-api.spec.ts` — 18 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente), de checkout y de cupones
+- `errores-api.spec.ts` — 22 tests: mensajes de stock insuficiente (carrito, checkout y panel), de variantes, de dirección (Georef caído, localidad inexistente), de checkout, de cupones y de la cancelación de un pedido pagado
 - `admin-variantes.spec.ts` — 7 tests: el formulario de variantes usado como un admin (atributos repetidos sin importar mayúsculas, stock negativo o con decimales, campos vacíos, lo que se manda al back, ajuste rechazado por falta de stock)
 - `admin-producto.spec.ts` — 4 tests: el alta de un producto con foto y marca de novedad
 - `header-admin.spec.ts` — 3 tests: el header del panel (solo secciones del panel, usuario de la sesión, cerrar sesión)
 - `confirmar-recepcion.spec.ts` — 5 tests: "Lo recibí" / "No lo recibí" de un pedido entregado (no aparece en otros estados, comentario sin espacios de más, "Ya lo recibí" después de avisar, motivo del rechazo del back)
+- `solicitar-reembolso.spec.ts` — 6 tests: el reembolso de un pedido entregado (solo una vez y dentro del plazo, motivo de al menos 10 caracteres, cómo lo resolvió la tienda, pedido repetido)
+- `pedido.spec.ts` — 3 tests: el cliente puede cancelar mientras no se despachó, aunque esté pagado, y el mensaje de cuánto se devolvió y por dónde
+- `dolar.spec.ts` — 4 tests y `admin-dolar.spec.ts` — 3 tests: formato de la cotización y la variación, y la pantalla del dólar en el panel (historial, confirmar un salto grande con `forzar=true`, sin cotización todavía)
 
 Para escribir tests nuevos que necesiten una sesión, `src/testing/sesion-de-prueba.ts` arma
 tokens de prueba (`crearToken({ rol: 'ADMIN' })`) y los deja guardados como si el usuario
